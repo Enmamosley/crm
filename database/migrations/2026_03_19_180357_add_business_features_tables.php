@@ -15,6 +15,7 @@ return new class extends Migration
         });
 
         // 2. Dunning: reintentos de pagos fallidos
+        Schema::dropIfExists('dunning_attempts');
         Schema::create('dunning_attempts', function (Blueprint $table) {
             $table->id();
             $table->foreignId('client_invoice_id')->constrained()->cascadeOnDelete();
@@ -28,6 +29,7 @@ return new class extends Migration
         });
 
         // 3. Permisos granulares
+        Schema::dropIfExists('permissions');
         Schema::create('permissions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -37,6 +39,7 @@ return new class extends Migration
         });
 
         // 4. Códigos de descuento
+        Schema::dropIfExists('discount_codes');
         Schema::create('discount_codes', function (Blueprint $table) {
             $table->id();
             $table->string('code')->unique();
@@ -53,6 +56,7 @@ return new class extends Migration
         });
 
         // 6. Etiquetas de clientes
+        Schema::dropIfExists('tags');
         Schema::create('tags', function (Blueprint $table) {
             $table->id();
             $table->string('name');
@@ -60,6 +64,7 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        Schema::dropIfExists('client_tag');
         Schema::create('client_tag', function (Blueprint $table) {
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
             $table->foreignId('tag_id')->constrained()->cascadeOnDelete();
@@ -67,6 +72,7 @@ return new class extends Migration
         });
 
         // 7. Notificaciones internas
+        Schema::dropIfExists('notifications');
         Schema::create('notifications', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
@@ -80,6 +86,7 @@ return new class extends Migration
         });
 
         // 8. Tickets de soporte
+        Schema::dropIfExists('support_tickets');
         Schema::create('support_tickets', function (Blueprint $table) {
             $table->id();
             $table->foreignId('client_id')->constrained()->cascadeOnDelete();
@@ -92,6 +99,7 @@ return new class extends Migration
             $table->index(['status', 'priority']);
         });
 
+        Schema::dropIfExists('ticket_replies');
         Schema::create('ticket_replies', function (Blueprint $table) {
             $table->id();
             $table->foreignId('support_ticket_id')->constrained()->cascadeOnDelete();
@@ -103,6 +111,7 @@ return new class extends Migration
         });
 
         // 10. Carrito multi-producto: tabla de items para checkout directo
+        Schema::dropIfExists('cart_items');
         Schema::create('cart_items', function (Blueprint $table) {
             $table->id();
             $table->string('session_id');

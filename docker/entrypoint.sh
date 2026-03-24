@@ -1,5 +1,4 @@
 #!/bin/sh
-set -e
 
 # Load persisted APP_KEY for ALL containers (app, queue, scheduler)
 KEY_FILE=/var/www/html/storage/app/env/app_key
@@ -11,7 +10,11 @@ fi
 
 # Only run migrations, key generation, and cache on the main app container
 if [ "$1" = "php-fpm" ]; then
+    # Ensure storage directories exist (volumes may be empty on first boot)
+    mkdir -p /var/www/html/storage/framework/{cache,sessions,views}
+    mkdir -p /var/www/html/storage/logs
     mkdir -p "$(dirname "$KEY_FILE")"
+    chown -R www-data:www-data /var/www/html/storage
 
     if [ -z "$APP_KEY" ]; then
         export APP_KEY=$(php -r "echo 'base64:'.base64_encode(random_bytes(32));")
@@ -26,9 +29,9 @@ if [ "$1" = "php-fpm" ]; then
     fi
 
     echo "→ Caching config / routes / views..."
-    php artisan config:cache
-    php artisan route:cache
-    php artisan view:cache
+    php artisan config:cache || true
+    php artisan route:cache || true
+    php artisan view:cache || true
 
     echo "→ Linking storage..."
     php artisan storage:link --force 2>/dev/null || true

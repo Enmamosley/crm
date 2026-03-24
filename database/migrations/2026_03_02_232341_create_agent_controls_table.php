@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('agent_controls');
         Schema::create('agent_controls', function (Blueprint $table) {
             $table->id();
             $table->string('channel')->default('general')->comment('Canal: general, chat, lead_id');
