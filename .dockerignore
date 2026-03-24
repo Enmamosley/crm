@@ -1,5 +1,6 @@
-# Dependencies
+# Dependencies (composer install runs inside Docker)
 node_modules
+vendor
 npm-debug.log*
 
 # Git
@@ -21,10 +22,15 @@ storage/framework/sessions
 storage/framework/views
 storage/logs/*.log
 
+# Docker compose (not needed inside image; Dockerfile IS needed)
+docker-compose*.yml
+docker-compose*.yaml
+
 # Dev/test artifacts
 tests/
 coverage/
 .phpunit.result.cache
+phpunit.xml
 
 # Docs and extras
 *.md

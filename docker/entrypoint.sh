@@ -21,7 +21,9 @@ if [ "$1" = "php-fpm" ]; then
     fi
 
     echo "→ Running migrations..."
-    php artisan migrate --force
+    if ! php artisan migrate --force; then
+        echo "⚠ Migrations failed — container will start anyway (check logs)"
+    fi
 
     echo "→ Caching config / routes / views..."
     php artisan config:cache
