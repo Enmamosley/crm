@@ -118,7 +118,7 @@ docker compose up -d --build app nginx
 
 Ver [`OPENCLAW_API.md`](OPENCLAW_API.md) — documentación completa de todos los endpoints, flujos recomendados y reglas de negocio.
 
-**Base URL:** `https://sys.mosley.mx/api/v1`
+**Base URL:** `https://app.mosley.digital/api/v1`
 **Auth:** Bearer token (Sanctum)
 
 Endpoints principales:

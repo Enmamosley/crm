@@ -1,5 +1,5 @@
 # API Reference — OpenClaw Integration
-**Base URL:** `https://sys.mosley.mx/api/v1`
+**Base URL:** `https://app.mosley.digital/api/v1`
 **Formato:** JSON (`Content-Type: application/json`)
 **Autenticación:** Bearer Token (Sanctum)
 
