@@ -3,7 +3,6 @@
 .env
 .env.backup
 .env.production
-.env.docker
 
 # Subdirectorios externos no parte del proyecto
 /tailadmin-laravel-pro-main
