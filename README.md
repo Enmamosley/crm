@@ -1,13 +1,143 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# CRM Mosley
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+CRM interno para gestión de prospectos, cotizaciones, facturas y clientes. Incluye API REST para integración con el agente IA **OpenClaw**.
 
-## About Laravel
+## Stack
+
+| Capa | Tecnología |
+|---|---|
+| Backend | Laravel 12 · PHP 8.2 |
+| Frontend | Blade · Alpine.js · Tailwind CSS 4 · Vite |
+| Base de datos | MySQL 8 |
+| Colas / Caché | MySQL (driver `database`) |
+| PDF | DomPDF |
+| Auth API | Laravel Sanctum (Bearer token) |
+| Deploy | Docker · Nginx · Traefik (SSL) |
+
+## Módulos
+
+- **Leads** — pipeline de prospectos con historial de estados y notas
+- **Cotizaciones** — generación de PDFs con numeración automática e IVA configurable
+- **Clientes** — portal de cliente con documentos y facturas
+- **Facturación** — facturas, pagos, facturas recurrentes, dunning automático, integración FacturAPI
+- **Correo 20i** — gestión de buzones por cliente vía API de 20i
+- **MercadoPago** — checkout directo y carrito con webhook HMAC
+- **Control del agente** — pausa/reactiva OpenClaw por canal desde el panel admin
+- **API REST** — endpoints para que OpenClaw gestione leads y cotizaciones de forma autónoma
+
+## Requisitos locales
+
+- PHP 8.2+
+- Composer 2
+- Node 20+
+- MySQL 8 (o SQLite para desarrollo rápido)
+
+## Instalación local
+
+```bash
+git clone https://github.com/TU_USUARIO/crm.git && cd crm
+
+# Variables de entorno
+cp .env.example .env
+
+# Dependencias
+composer install
+npm install
+
+# Clave de la app
+php artisan key:generate
+
+# Base de datos
+php artisan migrate --seed
+
+# Assets
+npm run build
+
+# Levantar servidor
+php artisan serve
+```
+
+## Deploy en VPS con Docker
+
+### Pre-requisitos en el VPS
+- Docker + Docker Compose
+- Traefik corriendo en la red `openclaw-ehpt_default` con certresolver `letsencrypt`
+
+### Primer deploy
+
+```bash
+# Clonar repo
+git clone https://github.com/TU_USUARIO/crm.git /srv/crm
+cd /srv/crm
+
+# Configurar entorno de producción
+cp .env.example .env
+# Editar .env: APP_KEY, DB_*, MAIL_*, MP_*, FACTURAPI_KEY, APP_DOMAIN, etc.
+
+# Generar APP_KEY
+docker run --rm php:8.2-cli php -r "echo 'base64:'.base64_encode(random_bytes(32)).PHP_EOL;"
+# Pegar el resultado en APP_KEY en el .env
+
+# Construir y levantar
+docker compose up -d --build
+```
+
+### Actualizar
+
+```bash
+cd /srv/crm
+git pull
+docker compose up -d --build app nginx
+```
+
+### Servicios Docker
+
+| Servicio | Descripción |
+|---|---|
+| `app` | PHP-FPM — corre migraciones y cachea config al iniciar |
+| `nginx` | Sirve assets estáticos y proxy a PHP-FPM |
+| `db` | MySQL 8 — datos persistentes en volumen `db_data` |
+| `queue` | Worker de colas (`queue:work`) |
+| `scheduler` | Cron que ejecuta `schedule:run` cada minuto |
+
+### Variables de entorno importantes
+
+| Variable | Descripción |
+|---|---|
+| `APP_KEY` | Clave de cifrado (generar con artisan) |
+| `APP_DOMAIN` | Dominio sin `https://` — usado por Traefik para el cert |
+| `DB_PASSWORD` | Contraseña del usuario MySQL |
+| `DB_ROOT_PASSWORD` | Contraseña root de MySQL |
+| `MAIL_*` | Configuración SMTP |
+| `MP_ACCESS_TOKEN` | Token de MercadoPago |
+| `MP_WEBHOOK_SECRET` | Secret HMAC para validar webhooks de MercadoPago |
+| `FACTURAPI_KEY` | API key de FacturAPI para timbrado |
+| `TWENTYI_API_KEY` | API key de 20i para gestión de correos |
+
+## API para OpenClaw
+
+Ver [`OPENCLAW_API.md`](OPENCLAW_API.md) — documentación completa de todos los endpoints, flujos recomendados y reglas de negocio.
+
+**Base URL:** `https://sys.mosley.mx/api/v1`
+**Auth:** Bearer token (Sanctum)
+
+Endpoints principales:
+- `GET /agent/status` — verificar si el agente está activo por canal
+- `GET /services` — catálogo de servicios con precios
+- `GET /leads/search` — buscar prospect existente
+- `POST /leads` — registrar nuevo prospecto
+- `POST /quotes` — generar cotización con PDF
+
+## Tareas programadas
+
+| Comando | Horario | Descripción |
+|---|---|---|
+| `invoices:send-reminders` | 9:00 AM | Recordatorios de pago |
+| `invoices:process-recurring` | 6:00 AM | Generar facturas recurrentes |
+| `quotes:expire` | 7:00 AM | Marcar cotizaciones vencidas |
+| `db:backup` | 2:00 AM | Backup MySQL comprimido (guarda últimos 10) |
+| `dunning:process` | 10:00 AM | Reintentos de cobro automáticos |
+
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
