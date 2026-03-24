@@ -1,0 +1,39 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Environment files (never bake secrets into the image)
+.env
+.env.*
+!.env.example
+
+# Built assets (generated inside Docker via multi-stage build)
+public/build
+
+# Laravel cache/runtime (generated at container startup)
+storage/framework/cache/data
+storage/framework/sessions
+storage/framework/views
+storage/logs/*.log
+
+# Dev/test artifacts
+tests/
+coverage/
+.phpunit.result.cache
+
+# Docs and extras
+*.md
+!README.md
+docker-compose.override.yml
+
+# Local-only subdirectories not part of the app
+tailadmin-laravel-pro-main/
+api-modules-1.0.6/
+
+# macOS
+.DS_Store

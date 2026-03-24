@@ -1,0 +1,114 @@
+services:
+
+  # ── PHP-FPM Application ────────────────────────────────
+  app:
+    build:
+      context: .
+      target: app
+    image: crm_app
+    container_name: crm_app
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - storage_app:/var/www/html/storage/app
+      - storage_logs:/var/www/html/storage/logs
+    networks:
+      - crm
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Nginx Web Server ───────────────────────────────────
+  nginx:
+    build:
+      context: .
+      target: web
+    image: crm_nginx
+    container_name: crm_nginx
+    restart: unless-stopped
+    # Sin ports: Traefik enruta al contenedor directamente por la red
+    volumes:
+      # Serve user-uploaded files from the same storage volume as the app
+      - storage_app:/var/www/html/storage/app:ro
+    networks:
+      - crm
+      - openclaw-ehpt_default   # red externa donde vive Traefik
+    depends_on:
+      - app
+    labels:
+      - "traefik.enable=true"
+      # ── Router HTTPS ──────────────────────────────────
+      - "traefik.http.routers.crm.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.crm.entrypoints=websecure"
+      - "traefik.http.routers.crm.tls=true"
+      - "traefik.http.routers.crm.tls.certresolver=letsencrypt"
+      # ── Redirigir HTTP → HTTPS ────────────────────────
+      - "traefik.http.routers.crm-http.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.crm-http.entrypoints=web"
+      - "traefik.http.routers.crm-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+      # ── Servicio (puerto interno del contenedor) ──────
+      - "traefik.http.services.crm.loadbalancer.server.port=80"
+
+  # ── MySQL Database ─────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: crm_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - crm
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Queue Worker ───────────────────────────────────────
+  queue:
+    image: crm_app
+    container_name: crm_queue
+    restart: unless-stopped
+    env_file: .env
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=90"]
+    volumes:
+      - storage_app:/var/www/html/storage/app
+      - storage_logs:/var/www/html/storage/logs
+    networks:
+      - crm
+    depends_on:
+      - app
+
+  # ── Task Scheduler (cron) ──────────────────────────────
+  # Runs: send-reminders, process-recurring, expire-quotes, dunning, db:backup
+  scheduler:
+    image: crm_app
+    container_name: crm_scheduler
+    restart: unless-stopped
+    env_file: .env
+    command: ["/bin/sh", "-c", "while true; do php artisan schedule:run >> /dev/null 2>&1; sleep 60; done"]
+    volumes:
+      - storage_app:/var/www/html/storage/app
+      - storage_logs:/var/www/html/storage/logs
+    networks:
+      - crm
+    depends_on:
+      - app
+
+networks:
+  crm:
+    driver: bridge
+  openclaw-ehpt_default:
+    external: true   # Red ya creada por Traefik en el VPS
+
+volumes:
+  db_data:
+  storage_app:
+  storage_logs:
