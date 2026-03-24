@@ -1,6 +1,6 @@
 @extends('layouts.admin')
-@section('title', 'Buscador de Dominios')
-@section('header', 'Buscador de Dominios')
+@section('title', 'Dominios')
+@section('header', 'Gestión de Dominios')
 
 @section('actions')
 <a href="{{ route('admin.settings.index') }}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 text-sm">
@@ -9,7 +9,7 @@
 @endsection
 
 @section('content')
-<div class="max-w-3xl space-y-6">
+<div class="space-y-6">
 
     @if(!$configured)
         <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg px-5 py-4">
@@ -18,14 +18,102 @@
         </div>
     @endif
 
-    @if($isOte)
+    @if($isSandbox)
         <div class="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg px-4 py-3 text-sm flex items-center gap-2">
             <i class="fas fa-flask"></i>
-            <span>Usando entorno <strong>OTE (sandbox)</strong> de Cosmotown. Los registros son de prueba y no son reales.</span>
+            <span>Usando entorno <strong>Sandbox</strong> de Cosmotown. Los registros son de prueba y no son reales.</span>
         </div>
     @endif
 
-    {{-- Buscador --}}
+    {{-- Tabs --}}
+    <div x-data="{ tab: 'domains' }" class="space-y-4">
+        <div class="flex gap-1 border-b">
+            <button @click="tab = 'domains'" :class="tab === 'domains' ? 'border-b-2 border-blue-600 text-blue-600 font-semibold' : 'text-gray-500 hover:text-gray-700'" class="px-4 py-2.5 text-sm transition">
+                <i class="fas fa-globe mr-1"></i> Mis Dominios
+            </button>
+            <button @click="tab = 'search'" :class="tab === 'search' ? 'border-b-2 border-blue-600 text-blue-600 font-semibold' : 'text-gray-500 hover:text-gray-700'" class="px-4 py-2.5 text-sm transition">
+                <i class="fas fa-search mr-1"></i> Buscar / Registrar
+            </button>
+        </div>
+
+        {{-- TAB: Mis Dominios --}}
+        <div x-show="tab === 'domains'" x-data="domainList()" x-init="loadDomains()">
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b flex items-center justify-between">
+                    <h3 class="font-semibold text-gray-800">Dominios en tu cuenta Cosmotown</h3>
+                    <button @click="loadDomains()" class="text-sm text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-sync-alt mr-1" :class="loading && 'fa-spin'"></i> Actualizar
+                    </button>
+                </div>
+
+                {{-- Loading --}}
+                <div x-show="loading" class="p-8 text-center text-gray-500">
+                    <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                    <p class="text-sm">Cargando dominios...</p>
+                </div>
+
+                {{-- Error --}}
+                <div x-show="error" class="p-6">
+                    <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> <span x-text="error"></span>
+                    </div>
+                </div>
+
+                {{-- Tabla --}}
+                <div x-show="!loading && !error && domains.length > 0" class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wider">
+                            <tr>
+                                <th class="px-6 py-3">Dominio</th>
+                                <th class="px-6 py-3">Estado</th>
+                                <th class="px-6 py-3">Privacidad</th>
+                                <th class="px-6 py-3">Bloqueado</th>
+                                <th class="px-6 py-3">Creado</th>
+                                <th class="px-6 py-3">Expira</th>
+                                <th class="px-6 py-3 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            <template x-for="d in domains" :key="d.domain">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-3">
+                                        <span class="font-medium font-mono text-blue-700" x-text="d.domain"></span>
+                                    </td>
+                                    <td class="px-6 py-3">
+                                        <span x-show="d.auto_billing" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Auto-renueva</span>
+                                        <span x-show="!d.auto_billing" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Manual</span>
+                                    </td>
+                                    <td class="px-6 py-3">
+                                        <i x-show="d.whois_privacy" class="fas fa-shield-alt text-green-500" title="WHOIS protegido"></i>
+                                        <i x-show="!d.whois_privacy" class="fas fa-eye text-gray-400" title="WHOIS público"></i>
+                                    </td>
+                                    <td class="px-6 py-3">
+                                        <i x-show="d.locked" class="fas fa-lock text-green-500" title="Bloqueado (seguro)"></i>
+                                        <i x-show="!d.locked" class="fas fa-lock-open text-yellow-500" title="Desbloqueado"></i>
+                                    </td>
+                                    <td class="px-6 py-3 text-gray-500 text-xs" x-text="d.created ? d.created.split(' ')[0] : '—'"></td>
+                                    <td class="px-6 py-3 text-xs" :class="isExpiringSoon(d.expiration_date) ? 'text-red-600 font-semibold' : 'text-gray-500'" x-text="d.expiration_date ? d.expiration_date.split(' ')[0] : '—'"></td>
+                                    <td class="px-6 py-3 text-right space-x-2">
+                                        <a :href="'{{ route('admin.domains.info', ':d') }}'.replace(':d', d.domain)" class="text-blue-600 hover:text-blue-800 text-xs font-medium">
+                                            <i class="fas fa-info-circle mr-0.5"></i> Info
+                                        </a>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                {{-- Vacío --}}
+                <div x-show="!loading && !error && domains.length === 0" class="p-8 text-center text-gray-400">
+                    <i class="fas fa-globe text-3xl mb-2"></i>
+                    <p class="text-sm">No tienes dominios registrados en Cosmotown.</p>
+                </div>
+            </div>
+        </div>
+
+        {{-- TAB: Buscar / Registrar --}}
+        <div x-show="tab === 'search'" class="max-w-3xl space-y-6">
     <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-lg font-semibold mb-1">Verificar disponibilidad</h3>
         <p class="text-sm text-gray-500 mb-5">Escribe el dominio que quieres verificar (ej: <code class="bg-gray-100 px-1 rounded">miempresa.com</code>)</p>
@@ -116,13 +204,46 @@
             <li><i class="fas fa-check text-gray-400 mr-1.5 w-3"></i> Puedes verificar la disponibilidad de cualquier dominio usando la API de Cosmotown.</li>
             <li><i class="fas fa-check text-gray-400 mr-1.5 w-3"></i> Si el dominio está disponible, puedes registrarlo directamente desde aquí (requiere saldo en tu cuenta Cosmotown).</li>
             <li><i class="fas fa-check text-gray-400 mr-1.5 w-3"></i> Una vez registrado, asígna el Package ID de 20i al cliente para gestionar sus buzones de correo.</li>
-            <li class="text-yellow-600"><i class="fas fa-flask mr-1.5 w-3"></i> El entorno OTE es un sandbox: los registros no son reales ni tienen costo.</li>
+            <li class="text-yellow-600"><i class="fas fa-flask mr-1.5 w-3"></i> En sandbox los registros no son reales ni tienen costo.</li>
         </ul>
     </div>
 
+        </div>{{-- /tab search --}}
+    </div>{{-- /tabs --}}
 </div>
 
 <script>
+function domainList() {
+    return {
+        domains: [],
+        loading: false,
+        error: null,
+        async loadDomains() {
+            this.loading = true;
+            this.error = null;
+            try {
+                const resp = await fetch('{{ route("admin.domains.list") }}', {
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                });
+                const data = await resp.json();
+                if (!resp.ok) { this.error = data.error ?? 'Error desconocido'; return; }
+                this.domains = data.domains ?? [];
+            } catch (e) {
+                this.error = 'Error de conexión: ' + e.message;
+            } finally {
+                this.loading = false;
+            }
+        },
+        isExpiringSoon(date) {
+            if (!date) return false;
+            const exp = new Date(date);
+            const now = new Date();
+            const diff = (exp - now) / (1000 * 60 * 60 * 24);
+            return diff < 30;
+        }
+    };
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const input       = document.getElementById('domain-input');
     const btnCheck    = document.getElementById('btn-check');
@@ -166,19 +287,19 @@ document.addEventListener('DOMContentLoaded', function () {
                 document.getElementById('result-domain-name').textContent = data.domain;
                 const priceLine = document.getElementById('result-price-line');
                 if (data.price) {
-                    document.getElementById('result-price').textContent = '$' + parseFloat(data.price).toFixed(2) + ' ' + (data.currency ?? 'USD');
+                    document.getElementById('result-price').textContent = '$' + parseFloat(data.price).toFixed(2) + ' USD';
                     priceLine.classList.remove('hidden');
                 } else {
                     priceLine.classList.add('hidden');
                 }
                 const extra = document.getElementById('result-extra');
-                if (data.extra) { extra.textContent = data.extra; extra.classList.remove('hidden'); }
+                if (data.message) { extra.textContent = data.message; extra.classList.remove('hidden'); }
                 else { extra.classList.add('hidden'); }
                 show('result-available');
             } else {
                 document.getElementById('result-domain-name-2').textContent = data.domain;
                 const extra2 = document.getElementById('result-extra-2');
-                if (data.extra) { extra2.textContent = data.extra; extra2.classList.remove('hidden'); }
+                if (data.message) { extra2.textContent = data.message; extra2.classList.remove('hidden'); }
                 else { extra2.classList.add('hidden'); }
                 show('result-unavailable');
             }

@@ -13,6 +13,7 @@ use App\Models\Service;
 use App\Models\SupportTicket;
 use App\Models\TicketReply;
 use App\Services\FacturapiService;
+use App\Services\CosmotownService;
 use App\Services\MercadoPagoService;
 use App\Services\TwentyIService;
 use App\Models\Setting;
@@ -651,5 +652,102 @@ class ClientPortalController extends Controller
         }
 
         return back()->with('success', 'Respuesta enviada.');
+    }
+
+    // ─── Dominio (Cosmotown) ────────────────────────────────────
+
+    public function domain(string $token)
+    {
+        $client = Client::where('portal_token', $token)->firstOrFail();
+
+        if (!$client->domain || $client->domain_type !== 'cosmotown') {
+            return redirect()->route('portal.dashboard', $token);
+        }
+
+        $cosmotown = new CosmotownService();
+        $domainInfo = null;
+        $error = null;
+
+        if ($cosmotown->isConfigured()) {
+            try {
+                $domainInfo = $cosmotown->domainInfo($client->domain);
+            } catch (\Throwable $e) {
+                $error = 'No se pudo obtener la información del dominio.';
+            }
+        }
+
+        return view('portal.domain', compact('client', 'domainInfo', 'error'));
+    }
+
+    public function domainDns(string $token)
+    {
+        $client = Client::where('portal_token', $token)->firstOrFail();
+
+        if (!$client->domain || $client->domain_type !== 'cosmotown') {
+            return response()->json(['error' => 'Sin dominio Cosmotown asignado.'], 422);
+        }
+
+        $cosmotown = new CosmotownService();
+
+        if (!$cosmotown->isConfigured()) {
+            return response()->json(['error' => 'Cosmotown no configurado.'], 422);
+        }
+
+        try {
+            return response()->json($cosmotown->getDnsSettings($client->domain));
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 502);
+        }
+    }
+
+    public function saveDomainDns(Request $request, string $token)
+    {
+        $client = Client::where('portal_token', $token)->firstOrFail();
+
+        if (!$client->domain || $client->domain_type !== 'cosmotown') {
+            return response()->json(['error' => 'Sin dominio Cosmotown asignado.'], 422);
+        }
+
+        $validated = $request->validate(['records' => 'required|array']);
+
+        $cosmotown = new CosmotownService();
+
+        if (!$cosmotown->isConfigured()) {
+            return response()->json(['error' => 'Cosmotown no configurado.'], 422);
+        }
+
+        try {
+            $cosmotown->saveDnsSettings($client->domain, $validated['records']);
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 502);
+        }
+    }
+
+    public function saveDomainNameservers(Request $request, string $token)
+    {
+        $client = Client::where('portal_token', $token)->firstOrFail();
+
+        if (!$client->domain || $client->domain_type !== 'cosmotown') {
+            return response()->json(['error' => 'Sin dominio Cosmotown asignado.'], 422);
+        }
+
+        $validated = $request->validate([
+            'nameservers'   => 'required|array|min:1|max:4',
+            'nameservers.*' => 'required|string|max:253',
+        ]);
+
+        $cosmotown = new CosmotownService();
+
+        if (!$cosmotown->isConfigured()) {
+            return response()->json(['error' => 'Cosmotown no configurado.'], 422);
+        }
+
+        try {
+            $cosmotown->saveNameservers($client->domain, $validated['nameservers']);
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 502);
+        }
     }
 }

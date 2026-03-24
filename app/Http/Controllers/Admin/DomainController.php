@@ -13,10 +13,10 @@ class DomainController extends Controller
     {
         $service     = new CosmotownService();
         $configured  = $service->isConfigured();
-        $environment = Setting::get('cosmotown_base_url', 'https://irest-ote.cosmotown.com');
-        $isOte       = str_contains($environment, 'ote');
+        $environment = Setting::get('cosmotown_base_url', 'https://sandbox.cosmotown.com');
+        $isSandbox   = str_contains($environment, 'sandbox');
 
-        return view('admin.domains.index', compact('configured', 'environment', 'isOte'));
+        return view('admin.domains.index', compact('configured', 'environment', 'isSandbox'));
     }
 
     /**
@@ -60,6 +60,183 @@ class DomainController extends Controller
         try {
             $result = $service->register($validated['domain']);
             return response()->json(['success' => true, 'data' => $result]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 502);
+        }
+    }
+
+    /**
+     * AJAX: list all domains in reseller account.
+     */
+    public function list(Request $request)
+    {
+        $service = new CosmotownService();
+
+        if (!$service->isConfigured()) {
+            return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
+        }
+
+        try {
+            $result = $service->listDomains(
+                (int) $request->query('limit', 100),
+                (int) $request->query('offset', 0)
+            );
+            return response()->json($result);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 502);
+        }
+    }
+
+    /**
+     * Domain detail page with info, DNS, and nameservers.
+     */
+    public function info(string $domain)
+    {
+        $service = new CosmotownService();
+
+        if (!$service->isConfigured()) {
+            return redirect()->route('admin.domains.index')->with('error', 'API key de Cosmotown no configurada.');
+        }
+
+        try {
+            $domainInfo = $service->domainInfo($domain);
+        } catch (\Throwable $e) {
+            return redirect()->route('admin.domains.index')->with('error', 'Error al obtener info: ' . $e->getMessage());
+        }
+
+        $environment = Setting::get('cosmotown_base_url', 'https://sandbox.cosmotown.com');
+        $isSandbox   = str_contains($environment, 'sandbox');
+
+        return view('admin.domains.show', compact('domain', 'domainInfo', 'isSandbox'));
+    }
+
+    /**
+     * AJAX: get DNS settings for a domain.
+     */
+    public function dns(string $domain)
+    {
+        $service = new CosmotownService();
+
+        if (!$service->isConfigured()) {
+            return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
+        }
+
+        try {
+            $result = $service->getDnsSettings($domain);
+            return response()->json($result);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 502);
+        }
+    }
+
+    /**
+     * AJAX: save DNS settings for a domain.
+     */
+    public function saveDns(Request $request, string $domain)
+    {
+        $validated = $request->validate([
+            'records' => ['required', 'array'],
+        ]);
+
+        $service = new CosmotownService();
+
+        if (!$service->isConfigured()) {
+            return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
+        }
+
+        try {
+            $service->saveDnsSettings($domain, $validated['records']);
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 502);
+        }
+    }
+
+    /**
+     * AJAX: save nameservers for a domain.
+     */
+    public function saveNameservers(Request $request, string $domain)
+    {
+        $validated = $request->validate([
+            'nameservers' => ['required', 'array', 'min:1', 'max:4'],
+            'nameservers.*' => ['required', 'string', 'max:253'],
+        ]);
+
+        $service = new CosmotownService();
+
+        if (!$service->isConfigured()) {
+            return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
+        }
+
+        try {
+            $service->saveNameservers($domain, $validated['nameservers']);
+            return response()->json(['success' => true]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 502);
+        }
+    }
+
+    /**
+     * AJAX: renew a domain.
+     */
+    public function renew(Request $request, string $domain)
+    {
+        $validated = $request->validate([
+            'years' => ['required', 'integer', 'min:1', 'max:10'],
+        ]);
+
+        $service = new CosmotownService();
+
+        if (!$service->isConfigured()) {
+            return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
+        }
+
+        try {
+            $result = $service->renew($domain, $validated['years']);
+            return response()->json(['success' => true, 'data' => $result]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 502);
+        }
+    }
+
+    /**
+     * AJAX: check registration status of domains.
+     */
+    public function status(Request $request)
+    {
+        $validated = $request->validate([
+            'domains' => ['required', 'array', 'min:1'],
+            'domains.*' => ['required', 'string', 'max:253'],
+        ]);
+
+        $service = new CosmotownService();
+
+        if (!$service->isConfigured()) {
+            return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
+        }
+
+        try {
+            $result = $service->domainStatus($validated['domains']);
+            return response()->json($result);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 502);
+        }
+    }
+
+    /**
+     * AJAX: ping Cosmotown API.
+     */
+    public function ping()
+    {
+        $service = new CosmotownService();
+
+        if (!$service->isConfigured()) {
+            return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
+        }
+
+        try {
+            $result = $service->ping();
+            return response()->json($result);
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 502);
         }

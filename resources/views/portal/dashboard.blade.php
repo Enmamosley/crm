@@ -27,6 +27,12 @@
                    class="text-xs text-brand-600 hover:text-brand-800 bg-brand-50 px-3 py-1.5 rounded-lg font-medium transition">
                     <i class="fas fa-edit mr-1"></i> Datos fiscales
                 </a>
+                @if($client->domain && $client->domain_type === 'cosmotown')
+                <a href="{{ route('portal.domain', $client->portal_token) }}"
+                   class="text-xs text-brand-600 hover:text-brand-800 bg-brand-50 px-3 py-1.5 rounded-lg font-medium transition">
+                    <i class="fas fa-globe mr-1"></i> Dominio
+                </a>
+                @endif
                 <a href="{{ route('portal.tickets.index', $client->portal_token) }}"
                    class="text-xs text-brand-600 hover:text-brand-800 bg-brand-50 px-3 py-1.5 rounded-lg font-medium transition">
                     <i class="fas fa-headset mr-1"></i> Soporte
@@ -201,6 +207,25 @@
                 </div>
             @endif
         </section>
+
+        {{-- Dominio --}}
+        @if($client->domain && $client->domain_type === 'cosmotown')
+        <section class="animate-slide-up" style="animation-delay:.15s">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <span class="w-7 h-7 bg-blue-50 rounded-lg flex items-center justify-center"><i class="fas fa-globe text-blue-500 text-xs"></i></span>
+                    Mi Dominio
+                    <span class="text-xs font-normal font-mono text-blue-600 ml-1">{{ $client->domain }}</span>
+                </h2>
+                <a href="{{ route('portal.domain', $client->portal_token) }}" class="text-xs text-brand-600 hover:text-brand-800 bg-brand-50 px-3 py-1.5 rounded-lg font-medium transition">
+                    Gestionar <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                <p class="text-sm text-gray-600">Administra los nameservers y registros DNS de tu dominio.</p>
+            </div>
+        </section>
+        @endif
 
         {{-- Correo electrónico --}}
         @if($hasEmailService)

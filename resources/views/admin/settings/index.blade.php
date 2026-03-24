@@ -147,12 +147,12 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">URL base <span class="font-normal text-gray-400">(entorno)</span></label>
-                        <input type="text" name="cosmotown_base_url" value="{{ $settings['cosmotown_base_url'] ?? 'https://irest-ote.cosmotown.com' }}"
-                            placeholder="https://irest-ote.cosmotown.com"
+                        <input type="text" name="cosmotown_base_url" value="{{ $settings['cosmotown_base_url'] ?? 'https://sandbox.cosmotown.com' }}"
+                            placeholder="https://sandbox.cosmotown.com"
                             class="w-full md:w-2/3 border rounded-lg px-3 py-2 font-mono text-sm">
                         <p class="text-xs text-gray-400 mt-1">
-                            OTE (sandbox): <code class="bg-gray-100 px-1 rounded text-xs">https://irest-ote.cosmotown.com</code>
-                            &nbsp;·&nbsp; Producción: según documentación de Cosmotown.
+                            Sandbox: <code class="bg-gray-100 px-1 rounded text-xs">https://sandbox.cosmotown.com</code>
+                            &nbsp;·&nbsp; Producción: <code class="bg-gray-100 px-1 rounded text-xs">https://cosmotown.com</code>
                         </p>
                     </div>
                 </div>

@@ -35,7 +35,7 @@
                 } else {
                     this.domainAvailable = json.available;
                     this.domainChecked = true;
-                    if (json.price) this.domainPrice = json.currency + ' ' + json.price;
+                    if (json.price) this.domainPrice = 'USD ' + json.price;
                 }
             } catch (e) {
                 this.domainError = 'Error al verificar. Intenta de nuevo.';

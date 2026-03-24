@@ -106,6 +106,14 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('domains', [DomainController::class, 'index'])->name('domains.index');
     Route::get('domains/check', [DomainController::class, 'check'])->name('domains.check');
     Route::post('domains/register', [DomainController::class, 'register'])->name('domains.register');
+    Route::get('domains/list', [DomainController::class, 'list'])->name('domains.list');
+    Route::get('domains/ping', [DomainController::class, 'ping'])->name('domains.ping');
+    Route::get('domains/{domain}/info', [DomainController::class, 'info'])->name('domains.info')->where('domain', '[a-zA-Z0-9\.\-]+');
+    Route::get('domains/{domain}/dns', [DomainController::class, 'dns'])->name('domains.dns')->where('domain', '[a-zA-Z0-9\.\-]+');
+    Route::post('domains/{domain}/dns', [DomainController::class, 'saveDns'])->name('domains.dns.save')->where('domain', '[a-zA-Z0-9\.\-]+');
+    Route::post('domains/{domain}/nameservers', [DomainController::class, 'saveNameservers'])->name('domains.nameservers.save')->where('domain', '[a-zA-Z0-9\.\-]+');
+    Route::post('domains/{domain}/renew', [DomainController::class, 'renew'])->name('domains.renew')->where('domain', '[a-zA-Z0-9\.\-]+');
+    Route::post('domains/status', [DomainController::class, 'status'])->name('domains.status');
 
     // Correos 20i
     Route::get('clients/{client}/mailboxes', [MailboxController::class, 'index'])->name('clients.mailboxes.index');
@@ -238,4 +246,10 @@ Route::prefix('portal')->name('portal.')->middleware('portal')->group(function (
     Route::post('{token}/tickets', [ClientPortalController::class, 'storeTicket'])->name('tickets.store');
     Route::get('{token}/tickets/{ticket}', [ClientPortalController::class, 'showTicket'])->name('tickets.show');
     Route::post('{token}/tickets/{ticket}/reply', [ClientPortalController::class, 'replyToTicket'])->name('tickets.reply');
+
+    // Dominio (Cosmotown)
+    Route::get('{token}/domain', [ClientPortalController::class, 'domain'])->name('domain');
+    Route::get('{token}/domain/dns', [ClientPortalController::class, 'domainDns'])->name('domain.dns');
+    Route::post('{token}/domain/dns', [ClientPortalController::class, 'saveDomainDns'])->name('domain.dns.save');
+    Route::post('{token}/domain/nameservers', [ClientPortalController::class, 'saveDomainNameservers'])->name('domain.nameservers.save');
 });
