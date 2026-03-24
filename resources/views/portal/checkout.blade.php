@@ -441,6 +441,10 @@
                 return showError('No se pudo tokenizar la tarjeta. Revisa los datos.');
             }
 
+            if (!currentPaymentMethodId) {
+                return showError('No se detectó el tipo de tarjeta. Verifica el número e intenta de nuevo.');
+            }
+
             const response = await fetch('{{ route("portal.pay.card", [$client->portal_token, $invoice]) }}', {
                 method: 'POST',
                 headers: {
@@ -450,7 +454,7 @@
                 },
                 body: JSON.stringify({
                     token: tokenData.id,
-                    payment_method_id: currentPaymentMethodId || 'visa',
+                    payment_method_id: currentPaymentMethodId,
                     issuer_id: document.getElementById('issuer-select').value || null,
                     installments: Number(document.getElementById('installments-select').value) || 1,
                     email: email,
@@ -460,7 +464,7 @@
 
             const data = await response.json();
 
-            if (data.success && data.redirect) {
+            if (data.redirect) {
                 window.location = data.redirect;
             } else {
                 const detail = data.status_detail || '';

@@ -45,7 +45,7 @@ class MercadoPagoService
         ];
 
         if ($issuerId) {
-            $payload['issuer_id'] = $issuerId;
+            $payload['issuer_id'] = (int) $issuerId;
         }
 
         return $this->processPayment($invoice, $payload);
@@ -73,7 +73,8 @@ class MercadoPagoService
         return $this->processPayment($invoice, [
             'transaction_amount' => (float) $invoice->total,
             'description'        => "Factura {$invoice->folio()} – {$invoice->client->legal_name}",
-            'payment_method_id'  => 'bank_transfer',
+            'payment_method_id'  => 'clabe',
+            'payment_type_id'    => 'bank_transfer',
             'payer'              => ['email' => $email],
             'external_reference' => "invoice_{$invoice->id}",
         ]);
@@ -215,6 +216,9 @@ class MercadoPagoService
             ]);
 
             $msg = $data['message'] ?? ($data['cause'][0]['description'] ?? 'Error al procesar el pago en Mercado Pago');
+            if (empty($msg)) {
+                $msg = $data['cause'][0]['description'] ?? 'Error al procesar el pago en Mercado Pago';
+            }
             throw new \RuntimeException($msg);
         }
 

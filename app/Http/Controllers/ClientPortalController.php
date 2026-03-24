@@ -291,7 +291,7 @@ class ClientPortalController extends Controller
             'payment_method_id'  => 'required|string',
             'email'              => 'required|email',
             'installments'       => 'nullable|integer|min:1|max:24',
-            'issuer_id'          => 'nullable|string',
+            'issuer_id'          => 'nullable|integer',
             'billing_preference' => 'nullable|in:fiscal,publico_general,none',
         ]);
 
@@ -314,6 +314,7 @@ class ClientPortalController extends Controller
                 'status'        => $payment->status,
                 'status_detail' => $payment->status_detail,
                 'redirect'      => route('portal.payment.status', [$token, $payment]),
+                'error'         => null,
             ]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 422);
