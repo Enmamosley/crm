@@ -84,11 +84,11 @@ services:
     networks:
       - crm
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$$MYSQL_ROOT_PASSWORD 2>/dev/null | grep -q alive"]
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 40s
+      start_period: 30s
 
   # ── Queue Worker ───────────────────────────────────────
   queue:
@@ -115,7 +115,10 @@ services:
     networks:
       - crm
     depends_on:
-      - app
+      app:
+        condition: service_started
+      db:
+        condition: service_healthy
 
   # ── Task Scheduler (cron) ──────────────────────────────
   scheduler:
@@ -142,7 +145,10 @@ services:
     networks:
       - crm
     depends_on:
-      - app
+      app:
+        condition: service_started
+      db:
+        condition: service_healthy
 
 networks:
   crm:
