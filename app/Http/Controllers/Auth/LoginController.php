@@ -38,6 +38,7 @@ class LoginController extends Controller
 
         ActivityLog::create([
             'action'       => 'login_failed',
+            'subject_type' => '',
             'description'  => 'Intento fallido de login: ' . $request->input('email'),
             'ip_address'   => $request->ip(),
         ]);
