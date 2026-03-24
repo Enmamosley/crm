@@ -9,6 +9,163 @@ services:
     container_name: crm_app
     restart: unless-stopped
     environment:
+      APP_NAME: "${APP_NAME:-CRM Mosley}"
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: "${APP_URL:-https://app.mosley.digital}"
+      APP_KEY: "${APP_KEY:-}"
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: "${DB_DATABASE:-crm}"
+      DB_USERNAME: "${DB_USERNAME:-crm_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-changeme}"
+      SESSION_DRIVER: database
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+      FILESYSTEM_DISK: local
+      LOG_CHANNEL: stack
+      LOG_LEVEL: error
+      MAIL_MAILER: "${MAIL_MAILER:-log}"
+      MAIL_HOST: "${MAIL_HOST:-}"
+      MAIL_PORT: "${MAIL_PORT:-587}"
+      MAIL_USERNAME: "${MAIL_USERNAME:-}"
+      MAIL_PASSWORD: "${MAIL_PASSWORD:-}"
+      MAIL_FROM_ADDRESS: "${MAIL_FROM_ADDRESS:-no-reply@app.mosley.digital}"
+      MP_ACCESS_TOKEN: "${MP_ACCESS_TOKEN:-}"
+      MP_WEBHOOK_SECRET: "${MP_WEBHOOK_SECRET:-}"
+      FACTURAPI_KEY: "${FACTURAPI_KEY:-}"
+      TWENTYI_API_KEY: "${TWENTYI_API_KEY:-}"
+    volumes:
+      - storage_app:/var/www/html/storage/app
+      - storage_logs:/var/www/html/storage/logs
+      - app_env:/var/www/html/storage/app/env
+    networks:
+      - crm
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ── Nginx Web Server ───────────────────────────────────
+  nginx:
+    build:
+      context: .
+      target: web
+    image: crm_nginx
+    container_name: crm_nginx
+    restart: unless-stopped
+    volumes:
+      - storage_app:/var/www/html/storage/app:ro
+    networks:
+      - crm
+      - openclaw-ehpt_default
+    depends_on:
+      - app
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.crm.rule=Host(`${APP_DOMAIN:-app.mosley.digital}`)"
+      - "traefik.http.routers.crm.entrypoints=websecure"
+      - "traefik.http.routers.crm.tls=true"
+      - "traefik.http.routers.crm.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.crm-http.rule=Host(`${APP_DOMAIN:-app.mosley.digital}`)"
+      - "traefik.http.routers.crm-http.entrypoints=web"
+      - "traefik.http.routers.crm-http.middlewares=redirect-to-https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
+      - "traefik.http.services.crm.loadbalancer.server.port=80"
+
+  # ── MySQL Database ─────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: crm_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: "${DB_DATABASE:-crm}"
+      MYSQL_USER: "${DB_USERNAME:-crm_user}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:-changeme}"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-changeme_root}"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - crm
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+
+  # ── Queue Worker ───────────────────────────────────────
+  queue:
+    image: crm_app
+    container_name: crm_queue
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      APP_KEY: "${APP_KEY:-}"
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: "${DB_DATABASE:-crm}"
+      DB_USERNAME: "${DB_USERNAME:-crm_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-changeme}"
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+      LOG_LEVEL: error
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--timeout=90"]
+    volumes:
+      - storage_app:/var/www/html/storage/app
+      - storage_logs:/var/www/html/storage/logs
+    networks:
+      - crm
+    depends_on:
+      - app
+
+  # ── Task Scheduler (cron) ──────────────────────────────
+  scheduler:
+    image: crm_app
+    container_name: crm_scheduler
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      APP_KEY: "${APP_KEY:-}"
+      DB_CONNECTION: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_DATABASE: "${DB_DATABASE:-crm}"
+      DB_USERNAME: "${DB_USERNAME:-crm_user}"
+      DB_PASSWORD: "${DB_PASSWORD:-changeme}"
+      QUEUE_CONNECTION: database
+      CACHE_STORE: database
+      LOG_LEVEL: error
+    command: ["/bin/sh", "-c", "while true; do php artisan schedule:run >> /dev/null 2>&1; sleep 60; done"]
+    volumes:
+      - storage_app:/var/www/html/storage/app
+      - storage_logs:/var/www/html/storage/logs
+    networks:
+      - crm
+    depends_on:
+      - app
+
+networks:
+  crm:
+    driver: bridge
+  openclaw-ehpt_default:
+    external: true
+
+volumes:
+  db_data:
+  storage_app:
+  storage_logs:
+  app_env:
+
+    build:
+      context: .
+      target: app
+    image: crm_app
+    container_name: crm_app
+    restart: unless-stopped
+    environment:
       APP_NAME: "CRM Mosley"
       APP_ENV: production
       APP_DEBUG: "false"
