@@ -67,11 +67,6 @@ services:
       - "traefik.http.routers.crm.entrypoints=websecure"
       - "traefik.http.routers.crm.tls=true"
       - "traefik.http.routers.crm.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.crm-http.rule=Host(`${APP_DOMAIN:-app.mosley.digital}`)"
-      - "traefik.http.routers.crm-http.entrypoints=web"
-      - "traefik.http.routers.crm-http.middlewares=redirect-to-https"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.redirect-to-https.redirectscheme.permanent=true"
       - "traefik.http.services.crm.loadbalancer.server.port=80"
 
   # ── MySQL Database ─────────────────────────────────────
@@ -116,6 +111,7 @@ services:
     volumes:
       - storage_app:/var/www/html/storage/app
       - storage_logs:/var/www/html/storage/logs
+      - app_env:/var/www/html/storage/app/env:ro
     networks:
       - crm
     depends_on:
@@ -142,6 +138,7 @@ services:
     volumes:
       - storage_app:/var/www/html/storage/app
       - storage_logs:/var/www/html/storage/logs
+      - app_env:/var/www/html/storage/app/env:ro
     networks:
       - crm
     depends_on:
