@@ -11,6 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
+        Schema::dropIfExists('lead_status_histories');
         Schema::create('lead_status_histories', function (Blueprint $table) {
             $table->id();
             $table->foreignId('lead_id')->constrained()->cascadeOnDelete();

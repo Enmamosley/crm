@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────
-# Stage 1: Build frontend assets (Node)
+# Stage 1: Build frontend assets (Node) — rebuild: 2026-03-24
 # ─────────────────────────────────────────────────────────
 FROM node:20-alpine AS assets
 
