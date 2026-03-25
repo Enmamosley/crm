@@ -198,19 +198,20 @@ class TwentyIService
         $resellerId = $this->getResellerId();
 
         $payload = [
-            'new' => [
-                'domain_name'       => $domain,
-                'package_bundle_id' => (int) $bundleId,
-            ],
+            'type'           => (string) $bundleId,
+            'domain_name'    => $domain,
+            'label'          => $domain,
+            'documentRoots'  => [$domain => 'public_html'],
         ];
 
         \Illuminate\Support\Facades\Log::info('20i createHostingPackage', [
             'domain'     => $domain,
             'reseller'   => $resellerId,
             'bundle'     => $bundleId,
+            'payload'    => $payload,
         ]);
 
-        $response = $this->http()->post("/reseller/{$resellerId}/addHostingPackage", $payload);
+        $response = $this->http()->post("/reseller/{$resellerId}/addWeb", $payload);
         $this->throwIfFailed($response, 'crear paquete de hosting');
 
         $data = $response->json();
@@ -246,19 +247,16 @@ class TwentyIService
         $resellerId = $this->getResellerId();
 
         // Intentar endpoint de allowances/productos del reseller
-        foreach (['packageBundleTypes', 'newPackages', 'allowance'] as $path) {
-            $response = $this->http()->get("/reseller/{$resellerId}/{$path}");
-            if ($response->ok()) {
-                $data = $response->json() ?? [];
-                \Illuminate\Support\Facades\Log::info("20i {$path} raw", ['data' => $data]);
-                if (!empty($data)) {
-                    return $data;
-                }
+        // /reseller/{id}/packageTypes devuelve los tipos de paquetes disponibles
+        $response = $this->http()->get("/reseller/{$resellerId}/packageTypes");
+        if ($response->ok()) {
+            $data = $response->json() ?? [];
+            \Illuminate\Support\Facades\Log::info('20i packageTypes raw', ['data' => $data]);
+            if (!empty($data)) {
+                return $data;
             }
         }
 
-        // La API de 20i no expone los bundle types por API.
-        // El ID debe obtenerse desde el panel: Reseller → Package Types.
         return [];
     }
 
