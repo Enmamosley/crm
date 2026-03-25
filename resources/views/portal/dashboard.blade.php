@@ -227,6 +227,25 @@
         </section>
         @endif
 
+        {{-- DNS 20i (hosting) --}}
+        @if($client->twentyi_package_id && $client->domain)
+        <section class="animate-slide-up" style="animation-delay:.18s">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <span class="w-7 h-7 bg-purple-50 rounded-lg flex items-center justify-center"><i class="fas fa-network-wired text-purple-500 text-xs"></i></span>
+                    DNS Hosting
+                    <span class="text-xs font-normal font-mono text-purple-600 ml-1">{{ $client->domain }}</span>
+                </h2>
+                <a href="{{ route('portal.dns', $client->portal_token) }}" class="text-xs text-brand-600 hover:text-brand-800 bg-brand-50 px-3 py-1.5 rounded-lg font-medium transition">
+                    Gestionar DNS <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                <p class="text-sm text-gray-600">Administra los registros DNS (A, CNAME, MX, TXT) de tu hosting.</p>
+            </div>
+        </section>
+        @endif
+
         {{-- Correo electrónico --}}
         @if($hasEmailService)
         <section class="animate-slide-up" style="animation-delay:.2s">
