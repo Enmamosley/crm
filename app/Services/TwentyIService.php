@@ -219,17 +219,22 @@ class TwentyIService
         \Illuminate\Support\Facades\Log::info('20i createHostingPackage response', ['data' => $data]);
 
         // La respuesta puede tener distintas formas:
+        // {"result": 3635667}              ← escalar directo
         // {"result": {"result": [{"id": 12345}]}}
         // {"result": [12345]}
         // {"id": 12345}
-        // [{"id": 12345}]
-        $id = $data['result']['result'][0]['id']
-            ?? $data['result'][0]['id']
-            ?? $data['result'][0]
-            ?? $data['id']
-            ?? $data[0]['id']
-            ?? $data[0]
-            ?? null;
+        $result = $data['result'] ?? null;
+
+        if (is_numeric($result)) {
+            $id = $result;
+        } elseif (is_array($result)) {
+            $id = $result['result'][0]['id']
+                ?? $result[0]['id']
+                ?? $result[0]
+                ?? null;
+        } else {
+            $id = $data['id'] ?? $data[0]['id'] ?? $data[0] ?? null;
+        }
 
         if (!$id) {
             throw new \RuntimeException('Paquete creado pero no se pudo extraer el Package ID. Respuesta: ' . json_encode($data));
