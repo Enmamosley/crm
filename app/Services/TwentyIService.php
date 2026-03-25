@@ -268,32 +268,44 @@ class TwentyIService
     // ─── DNS ─────────────────────────────────────────────────────────────────
 
     /**
-     * Obtiene los nombres asociados al paquete y devuelve el primer domainId.
-     * GET /package/{id}/names devuelve un array o un objeto con names.
+     * Obtiene el domainId numérico del primer dominio del paquete.
+     * GET /package/{id} devuelve { domain: [{ id, name, ... }] }
      */
     private function getDomainIdForPackage(Client $client): string
     {
         $packageId = $client->twentyi_package_id;
 
-        // La API de 20i acepta el domain name como domainId alternativo
+        $response = $this->http()->get("/package/{$packageId}");
+        $this->throwIfFailed($response, 'obtener info del paquete');
+
+        $data = $response->json();
+
+        // domain es un array de objetos con 'id' y 'name'
+        $domains = $data['domain'] ?? [];
+
+        if (!empty($domains) && is_array($domains)) {
+            // Buscar el dominio que coincida con el del cliente
+            foreach ($domains as $d) {
+                if (is_array($d) && isset($d['id'])) {
+                    if (!$client->domain || ($d['name'] ?? '') === $client->domain) {
+                        return (string) $d['id'];
+                    }
+                }
+            }
+            // Si no coincide, usar el primero
+            $first = reset($domains);
+            if (is_array($first) && isset($first['id'])) {
+                return (string) $first['id'];
+            }
+        }
+
+        // Si domain está vacío, el domainId podría ser el domain name
+        // como alternativa según la API intro
         if ($client->domain) {
             return $client->domain;
         }
 
-        // Fallback: obtener el primer nombre del paquete
-        $response = $this->http()->get("/package/{$packageId}/names");
-        $this->throwIfFailed($response, 'obtener nombres del paquete');
-
-        $data = $response->json();
-        $names = is_array($data) ? $data : ($data['result'] ?? []);
-
-        if (empty($names)) {
-            throw new \RuntimeException("No se encontraron dominios en el paquete #{$packageId}");
-        }
-
-        // Puede ser un array de strings o de objetos con 'name'
-        $first = $names[0];
-        return is_array($first) ? ($first['name'] ?? $first['domain'] ?? (string) $first) : (string) $first;
+        throw new \RuntimeException("No se encontraron dominios en el paquete #{$packageId}");
     }
 
     /**
