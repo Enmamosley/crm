@@ -2,31 +2,38 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; }
-        .header { background: #16a34a; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
-        .content { padding: 24px; background: #fff; border: 1px solid #e5e7eb; }
-        .footer { padding: 16px; text-align: center; font-size: 12px; color: #9ca3af; }
-        .btn { display: inline-block; background: #16a34a; color: white; padding: 14px 28px; border-radius: 6px; text-decoration: none; margin-top: 16px; font-size: 16px; font-weight: bold; }
-        .detail { background: #f0fdf4; padding: 16px; border-radius: 6px; margin: 16px 0; border-left: 4px solid #16a34a; }
-        .amount { font-size: 28px; font-weight: bold; color: #16a34a; }
-        .items-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 14px; }
-        .items-table th { background: #f3f4f6; text-align: left; padding: 8px 12px; }
-        .items-table td { padding: 8px 12px; border-bottom: 1px solid #f3f4f6; }
+        body { margin: 0; padding: 24px 12px; background: #f3f6fb; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; color: #0f172a; }
+        .wrap { max-width: 620px; margin: 0 auto; }
+        .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
+        .header { background: linear-gradient(135deg, #15803d, #16a34a); color: #fff; padding: 22px 24px; }
+        .header h1 { margin: 0; font-size: 20px; }
+        .header p { margin: 8px 0 0; opacity: 0.92; font-size: 13px; }
+        .content { padding: 22px 24px; line-height: 1.6; }
+        .detail { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px; margin: 16px 0; }
+        .amount { font-size: 30px; font-weight: 800; color: #166534; margin: 8px 0 0; }
+        .btn { display: inline-block; background: #15803d; color: #ffffff !important; text-decoration: none; padding: 12px 22px; border-radius: 8px; font-weight: 700; }
+        .items-table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 14px; }
+        .items-table th { background: #f1f5f9; text-align: left; padding: 8px 10px; color: #334155; }
+        .items-table td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; }
         .items-table .text-right { text-align: right; }
+        .foot { color: #64748b; font-size: 12px; text-align: center; padding: 14px 10px 0; }
     </style>
 </head>
 <body>
+    <div class="wrap">
+    <div class="card">
     <div class="header">
-        <h1 style="margin:0;font-size:22px;">💳 Link de Pago</h1>
-        <p style="margin:4px 0 0;opacity:.85;">Tu orden está lista para pagarse</p>
+        <h1>Link de pago</h1>
+        <p>Tu orden está lista para pagarse</p>
     </div>
     <div class="content">
         <p>Hola <strong>{{ $invoice->client->legal_name }}</strong>,</p>
         <p>Te compartimos el link para realizar el pago de tu orden de servicio:</p>
 
         <div class="detail">
-            <p style="margin:0 0 8px;">
+            <p style="margin:0 0 8px; font-size:14px;">
                 @if($invoice->quote)
                 <strong>Cotización:</strong> {{ $invoice->quote->quote_number }}<br>
                 @endif
@@ -62,11 +69,13 @@
 
         <p style="font-size:13px;color:#6b7280;margin-top:24px;">
             Puedes pagar con tarjeta de crédito/débito, OXXO o transferencia SPEI.
-            Si tienes alguna duda, contáctanos respondiendo este correo.
+            Si tienes dudas, responde este correo o contáctanos por WhatsApp.
         </p>
     </div>
-    <div class="footer">
-        <p>Este es un correo automático generado por el sistema CRM.</p>
+    </div>
+    <div class="foot">
+        Correo automático de CRM Mosley.
+    </div>
     </div>
 </body>
 </html>
