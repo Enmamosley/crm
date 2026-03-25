@@ -37,8 +37,19 @@ class InvoiceController extends Controller
 
         $paymentForms = $this->paymentForms();
         $services = Service::active()->orderBy('name')->get(['id', 'name', 'price']);
+        $defaultItems = old('items', [[
+            'description'     => '',
+            'quantity'        => 1,
+            'unit_price'      => '',
+            'sat_product_key' => '80101501',
+            'sat_unit_key'    => 'E48',
+            'sat_unit_name'   => 'Servicio',
+            'tax_object'      => '02',
+            'iva_exempt'      => false,
+        ]]);
+        $ivaRate = (float) \App\Models\Setting::get('iva_percentage', 16) / 100;
 
-        return view('admin.invoices.create', compact('client', 'quote', 'clients', 'paymentForms', 'services'));
+        return view('admin.invoices.create', compact('client', 'quote', 'clients', 'paymentForms', 'services', 'defaultItems', 'ivaRate'));
     }
 
     public function store(Request $request)
