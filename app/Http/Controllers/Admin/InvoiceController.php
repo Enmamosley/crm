@@ -151,6 +151,12 @@ class InvoiceController extends Controller
 
         try {
             Mail::to($client->email)->send(new InvoicePaymentLink($invoice, $checkoutUrl));
+
+            // Mark as pending once the collection link is sent.
+            if ($invoice->status === 'draft') {
+                $invoice->update(['status' => 'pending']);
+            }
+
             ActivityLog::log('payment_link_sent', $invoice, "Link de cobro enviado a {$client->email}");
             return back()->with('success', "Link de cobro enviado a {$client->email}");
         } catch (\Throwable $e) {
@@ -234,11 +240,7 @@ class InvoiceController extends Controller
 
         $invoice->update(['status' => $validated['status']]);
 
-        if ($validated['status'] === 'sent' && !$invoice->paid_at) {
-            $invoice->update(['paid_at' => now()]);
-        }
-
-        $labels = ['draft' => 'Borrador', 'sent' => 'Pagada', 'pending' => 'Procesando'];
+        $labels = ['draft' => 'Borrador', 'sent' => 'Enviada', 'pending' => 'Procesando'];
         ActivityLog::log('invoice_status_changed', $invoice,
             "Estado de factura {$invoice->folio()} cambiado a '{$labels[$validated['status']]}' por " . auth()->user()->name);
 

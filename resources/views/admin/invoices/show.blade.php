@@ -3,7 +3,7 @@
 @section('header', 'Factura ' . ($invoice->folio() ?: 'Sin folio'))
 
 @section('actions')
-@if(!$invoice->isPaid() && in_array($invoice->status, ['draft','pending']))
+@if(!$invoice->isPaid() && in_array($invoice->status, ['draft','pending','sent']))
     <button onclick="document.getElementById('manualPayModal').classList.remove('hidden')"
         class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm font-medium">
         <i class="fas fa-money-bill mr-1"></i> Registrar Pago
@@ -111,7 +111,7 @@
                 <h3 class="text-lg font-semibold">Información General</h3>
                 @php
                     $colors = ['draft'=>'gray','sent'=>'blue','pending'=>'yellow','valid'=>'green','cancelled'=>'red'];
-                    $labels = ['draft'=>'Borrador','sent'=>'Pagada','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
+                    $labels = ['draft'=>'Borrador','sent'=>'Enviada','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
                     $c = $colors[$invoice->status] ?? 'gray';
                 @endphp
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-{{ $c }}-100 text-{{ $c }}-700">
@@ -123,7 +123,7 @@
                     @csrf @method('PATCH')
                     <select name="status" class="text-xs border rounded px-2 py-1 bg-white">
                         <option value="draft" {{ $invoice->status === 'draft' ? 'selected' : '' }}>Borrador</option>
-                        <option value="sent" {{ $invoice->status === 'sent' ? 'selected' : '' }}>Pagada</option>
+                        <option value="sent" {{ $invoice->status === 'sent' ? 'selected' : '' }}>Enviada</option>
                         <option value="pending" {{ $invoice->status === 'pending' ? 'selected' : '' }}>Procesando</option>
                     </select>
                     <button type="submit" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded">
