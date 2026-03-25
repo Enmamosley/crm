@@ -268,9 +268,37 @@ class TwentyIService
     // ─── DNS ─────────────────────────────────────────────────────────────────
 
     /**
+     * Obtiene los nombres asociados al paquete y devuelve el primer domainId.
+     * GET /package/{id}/names devuelve un array o un objeto con names.
+     */
+    private function getDomainIdForPackage(Client $client): string
+    {
+        $packageId = $client->twentyi_package_id;
+
+        // La API de 20i acepta el domain name como domainId alternativo
+        if ($client->domain) {
+            return $client->domain;
+        }
+
+        // Fallback: obtener el primer nombre del paquete
+        $response = $this->http()->get("/package/{$packageId}/names");
+        $this->throwIfFailed($response, 'obtener nombres del paquete');
+
+        $data = $response->json();
+        $names = is_array($data) ? $data : ($data['result'] ?? []);
+
+        if (empty($names)) {
+            throw new \RuntimeException("No se encontraron dominios en el paquete #{$packageId}");
+        }
+
+        // Puede ser un array de strings o de objetos con 'name'
+        $first = $names[0];
+        return is_array($first) ? ($first['name'] ?? $first['domain'] ?? (string) $first) : (string) $first;
+    }
+
+    /**
      * Lista los registros DNS del paquete del cliente.
-     * Devuelve un array plano de registros, cada uno con: id, host, type, ip/content, ttl, priority.
-     * La respuesta de 20i es { "dominio.com": [ { id, host, type, ip, ttl, ... }, ... ] }
+     * Endpoint: GET /package/{packageId}/domain/{domainId}/dns
      */
     public function listDnsRecords(Client $client): array
     {
@@ -279,7 +307,9 @@ class TwentyIService
             return [];
         }
 
-        $response = $this->http()->get("/package/{$packageId}/dns");
+        $domainId = $this->getDomainIdForPackage($client);
+
+        $response = $this->http()->get("/package/{$packageId}/domain/{$domainId}/dns");
         $this->throwIfFailed($response, 'listar registros DNS');
 
         $data = $response->json();
@@ -287,47 +317,78 @@ class TwentyIService
             return [];
         }
 
-        // La respuesta tiene estructura: { "dominio.com": [ records... ] }
-        $records = is_array(array_key_first($data) !== null ? $data[array_key_first($data)] : [])
-            ? array_values($data[array_key_first($data)])
-            : [];
+        \Illuminate\Support\Facades\Log::info("20i listDnsRecords raw", ['packageId' => $packageId, 'domain' => $domainId, 'data' => $data]);
 
-        \Illuminate\Support\Facades\Log::info("20i listDnsRecords package {$packageId}", ['count' => count($records)]);
+        // La respuesta: { "records": { ... }, "suggestedNameservers": [...] }
+        // o directamente { "dominio.com": [ records... ] }
+        $records = [];
+        if (isset($data['records']) && is_array($data['records'])) {
+            // Formato: { records: { A: [{...}], CNAME: [{...}], ... } }
+            foreach ($data['records'] as $type => $typeRecords) {
+                if (!is_array($typeRecords)) continue;
+                foreach ($typeRecords as $rec) {
+                    $rec['type'] = strtoupper($type);
+                    $records[] = $rec;
+                }
+            }
+        } else {
+            // Formato plano: { "dominio.com": [ {...}, ... ] }
+            $firstKey = array_key_first($data);
+            if ($firstKey !== null && is_array($data[$firstKey])) {
+                $records = array_values($data[$firstKey]);
+            }
+        }
+
+        \Illuminate\Support\Facades\Log::info("20i listDnsRecords parsed", ['count' => count($records)]);
 
         return $records;
     }
 
     /**
      * Añade un registro DNS al paquete del cliente.
-     * Soporta tipos: A, AAAA, CNAME, MX, TXT, NS, SRV.
-     * Para MX incluir $priority; para A/AAAA el $value es la IP; para CNAME/TXT el $value es el destino.
+     * Endpoint: POST /package/{packageId}/domain/{domainId}/dns
+     * Cada tipo tiene su propia estructura según la API de 20i.
      */
     public function addDnsRecord(Client $client, string $type, string $host, string $value, int $ttl = 3600, int $priority = 10): void
     {
         $packageId = $client->twentyi_package_id;
+        $domainId  = $this->getDomainIdForPackage($client);
+        $type      = strtoupper($type);
 
-        $record = ['type' => strtoupper($type), 'host' => $host, 'ip' => $value, 'ttl' => $ttl];
+        // Construir el registro según el tipo — formato 20i
+        $record = match ($type) {
+            'A'     => ['host' => $host, 'ip' => $value],
+            'AAAA'  => ['host' => $host, 'ipv6' => $value],
+            'CNAME' => ['host' => $host, 'target' => $value],
+            'MX'    => ['host' => $host, 'target' => $value, 'pri' => (string) $priority],
+            'TXT'   => ['host' => $host, 'txt' => $value],
+            'NS'    => ['host' => $host, 'target' => $value],
+            'SRV'   => ['host' => $host, 'target' => $value, 'pri' => (string) $priority, 'weight' => '0', 'port' => '0'],
+            default => ['host' => $host, 'ip' => $value],
+        };
 
-        if (in_array(strtoupper($type), ['MX', 'SRV'])) {
-            $record['priority'] = $priority;
-        }
+        $payload = [
+            'new' => [$type => $record],
+        ];
 
-        $payload = ['new' => [$record]];
+        \Illuminate\Support\Facades\Log::info("20i addDnsRecord", ['packageId' => $packageId, 'domain' => $domainId, 'payload' => $payload]);
 
-        $response = $this->http()->post("/package/{$packageId}/dns", $payload);
+        $response = $this->http()->post("/package/{$packageId}/domain/{$domainId}/dns", $payload);
         $this->throwIfFailed($response, 'añadir registro DNS');
     }
 
     /**
      * Elimina un registro DNS por su ID.
+     * Endpoint: POST /package/{packageId}/domain/{domainId}/dns
      */
     public function deleteDnsRecord(Client $client, int|string $recordId): void
     {
         $packageId = $client->twentyi_package_id;
+        $domainId  = $this->getDomainIdForPackage($client);
 
-        $payload = ['delete' => [$recordId]];
+        $payload = ['delete' => [(string) $recordId]];
 
-        $response = $this->http()->post("/package/{$packageId}/dns", $payload);
+        $response = $this->http()->post("/package/{$packageId}/domain/{$domainId}/dns", $payload);
         $this->throwIfFailed($response, 'eliminar registro DNS');
     }
 

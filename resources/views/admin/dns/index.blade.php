@@ -88,9 +88,9 @@
                             $type  = strtoupper($record['type'] ?? '?');
                             $color = $typeColors[$type] ?? 'gray';
                             $host  = $record['host'] ?? $record['name'] ?? '@';
-                            $value = $record['ip'] ?? $record['content'] ?? $record['value'] ?? '-';
+                            $value = $record['ip'] ?? $record['ipv6'] ?? $record['target'] ?? $record['txt'] ?? $record['content'] ?? $record['value'] ?? '-';
                             $ttl   = $record['ttl'] ?? '-';
-                            $prio  = $record['priority'] ?? $record['pref'] ?? '-';
+                            $prio  = $record['pri'] ?? $record['priority'] ?? $record['pref'] ?? '-';
                             $id    = $record['id'] ?? null;
                         @endphp
                         <tr class="hover:bg-gray-50">
