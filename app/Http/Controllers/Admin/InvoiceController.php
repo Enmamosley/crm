@@ -11,6 +11,7 @@ use App\Models\ClientInvoice;
 use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Models\Quote;
+use App\Models\Service;
 use App\Services\FacturapiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,8 +36,9 @@ class InvoiceController extends Controller
         $clients = Client::orderBy('legal_name')->get(['id', 'legal_name', 'tax_id']);
 
         $paymentForms = $this->paymentForms();
+        $services = Service::active()->orderBy('name')->get(['id', 'name', 'price']);
 
-        return view('admin.invoices.create', compact('client', 'quote', 'clients', 'paymentForms'));
+        return view('admin.invoices.create', compact('client', 'quote', 'clients', 'paymentForms', 'services'));
     }
 
     public function store(Request $request)
