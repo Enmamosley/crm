@@ -195,19 +195,37 @@ class ClientController extends Controller
             return response()->json(['error' => 'No hay API key de 20i configurada en Ajustes.'], 422);
         }
 
-        if (!Setting::get('twentyi_package_bundle_id')) {
-            return response()->json(['error' => 'No hay Package Bundle ID configurado en Ajustes → 20i.'], 422);
+        // Buscar bundle ID del servicio comprado por el cliente (desde sus facturas)
+        $bundleId = null;
+        $invoice = $client->invoices()
+            ->where('notes', 'LIKE', 'Compra directa:%')
+            ->latest()
+            ->first();
+
+        if ($invoice) {
+            $serviceName = str_replace('Compra directa: ', '', $invoice->notes);
+            $service = \App\Models\Service::where('name', $serviceName)->first();
+            if ($service && $service->twentyi_package_bundle_id) {
+                $bundleId = $service->twentyi_package_bundle_id;
+            }
+        }
+
+        // Fallback al global si no se encontró en el servicio
+        $bundleId = $bundleId ?: Setting::get('twentyi_package_bundle_id');
+
+        if (!$bundleId) {
+            return response()->json(['error' => 'No se encontró Package Bundle ID en el servicio ni en Ajustes globales.'], 422);
         }
 
         try {
-            $packageId = (new TwentyIService())->createHostingPackage($client->domain);
+            $packageId = (new TwentyIService())->createHostingPackage($client->domain, $bundleId);
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
 
         $client->update(['twentyi_package_id' => $packageId]);
 
-        ActivityLog::log('client_updated', $client, "Paquete 20i creado automáticamente ({$packageId}) para dominio {$client->domain}");
+        ActivityLog::log('client_updated', $client, "Paquete 20i creado ({$packageId}) con bundle {$bundleId} para {$client->domain}");
 
         return response()->json([
             'success'    => true,
