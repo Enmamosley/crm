@@ -315,21 +315,30 @@ class TwentyIService
 
         \Illuminate\Support\Facades\Log::info("20i listDnsRecords raw", ['packageId' => $packageId, 'domain' => $domain, 'data' => $data]);
 
-        // La respuesta: { "records": { A: [{...}], CNAME: [{...}], ... } }
-        // o directamente { "dominio.com": [ {...}, ... ] }
+        // Parsear la respuesta DNS — puede venir en varios formatos
         $records = [];
-        if (isset($data['records']) && is_array($data['records'])) {
-            foreach ($data['records'] as $type => $typeRecords) {
-                if (!is_array($typeRecords)) continue;
-                foreach ($typeRecords as $rec) {
-                    $rec['type'] = strtoupper($type);
-                    $records[] = $rec;
+
+        // Formato 1: { "records": { "A": [{...}], "CNAME": [{...}] } }
+        // Formato 2: { "Montsenails.com": [{...}, ...] }
+        // Formato 3: [{ type, host, ip, ... }, ...]
+        $source = $data['records'] ?? $data;
+
+        if (is_array($source)) {
+            foreach ($source as $key => $val) {
+                if (is_int($key) && is_array($val)) {
+                    // Array plano de registros
+                    $records[] = $val;
+                } elseif (is_string($key) && is_array($val)) {
+                    // Agrupado por tipo (A, CNAME...) o por dominio
+                    foreach ($val as $rec) {
+                        if (is_array($rec)) {
+                            if (!isset($rec['type'])) {
+                                $rec['type'] = strtoupper($key);
+                            }
+                            $records[] = $rec;
+                        }
+                    }
                 }
-            }
-        } else {
-            $firstKey = array_key_first($data);
-            if ($firstKey !== null && is_array($data[$firstKey])) {
-                $records = array_values($data[$firstKey]);
             }
         }
 
