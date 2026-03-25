@@ -5,7 +5,9 @@
 @section('content')
 <form action="{{ route('admin.invoices.store') }}" method="POST" class="max-w-2xl mx-auto space-y-6"
       x-data="{
-          quoteId: '{{ old('quote_id', $quote?->id ?? '') }}',          services: {{ Js::from($services) }},          items: {{ old('items') ? json_encode(old('items')) : '[{description:\"\",quantity:1,unit_price:\"\",sat_product_key:\"80101501\",sat_unit_key:\"E48\",sat_unit_name:\"Servicio\",tax_object:\"02\",iva_exempt:false}]' }},
+          quoteId: '{{ old('quote_id', $quote?->id ?? '') }}',
+          services: {{ Js::from($services) }},
+          items: {{ old('items') ? json_encode(old('items')) : '[{description:\"\",quantity:1,unit_price:\"\",sat_product_key:\"80101501\",sat_unit_key:\"E48\",sat_unit_name:\"Servicio\",tax_object:\"02\",iva_exempt:false}]' }},
           ivaRate: {{ (float)(\App\Models\Setting::get('iva_percentage', 16)) / 100 }},
           get subtotal() { return this.items.reduce((s,i)=>s+(parseFloat(i.quantity)||0)*(parseFloat(i.unit_price)||0),0); },
           get iva()      { return this.subtotal * this.ivaRate; },
