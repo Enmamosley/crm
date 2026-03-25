@@ -393,6 +393,7 @@ class DirectCheckoutController extends Controller
                 'legal_name'    => $data['name'],
                 'email'         => $data['email'],
                 'phone'         => $data['phone'] ?? null,
+                'lead_id'       => null,
                 'tax_system'    => '616',
                 'cfdi_use'      => 'S01',
                 'portal_active' => true,
