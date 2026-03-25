@@ -25,8 +25,8 @@
         <tbody class="divide-y">
             @forelse($invoices as $invoice)
                 @php
-                    $colors = ['draft'=>'gray','pending'=>'yellow','valid'=>'green','cancelled'=>'red'];
-                    $labels = ['draft'=>'Borrador','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
+                    $colors = ['draft'=>'gray','sent'=>'blue','pending'=>'yellow','valid'=>'green','cancelled'=>'red'];
+                    $labels = ['draft'=>'Borrador','sent'=>'Pagada','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
                     $c = $colors[$invoice->status] ?? 'gray';
                 @endphp
                 <tr class="hover:bg-gray-50">

@@ -156,8 +156,8 @@
                 <div class="space-y-2">
                     @foreach($client->invoices as $invoice)
                     @php
-                        $iColors = ['draft'=>'gray','pending'=>'yellow','valid'=>'green','cancelled'=>'red'];
-                        $iLabels = ['draft'=>'Borrador','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
+                        $iColors = ['draft'=>'gray','sent'=>'blue','pending'=>'yellow','valid'=>'green','cancelled'=>'red'];
+                        $iLabels = ['draft'=>'Borrador','sent'=>'Pagada','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
                         $ic = $iColors[$invoice->status] ?? 'gray';
                     @endphp
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between hover:shadow-md transition-shadow">

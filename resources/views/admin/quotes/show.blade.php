@@ -211,8 +211,8 @@
             <h3 class="text-sm font-semibold mb-3 text-gray-700">Órdenes de servicio</h3>
             @foreach($quote->invoices as $inv)
             @php
-                $invColors = ['draft'=>'gray','pending'=>'yellow','valid'=>'green','cancelled'=>'red'];
-                $invLabels = ['draft'=>'Borrador','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
+                $invColors = ['draft'=>'gray','sent'=>'blue','pending'=>'yellow','valid'=>'green','cancelled'=>'red'];
+                $invLabels = ['draft'=>'Borrador','sent'=>'Pagada','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
                 $ic = $invColors[$inv->status] ?? 'gray';
             @endphp
             <a href="{{ route('admin.invoices.show', $inv) }}"

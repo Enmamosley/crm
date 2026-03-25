@@ -110,8 +110,8 @@
                             <td class="px-6 py-3 text-right text-sm font-medium">${{ number_format($invoice->total, 2) }}</td>
                             <td class="px-6 py-3">
                                 @php
-                                    $colors = ['draft'=>'gray','pending'=>'yellow','valid'=>'green','cancelled'=>'red'];
-                                    $labels = ['draft'=>'Borrador','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
+                                    $colors = ['draft'=>'gray','sent'=>'blue','pending'=>'yellow','valid'=>'green','cancelled'=>'red'];
+                                    $labels = ['draft'=>'Borrador','sent'=>'Pagada','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
                                     $c = $colors[$invoice->status] ?? 'gray';
                                 @endphp
                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-{{ $c }}-100 text-{{ $c }}-700">

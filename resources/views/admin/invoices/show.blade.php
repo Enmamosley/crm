@@ -19,7 +19,7 @@
     </form>
 @endif
 
-@if($invoice->isPaid() && $invoice->status === 'draft')
+@if(($invoice->isPaid() || $invoice->status === 'sent') && in_array($invoice->status, ['draft', 'sent']))
     <form action="{{ route('admin.invoices.stamp', $invoice) }}" method="POST" class="inline"
           onsubmit="return confirm('¿Timbrar esta factura ante el SAT?')">
         @csrf @method('PATCH')
@@ -59,7 +59,7 @@
 @php
     $flowStep = 1; // orden creada
     if ($invoice->client && $invoice->client->portal_token) $flowStep = 2; // link disponible
-    if ($invoice->isPaid()) $flowStep = 3;
+    if ($invoice->isPaid() || $invoice->status === 'sent') $flowStep = 3;
     if ($invoice->isStamped()) $flowStep = 4;
     if ($invoice->status === 'cancelled') $flowStep = 0;
     $invSteps = [
@@ -110,14 +110,27 @@
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-lg font-semibold">Información General</h3>
                 @php
-                    $colors = ['draft'=>'gray','pending'=>'yellow','valid'=>'green','cancelled'=>'red'];
-                    $labels = ['draft'=>'Borrador','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
+                    $colors = ['draft'=>'gray','sent'=>'blue','pending'=>'yellow','valid'=>'green','cancelled'=>'red'];
+                    $labels = ['draft'=>'Borrador','sent'=>'Pagada','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
                     $c = $colors[$invoice->status] ?? 'gray';
                 @endphp
                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-{{ $c }}-100 text-{{ $c }}-700">
                     @if($invoice->status === 'valid') <i class="fas fa-check-circle mr-1"></i> @endif
                     {{ $labels[$invoice->status] ?? $invoice->status }}
                 </span>
+                @if(in_array($invoice->status, ['draft', 'sent', 'pending']))
+                <form action="{{ route('admin.invoices.update-status', $invoice) }}" method="POST" class="inline-flex items-center gap-1 ml-2">
+                    @csrf @method('PATCH')
+                    <select name="status" class="text-xs border rounded px-2 py-1 bg-white">
+                        <option value="draft" {{ $invoice->status === 'draft' ? 'selected' : '' }}>Borrador</option>
+                        <option value="sent" {{ $invoice->status === 'sent' ? 'selected' : '' }}>Pagada</option>
+                        <option value="pending" {{ $invoice->status === 'pending' ? 'selected' : '' }}>Procesando</option>
+                    </select>
+                    <button type="submit" class="text-xs bg-gray-200 hover:bg-gray-300 text-gray-700 px-2 py-1 rounded">
+                        <i class="fas fa-save"></i>
+                    </button>
+                </form>
+                @endif
             </div>
             <div class="grid grid-cols-2 gap-4 text-sm">
                 <div><span class="text-gray-500">Folio:</span><p class="font-medium font-mono">{{ $invoice->folio() ?: 'Sin asignar' }}</p></div>

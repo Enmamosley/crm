@@ -178,7 +178,7 @@ class InvoiceController extends Controller
             'paid_at'           => now(),
         ]);
 
-        $updates = ['paid_at' => now()];
+        $updates = ['status' => 'sent', 'paid_at' => now()];
         if ($validated['payment_form'] !== '99') {
             $updates['payment_form'] = $validated['payment_form'];
         }
@@ -201,13 +201,35 @@ class InvoiceController extends Controller
         ]);
 
         $invoice = $payment->invoice;
-        $invoice->update(['paid_at' => now()]);
+        $invoice->update(['status' => 'sent', 'paid_at' => now()]);
 
         ActivityLog::log('transfer_approved', $invoice,
             "Transferencia de \${$payment->amount} MXN confirmada por " . auth()->user()->name);
 
         return redirect()->route('admin.invoices.show', $invoice)
             ->with('success', 'Transferencia confirmada. Ahora puedes timbrar la factura.');
+    }
+
+    /**
+     * Cambiar estado de la factura manualmente.
+     */
+    public function updateStatus(Request $request, ClientInvoice $invoice)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:draft,sent,pending',
+        ]);
+
+        $invoice->update(['status' => $validated['status']]);
+
+        if ($validated['status'] === 'sent' && !$invoice->paid_at) {
+            $invoice->update(['paid_at' => now()]);
+        }
+
+        $labels = ['draft' => 'Borrador', 'sent' => 'Pagada', 'pending' => 'Procesando'];
+        ActivityLog::log('invoice_status_changed', $invoice,
+            "Estado de factura {$invoice->folio()} cambiado a '{$labels[$validated['status']]}' por " . auth()->user()->name);
+
+        return back()->with('success', "Estado actualizado a: {$labels[$validated['status']]}");
     }
 
     /**

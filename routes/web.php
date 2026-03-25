@@ -137,6 +137,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::post('invoices/{invoice}/send-link', [InvoiceController::class, 'sendPaymentLink'])->name('invoices.send-link');
     Route::post('invoices/{invoice}/pay-manual', [InvoiceController::class, 'registerManualPayment'])->name('invoices.pay-manual');
     Route::patch('payments/{payment}/approve', [InvoiceController::class, 'approveTransfer'])->name('payments.approve');
+    Route::patch('invoices/{invoice}/status', [InvoiceController::class, 'updateStatus'])->name('invoices.update-status');
 
     // Usuarios (admin only)
     Route::middleware('role:admin')->resource('users', UserController::class);
