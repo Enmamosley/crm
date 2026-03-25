@@ -169,17 +169,41 @@
                         </span>
                     @endif
                 </div>
-                @if($client->twentyi_package_id)
-                    <a href="{{ route('admin.clients.dns.index', $client) }}"
-                       class="inline-flex items-center gap-1 text-sm text-purple-600 hover:underline">
-                        <i class="fas fa-network-wired"></i> Gestionar registros DNS →
-                    </a>
-                @else
-                    <p class="text-xs text-yellow-600 mt-1">
-                        <i class="fas fa-exclamation-triangle mr-1"></i>
-                        Configura el Package ID de 20i para gestionar DNS.
-                    </p>
-                @endif
+
+                {{-- Botones de acción individuales --}}
+                <div class="mt-3 space-y-2">
+                    @if($client->twentyi_package_id)
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">
+                                <i class="fas fa-check mr-1"></i> Hosting 20i: #{{ $client->twentyi_package_id }}
+                            </span>
+                            <a href="{{ route('admin.clients.dns.index', $client) }}"
+                               class="text-xs text-purple-600 hover:underline">
+                                <i class="fas fa-network-wired"></i> DNS
+                            </a>
+                        </div>
+                    @else
+                        <div class="flex items-center gap-2">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-700">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> Sin hosting 20i
+                            </span>
+                            <button onclick="rebuildHosting()" id="btn-rebuild-hosting"
+                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 transition">
+                                <i class="fas fa-server"></i> Crear hosting
+                            </button>
+                        </div>
+                    @endif
+
+                    @if($client->domain_type === 'cosmotown')
+                        <div class="flex items-center gap-2">
+                            <button onclick="rebuildDomain()" id="btn-rebuild-domain"
+                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition">
+                                <i class="fas fa-globe"></i> Registrar dominio
+                            </button>
+                            <span class="text-xs text-gray-400">Cosmotown</span>
+                        </div>
+                    @endif
+                </div>
             @else
                 <p class="text-sm text-gray-400">Sin dominio configurado.</p>
                 <a href="{{ route('admin.clients.edit', $client) }}" class="mt-1 inline-block text-xs text-blue-600 hover:underline">
@@ -288,4 +312,42 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+function rebuildHosting() {
+    const btn = document.getElementById('btn-rebuild-hosting');
+    if (!confirm('¿Crear paquete de hosting 20i para {{ $client->domain }}?')) return;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creando...';
+    fetch('{{ route("admin.clients.create-hosting", $client) }}', {
+        method: 'POST',
+        headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json'}
+    })
+    .then(r => r.json().then(d => ({ok: r.ok, data: d})))
+    .then(({ok, data}) => {
+        if (ok) { alert(data.message); location.reload(); }
+        else { alert('Error: ' + (data.error || 'Falló la creación')); btn.disabled = false; btn.innerHTML = '<i class="fas fa-server"></i> Crear hosting'; }
+    })
+    .catch(() => { alert('Error de conexión'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-server"></i> Crear hosting'; });
+}
+
+function rebuildDomain() {
+    const btn = document.getElementById('btn-rebuild-domain');
+    if (!confirm('¿Registrar {{ $client->domain }} en Cosmotown? Se usará crédito de tu cuenta reseller.')) return;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+    fetch('{{ route("admin.clients.register-domain", $client) }}', {
+        method: 'POST',
+        headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json'}
+    })
+    .then(r => r.json().then(d => ({ok: r.ok, data: d})))
+    .then(({ok, data}) => {
+        if (ok) { alert(data.message); location.reload(); }
+        else { alert('Error: ' + (data.error || 'Falló el registro')); btn.disabled = false; btn.innerHTML = '<i class="fas fa-globe"></i> Registrar dominio'; }
+    })
+    .catch(() => { alert('Error de conexión'); btn.disabled = false; btn.innerHTML = '<i class="fas fa-globe"></i> Registrar dominio'; });
+}
+</script>
+@endpush
 @endsection

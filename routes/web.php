@@ -100,6 +100,7 @@ Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
     Route::get('clients/{client}/documents/{document}/download', [DocumentController::class, 'download'])->name('clients.documents.download');
     Route::delete('clients/{client}/documents/{document}', [DocumentController::class, 'destroy'])->name('clients.documents.destroy');
     Route::post('clients/{client}/create-hosting', [ClientController::class, 'createHosting'])->name('clients.create-hosting');
+    Route::post('clients/{client}/register-domain', [ClientController::class, 'registerDomain'])->name('clients.register-domain');
     Route::post('clients/{client}/sync-facturapi', [ClientController::class, 'syncFacturapi'])->name('clients.sync-facturapi');
 
     // Dominios (Cosmotown)

@@ -433,11 +433,29 @@ class DirectCheckoutController extends Controller
 
     private function provisionHosting(Client $client, Service $service, ?string $domain = null): void
     {
+        $domain = $domain ?: $client->domain;
+        if (!$domain) {
+            return;
+        }
+
+        // 1. Registrar dominio vía Cosmotown si fue seleccionado así
+        if ($client->domain_type === 'cosmotown') {
+            try {
+                $cosmotown = new CosmotownService();
+                if ($cosmotown->isConfigured()) {
+                    $result = $cosmotown->register($domain);
+                    ActivityLog::log('domain_registered', $client, "Dominio {$domain} registrado en Cosmotown");
+                }
+            } catch (\Throwable $e) {
+                Log::error('Domain registration failed', ['domain' => $domain, 'error' => $e->getMessage()]);
+            }
+        }
+
+        // 2. Crear paquete de hosting en 20i
         if (!$service->twentyi_package_bundle_id) {
             return;
         }
-        $domain = $domain ?: $client->domain;
-        if (!$domain) {
+        if ($client->twentyi_package_id) {
             return;
         }
         try {
@@ -445,7 +463,7 @@ class DirectCheckoutController extends Controller
             $client->update(['twentyi_package_id' => $packageId]);
             ActivityLog::log('hosting_provisioned', $client, "Hosting 20i creado: paquete #{$packageId} para {$domain}");
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('provisionHosting failed: ' . $e->getMessage());
+            Log::error('provisionHosting failed: ' . $e->getMessage());
         }
     }
 }

@@ -7,6 +7,7 @@ use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\Lead;
 use App\Models\Setting;
+use App\Services\CosmotownService;
 use App\Services\FacturapiService;
 use App\Services\TwentyIService;
 use Illuminate\Http\Request;
@@ -212,6 +213,36 @@ class ClientController extends Controller
             'success'    => true,
             'package_id' => $packageId,
             'message'    => "Paquete de hosting creado correctamente (ID: {$packageId})",
+        ]);
+    }
+
+    /**
+     * POST /admin/clients/{client}/register-domain
+     * Registra el dominio del cliente en Cosmotown.
+     */
+    public function registerDomain(Client $client)
+    {
+        if (!$client->domain) {
+            return response()->json(['error' => 'El cliente no tiene ningún dominio configurado.'], 422);
+        }
+
+        $cosmotown = new CosmotownService();
+        if (!$cosmotown->isConfigured()) {
+            return response()->json(['error' => 'No hay API key de Cosmotown configurada en Ajustes.'], 422);
+        }
+
+        try {
+            $result = $cosmotown->register($client->domain);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+
+        ActivityLog::log('domain_registered', $client, "Dominio {$client->domain} registrado manualmente en Cosmotown");
+
+        return response()->json([
+            'success' => true,
+            'message' => "Dominio {$client->domain} registrado correctamente en Cosmotown.",
+            'data'    => $result,
         ]);
     }
 
