@@ -62,6 +62,7 @@
                 <i class="fas fa-file-invoice text-indigo-500 mr-1"></i> ¿Necesitas factura?
             </h3>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3" id="billing-pref-group">
+                @if($client->tax_id)
                 <label class="billing-opt flex items-start gap-3 border-2 border-indigo-500 rounded-lg p-3 cursor-pointer bg-indigo-50">
                     <input type="radio" name="billing_preference_global" value="fiscal" class="mt-0.5 billing-radio" checked>
                     <div>
@@ -69,8 +70,9 @@
                         <p class="text-xs text-gray-500 mt-0.5">RFC: {{ $client->tax_id }}</p>
                     </div>
                 </label>
-                <label class="billing-opt flex items-start gap-3 border-2 border-transparent rounded-lg p-3 cursor-pointer hover:bg-gray-50">
-                    <input type="radio" name="billing_preference_global" value="publico_general" class="mt-0.5 billing-radio">
+                @endif
+                <label class="billing-opt flex items-start gap-3 border-2 {{ $client->tax_id ? 'border-transparent' : 'border-indigo-500 bg-indigo-50' }} rounded-lg p-3 cursor-pointer hover:bg-gray-50">
+                    <input type="radio" name="billing_preference_global" value="publico_general" class="mt-0.5 billing-radio" {{ !$client->tax_id ? 'checked' : '' }}>
                     <div>
                         <p class="text-sm font-medium text-gray-800">Sí, como Público en General</p>
                         <p class="text-xs text-gray-500 mt-0.5">RFC: XAXX010101000</p>

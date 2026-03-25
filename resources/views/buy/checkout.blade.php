@@ -95,6 +95,100 @@
                 @include('buy._domain-step')
             @endif
 
+            {{-- Facturación --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
+                <h3 class="font-bold text-gray-900 mb-1"><i class="fas fa-file-invoice text-brand-500 mr-1"></i> ¿Necesitas factura?</h3>
+                <p class="text-sm text-gray-400 mb-4">Selecciona cómo deseas tu comprobante fiscal (CFDI).</p>
+                <div class="space-y-2" id="billing-options">
+                    <label class="billing-opt flex items-start gap-3 border-2 border-transparent rounded-xl p-3 cursor-pointer hover:bg-gray-50 transition"
+                           onclick="selectBilling('none')">
+                        <input type="radio" name="billing_pref" value="none" class="mt-0.5 billing-radio" checked>
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">No necesito factura</p>
+                            <p class="text-xs text-gray-400">No se emitirá CFDI</p>
+                        </div>
+                    </label>
+                    <label class="billing-opt flex items-start gap-3 border-2 border-transparent rounded-xl p-3 cursor-pointer hover:bg-gray-50 transition"
+                           onclick="selectBilling('fiscal')">
+                        <input type="radio" name="billing_pref" value="fiscal" class="mt-0.5 billing-radio">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Sí, con mis datos fiscales</p>
+                            <p class="text-xs text-gray-400">Ingresa tu RFC y razón social</p>
+                        </div>
+                    </label>
+                    <label class="billing-opt flex items-start gap-3 border-2 border-transparent rounded-xl p-3 cursor-pointer hover:bg-gray-50 transition"
+                           onclick="selectBilling('publico_general')">
+                        <input type="radio" name="billing_pref" value="publico_general" class="mt-0.5 billing-radio">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">Sí, como Público en General</p>
+                            <p class="text-xs text-gray-400">RFC: XAXX010101000</p>
+                        </div>
+                    </label>
+                </div>
+
+                {{-- Campos fiscales (solo visibles con "fiscal") --}}
+                <div id="fiscal-fields" class="hidden mt-4 space-y-3 border-t pt-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">RFC</label>
+                        <input type="text" id="buyer-rfc" class="input-field uppercase" placeholder="XAXX010101000" maxlength="13" autocomplete="off">
+                        <p class="text-xs text-red-500 mt-1 hidden" id="err-rfc">Ingresa un RFC válido (12 o 13 caracteres)</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Razón social</label>
+                        <input type="text" id="buyer-legal-name" class="input-field" placeholder="Nombre o razón social como aparece en tu constancia">
+                        <p class="text-xs text-red-500 mt-1 hidden" id="err-legal-name">Ingresa la razón social</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Código postal fiscal</label>
+                            <input type="text" id="buyer-zip" class="input-field" placeholder="06600" maxlength="5">
+                            <p class="text-xs text-red-500 mt-1 hidden" id="err-zip">Ingresa tu C.P. fiscal</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1.5">Régimen fiscal</label>
+                            <select id="buyer-tax-system" class="input-field">
+                                <option value="601">601 - General de Ley</option>
+                                <option value="603">603 - Personas Morales Fines no Lucrativos</option>
+                                <option value="605">605 - Sueldos y Salarios</option>
+                                <option value="606">606 - Arrendamiento</option>
+                                <option value="608">608 - Demás Ingresos</option>
+                                <option value="610">610 - Residentes en el Extranjero</option>
+                                <option value="612">612 - Personas Físicas Actividad Empresarial</option>
+                                <option value="616" selected>616 - Sin Obligaciones Fiscales</option>
+                                <option value="620">620 - Sociedades Cooperativas de Producción</option>
+                                <option value="621">621 - Incorporación Fiscal</option>
+                                <option value="622">622 - Actividades Agrícolas, Ganaderas</option>
+                                <option value="623">623 - Opcional para Grupos de Sociedades</option>
+                                <option value="624">624 - Coordinados</option>
+                                <option value="625">625 - RESICO</option>
+                                <option value="626">626 - RESICO Personas Morales</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1.5">Uso del CFDI</label>
+                        <select id="buyer-cfdi-use" class="input-field">
+                            <option value="G03" selected>G03 - Gastos en general</option>
+                            <option value="G01">G01 - Adquisición de mercancías</option>
+                            <option value="G02">G02 - Devoluciones, descuentos o bonificaciones</option>
+                            <option value="I01">I01 - Construcciones</option>
+                            <option value="I02">I02 - Mobiliario y equipo de oficina</option>
+                            <option value="I04">I04 - Equipo de computo y accesorios</option>
+                            <option value="I08">I08 - Otra maquinaria y equipo</option>
+                            <option value="D01">D01 - Honorarios médicos</option>
+                            <option value="D02">D02 - Gastos médicos por incapacidad</option>
+                            <option value="D03">D03 - Gastos funerales</option>
+                            <option value="D04">D04 - Donativos</option>
+                            <option value="D05">D05 - Intereses de créditos hipotecarios</option>
+                            <option value="D06">D06 - Aportaciones voluntarias al SAR</option>
+                            <option value="D10">D10 - Pagos por servicios educativos</option>
+                            <option value="S01">S01 - Sin efectos fiscales</option>
+                            <option value="CP01">CP01 - Pagos</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <button id="btn-next" class="btn-primary w-full py-3.5 text-sm rounded-xl">
                 Continuar al pago <i class="fas fa-arrow-right ml-1"></i>
             </button>
@@ -175,6 +269,12 @@
                         <input type="hidden" name="phone" class="sync-phone">
                         <input type="hidden" name="domain" class="sync-domain">
                         <input type="hidden" name="domain_type" class="sync-domain-type">
+                        <input type="hidden" name="billing_preference" class="sync-billing-pref">
+                        <input type="hidden" name="tax_id" class="sync-rfc">
+                        <input type="hidden" name="fiscal_name" class="sync-legal-name">
+                        <input type="hidden" name="address_zip" class="sync-zip">
+                        <input type="hidden" name="tax_system" class="sync-tax-system">
+                        <input type="hidden" name="cfdi_use" class="sync-cfdi-use">
                         <div class="bg-yellow-50 rounded-xl p-4 mb-5 flex gap-3">
                             <i class="fas fa-store text-yellow-500 mt-0.5"></i>
                             <div class="text-sm text-yellow-800">
@@ -197,6 +297,12 @@
                         <input type="hidden" name="phone" class="sync-phone">
                         <input type="hidden" name="domain" class="sync-domain">
                         <input type="hidden" name="domain_type" class="sync-domain-type">
+                        <input type="hidden" name="billing_preference" class="sync-billing-pref">
+                        <input type="hidden" name="tax_id" class="sync-rfc">
+                        <input type="hidden" name="fiscal_name" class="sync-legal-name">
+                        <input type="hidden" name="address_zip" class="sync-zip">
+                        <input type="hidden" name="tax_system" class="sync-tax-system">
+                        <input type="hidden" name="cfdi_use" class="sync-cfdi-use">
                         <div class="bg-blue-50 rounded-xl p-4 mb-5 flex gap-3">
                             <i class="fas fa-building-columns text-blue-500 mt-0.5"></i>
                             <div class="text-sm text-blue-800">
@@ -220,6 +326,12 @@
                         <input type="hidden" name="phone" class="sync-phone">
                         <input type="hidden" name="domain" class="sync-domain">
                         <input type="hidden" name="domain_type" class="sync-domain-type">
+                        <input type="hidden" name="billing_preference" class="sync-billing-pref">
+                        <input type="hidden" name="tax_id" class="sync-rfc">
+                        <input type="hidden" name="fiscal_name" class="sync-legal-name">
+                        <input type="hidden" name="address_zip" class="sync-zip">
+                        <input type="hidden" name="tax_system" class="sync-tax-system">
+                        <input type="hidden" name="cfdi_use" class="sync-cfdi-use">
                         <div class="bg-green-50 rounded-xl p-4 mb-5 flex gap-3">
                             <i class="fas fa-money-bill-transfer text-green-600 mt-0.5 text-lg"></i>
                             <div class="text-sm text-green-800 space-y-0.5">
@@ -261,9 +373,77 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // ── Billing preference ──
+    let billingPref = 'none';
+    window.selectBilling = function(val) {
+        billingPref = val;
+        document.querySelectorAll('.billing-opt').forEach(lbl => {
+            const radio = lbl.querySelector('.billing-radio');
+            if (radio.value === val) {
+                radio.checked = true;
+                lbl.classList.add('border-brand-500', 'bg-brand-50');
+                lbl.classList.remove('border-transparent');
+            } else {
+                radio.checked = false;
+                lbl.classList.remove('border-brand-500', 'bg-brand-50');
+                lbl.classList.add('border-transparent');
+            }
+        });
+        document.getElementById('fiscal-fields').classList.toggle('hidden', val !== 'fiscal');
+    };
+    // Init
+    selectBilling('none');
+
     // ── Stepper logic ──
     const step1 = document.getElementById('step-1');
     const step2 = document.getElementById('step-2');
+
+    function validateFiscalFields() {
+        if (billingPref !== 'fiscal') return true;
+        let valid = true;
+        const rfc = (document.getElementById('buyer-rfc').value || '').trim().toUpperCase();
+        const legalName = (document.getElementById('buyer-legal-name').value || '').trim();
+        const zip = (document.getElementById('buyer-zip').value || '').trim();
+
+        if (!rfc || rfc.length < 12 || rfc.length > 13) {
+            document.getElementById('err-rfc').classList.remove('hidden');
+            valid = false;
+        } else {
+            document.getElementById('err-rfc').classList.add('hidden');
+        }
+        if (!legalName) {
+            document.getElementById('err-legal-name').classList.remove('hidden');
+            valid = false;
+        } else {
+            document.getElementById('err-legal-name').classList.add('hidden');
+        }
+        if (!zip || zip.length !== 5) {
+            document.getElementById('err-zip').classList.remove('hidden');
+            valid = false;
+        } else {
+            document.getElementById('err-zip').classList.add('hidden');
+        }
+        return valid;
+    }
+
+    function syncBillingData() {
+        document.querySelectorAll('.sync-billing-pref').forEach(el => el.value = billingPref);
+        if (billingPref === 'fiscal') {
+            const rfc = (document.getElementById('buyer-rfc').value || '').trim().toUpperCase();
+            const legalName = (document.getElementById('buyer-legal-name').value || '').trim();
+            const zip = (document.getElementById('buyer-zip').value || '').trim();
+            const taxSys = document.getElementById('buyer-tax-system').value;
+            const cfdiUse = document.getElementById('buyer-cfdi-use').value;
+            document.querySelectorAll('.sync-rfc').forEach(el => el.value = rfc);
+            document.querySelectorAll('.sync-legal-name').forEach(el => el.value = legalName);
+            document.querySelectorAll('.sync-zip').forEach(el => el.value = zip);
+            document.querySelectorAll('.sync-tax-system').forEach(el => el.value = taxSys);
+            document.querySelectorAll('.sync-cfdi-use').forEach(el => el.value = cfdiUse);
+        } else {
+            document.querySelectorAll('.sync-rfc, .sync-legal-name, .sync-zip, .sync-tax-system, .sync-cfdi-use')
+                .forEach(el => el.value = '');
+        }
+    }
 
     function goToStep2() {
         const name = document.getElementById('buyer-name').value.trim();
@@ -278,7 +458,6 @@ document.addEventListener('DOMContentLoaded', function () {
         else { document.getElementById('buyer-email').classList.remove('error'); }
 
         @if($service->requires_domain)
-        // Validar dominio
         const domainVal = document.getElementById('domain-hidden')?.value?.trim() || '';
         const domainType = document.getElementById('domain-type-hidden')?.value || 'own';
         const domainAvail = document.getElementById('domain-available-hidden')?.value;
@@ -294,6 +473,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
         @endif
 
+        if (!validateFiscalFields()) valid = false;
         if (!valid) return;
 
         // Sync data
@@ -302,12 +482,12 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.sync-phone').forEach(el => el.value = document.getElementById('buyer-phone').value);
         document.querySelectorAll('.sync-domain').forEach(el => el.value = document.getElementById('domain-hidden')?.value || '');
         document.querySelectorAll('.sync-domain-type').forEach(el => el.value = document.getElementById('domain-type-hidden')?.value || 'own');
+        syncBillingData();
 
         step1.classList.add('hidden');
         step2.classList.remove('hidden');
         step2.classList.add('animate-slide-up');
 
-        // Update stepper
         document.getElementById('step-progress').style.width = '100%';
         document.getElementById('step-2-circle').className = 'w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-sm font-bold transition-all duration-300';
         document.getElementById('step-2-label').className = 'ml-2 text-sm font-medium text-brand-700 transition-all duration-300';
@@ -324,7 +504,6 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('btn-next').addEventListener('click', goToStep2);
     document.getElementById('btn-back').addEventListener('click', goToStep1);
 
-    // Enter key on inputs advances step
     ['buyer-name', 'buyer-email', 'buyer-phone'].forEach(id => {
         document.getElementById(id).addEventListener('keydown', function(e) {
             if (e.key === 'Enter') { e.preventDefault(); goToStep2(); }
@@ -428,6 +607,12 @@ document.addEventListener('DOMContentLoaded', function () {
                     issuer_id: document.getElementById('issuer-select').value || null,
                     domain: document.getElementById('domain-hidden')?.value?.trim() || '',
                     domain_type: document.getElementById('domain-type-hidden')?.value || 'own',
+                    billing_preference: billingPref,
+                    tax_id: billingPref === 'fiscal' ? (document.getElementById('buyer-rfc').value || '').trim().toUpperCase() : '',
+                    fiscal_name: billingPref === 'fiscal' ? (document.getElementById('buyer-legal-name').value || '').trim() : '',
+                    address_zip: billingPref === 'fiscal' ? (document.getElementById('buyer-zip').value || '').trim() : '',
+                    tax_system: billingPref === 'fiscal' ? document.getElementById('buyer-tax-system').value : '',
+                    cfdi_use: billingPref === 'fiscal' ? document.getElementById('buyer-cfdi-use').value : '',
                 }),
             });
             const data = await response.json();

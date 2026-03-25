@@ -90,15 +90,21 @@ class DirectCheckoutController extends Controller
         $service = Service::where('slug', $slug)->where('public', true)->where('active', true)->firstOrFail();
 
         $validated = $request->validate([
-            'name'              => 'required|string|max:255',
-            'email'             => 'required|email|max:255',
-            'phone'             => 'nullable|string|max:20',
-            'token'             => 'required|string',
-            'payment_method_id' => 'required|string',
-            'installments'      => 'nullable|integer|min:1|max:24',
-            'issuer_id'         => 'nullable|string',
-            'domain'            => 'nullable|string|max:253',
-            'domain_type'       => 'nullable|in:cosmotown,own',
+            'name'               => 'required|string|max:255',
+            'email'              => 'required|email|max:255',
+            'phone'              => 'nullable|string|max:20',
+            'token'              => 'required|string',
+            'payment_method_id'  => 'required|string',
+            'installments'       => 'nullable|integer|min:1|max:24',
+            'issuer_id'          => 'nullable|string',
+            'domain'             => 'nullable|string|max:253',
+            'domain_type'        => 'nullable|in:cosmotown,own',
+            'billing_preference' => 'nullable|in:fiscal,publico_general,none',
+            'tax_id'             => 'nullable|string|max:13',
+            'fiscal_name'        => 'nullable|string|max:255',
+            'address_zip'        => 'nullable|string|max:5',
+            'tax_system'         => 'nullable|string|max:3',
+            'cfdi_use'           => 'nullable|string|max:4',
         ]);
 
         $client = $this->resolveOrCreateClient($validated);
@@ -112,16 +118,17 @@ class DirectCheckoutController extends Controller
         try {
             return DB::transaction(function () use ($client, $service, $slug, $validated, $subtotal, $iva, $total) {
                 $invoice = ClientInvoice::create([
-                    'client_id'      => $client->id,
-                    'series'         => 'V',
-                    'payment_form'   => '04', // Tarjeta de crédito
-                    'payment_method' => 'PUE',
-                    'use_cfdi'       => $client->cfdi_use ?? 'S01',
-                    'status'         => 'draft',
-                    'subtotal'       => $subtotal,
-                    'iva_amount'     => $iva,
-                    'total'          => $total,
-                    'notes'          => 'Compra directa: ' . $service->name,
+                    'client_id'          => $client->id,
+                    'series'             => 'V',
+                    'payment_form'       => '04', // Tarjeta de crédito
+                    'payment_method'     => 'PUE',
+                    'use_cfdi'           => $client->cfdi_use ?? 'S01',
+                    'billing_preference' => $validated['billing_preference'] ?? 'none',
+                    'status'             => 'draft',
+                    'subtotal'           => $subtotal,
+                    'iva_amount'         => $iva,
+                    'total'              => $total,
+                    'notes'              => 'Compra directa: ' . $service->name,
                 ]);
 
                 $payment = (new MercadoPagoService())->createCardPayment(
@@ -163,11 +170,17 @@ class DirectCheckoutController extends Controller
         $service = Service::where('slug', $slug)->where('public', true)->where('active', true)->firstOrFail();
 
         $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'email'       => 'required|email|max:255',
-            'phone'       => 'nullable|string|max:20',
-            'domain'      => 'nullable|string|max:253',
-            'domain_type' => 'nullable|in:cosmotown,own',
+            'name'               => 'required|string|max:255',
+            'email'              => 'required|email|max:255',
+            'phone'              => 'nullable|string|max:20',
+            'domain'             => 'nullable|string|max:253',
+            'domain_type'        => 'nullable|in:cosmotown,own',
+            'billing_preference' => 'nullable|in:fiscal,publico_general,none',
+            'tax_id'             => 'nullable|string|max:13',
+            'fiscal_name'        => 'nullable|string|max:255',
+            'address_zip'        => 'nullable|string|max:5',
+            'tax_system'         => 'nullable|string|max:3',
+            'cfdi_use'           => 'nullable|string|max:4',
         ]);
 
         $client = $this->resolveOrCreateClient($validated);
@@ -180,16 +193,17 @@ class DirectCheckoutController extends Controller
         try {
             return DB::transaction(function () use ($client, $service, $slug, $validated, $subtotal, $iva, $total) {
                 $invoice = ClientInvoice::create([
-                    'client_id'      => $client->id,
-                    'series'         => 'V',
-                    'payment_form'   => '01',
-                    'payment_method' => 'PUE',
-                    'use_cfdi'       => $client->cfdi_use ?? 'S01',
-                    'status'         => 'draft',
-                    'subtotal'       => $subtotal,
-                    'iva_amount'     => $iva,
-                    'total'          => $total,
-                    'notes'          => 'Compra directa: ' . $service->name,
+                    'client_id'          => $client->id,
+                    'series'             => 'V',
+                    'payment_form'       => '01',
+                    'payment_method'     => 'PUE',
+                    'use_cfdi'           => $client->cfdi_use ?? 'S01',
+                    'billing_preference' => $validated['billing_preference'] ?? 'none',
+                    'status'             => 'draft',
+                    'subtotal'           => $subtotal,
+                    'iva_amount'         => $iva,
+                    'total'              => $total,
+                    'notes'              => 'Compra directa: ' . $service->name,
                 ]);
 
                 $payment = (new MercadoPagoService())->createOxxoPayment($invoice, $validated['email']);
@@ -216,11 +230,17 @@ class DirectCheckoutController extends Controller
         $service = Service::where('slug', $slug)->where('public', true)->where('active', true)->firstOrFail();
 
         $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'email'       => 'required|email|max:255',
-            'phone'       => 'nullable|string|max:20',
-            'domain'      => 'nullable|string|max:253',
-            'domain_type' => 'nullable|in:cosmotown,own',
+            'name'               => 'required|string|max:255',
+            'email'              => 'required|email|max:255',
+            'phone'              => 'nullable|string|max:20',
+            'domain'             => 'nullable|string|max:253',
+            'domain_type'        => 'nullable|in:cosmotown,own',
+            'billing_preference' => 'nullable|in:fiscal,publico_general,none',
+            'tax_id'             => 'nullable|string|max:13',
+            'fiscal_name'        => 'nullable|string|max:255',
+            'address_zip'        => 'nullable|string|max:5',
+            'tax_system'         => 'nullable|string|max:3',
+            'cfdi_use'           => 'nullable|string|max:4',
         ]);
 
         $client = $this->resolveOrCreateClient($validated);
@@ -233,16 +253,17 @@ class DirectCheckoutController extends Controller
         try {
             return DB::transaction(function () use ($client, $service, $slug, $validated, $subtotal, $iva, $total) {
                 $invoice = ClientInvoice::create([
-                    'client_id'      => $client->id,
-                    'series'         => 'V',
-                    'payment_form'   => '03',
-                    'payment_method' => 'PUE',
-                    'use_cfdi'       => $client->cfdi_use ?? 'S01',
-                    'status'         => 'draft',
-                    'subtotal'       => $subtotal,
-                    'iva_amount'     => $iva,
-                    'total'          => $total,
-                    'notes'          => 'Compra directa: ' . $service->name,
+                    'client_id'          => $client->id,
+                    'series'             => 'V',
+                    'payment_form'       => '03',
+                    'payment_method'     => 'PUE',
+                    'use_cfdi'           => $client->cfdi_use ?? 'S01',
+                    'billing_preference' => $validated['billing_preference'] ?? 'none',
+                    'status'             => 'draft',
+                    'subtotal'           => $subtotal,
+                    'iva_amount'         => $iva,
+                    'total'              => $total,
+                    'notes'              => 'Compra directa: ' . $service->name,
                 ]);
 
                 $payment = (new MercadoPagoService())->createSpeiPayment($invoice, $validated['email']);
@@ -269,12 +290,18 @@ class DirectCheckoutController extends Controller
         $service = Service::where('slug', $slug)->where('public', true)->where('active', true)->firstOrFail();
 
         $validated = $request->validate([
-            'name'        => 'required|string|max:255',
-            'email'       => 'required|email|max:255',
-            'phone'       => 'nullable|string|max:20',
-            'domain'      => 'nullable|string|max:253',
-            'domain_type' => 'nullable|in:cosmotown,own',
-            'proof'       => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'name'               => 'required|string|max:255',
+            'email'              => 'required|email|max:255',
+            'phone'              => 'nullable|string|max:20',
+            'domain'             => 'nullable|string|max:253',
+            'domain_type'        => 'nullable|in:cosmotown,own',
+            'proof'              => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'billing_preference' => 'nullable|in:fiscal,publico_general,none',
+            'tax_id'             => 'nullable|string|max:13',
+            'fiscal_name'        => 'nullable|string|max:255',
+            'address_zip'        => 'nullable|string|max:5',
+            'tax_system'         => 'nullable|string|max:3',
+            'cfdi_use'           => 'nullable|string|max:4',
         ]);
 
         $client   = $this->resolveOrCreateClient($validated);
@@ -286,16 +313,17 @@ class DirectCheckoutController extends Controller
         try {
             return DB::transaction(function () use ($client, $service, $slug, $validated, $subtotal, $iva, $total, $request) {
                 $invoice = ClientInvoice::create([
-                    'client_id'      => $client->id,
-                    'series'         => 'V',
-                    'payment_form'   => '03',
-                    'payment_method' => 'PUE',
-                    'use_cfdi'       => $client->cfdi_use ?? 'S01',
-                    'status'         => 'draft',
-                    'subtotal'       => $subtotal,
-                    'iva_amount'     => $iva,
-                    'total'          => $total,
-                    'notes'          => 'Compra directa: ' . $service->name,
+                    'client_id'          => $client->id,
+                    'series'             => 'V',
+                    'payment_form'       => '03',
+                    'payment_method'     => 'PUE',
+                    'use_cfdi'           => $client->cfdi_use ?? 'S01',
+                    'billing_preference' => $validated['billing_preference'] ?? 'none',
+                    'status'             => 'draft',
+                    'subtotal'           => $subtotal,
+                    'iva_amount'         => $iva,
+                    'total'              => $total,
+                    'notes'              => 'Compra directa: ' . $service->name,
                 ]);
 
                 $proofPath = null;
@@ -347,16 +375,32 @@ class DirectCheckoutController extends Controller
     private function resolveOrCreateClient(array $data): Client
     {
         $client = Client::where('email', $data['email'])->first();
+
+        $billingPref = $data['billing_preference'] ?? 'none';
+        $fiscalData = [];
+        if ($billingPref === 'fiscal' && !empty($data['tax_id'])) {
+            $fiscalData = [
+                'tax_id'      => strtoupper($data['tax_id']),
+                'legal_name'  => $data['fiscal_name'] ?? $data['name'],
+                'address_zip' => $data['address_zip'] ?? null,
+                'tax_system'  => $data['tax_system'] ?? '616',
+                'cfdi_use'    => $data['cfdi_use'] ?? 'G03',
+            ];
+        }
+
         if (!$client) {
-            $client = Client::create([
+            $client = Client::create(array_merge([
                 'legal_name'    => $data['name'],
                 'email'         => $data['email'],
                 'phone'         => $data['phone'] ?? null,
                 'tax_system'    => '616',
                 'cfdi_use'      => 'S01',
                 'portal_active' => true,
-            ]);
+            ], $fiscalData));
+        } elseif (!empty($fiscalData) && empty($client->tax_id)) {
+            $client->update($fiscalData);
         }
+
         if (!empty($data['domain'])) {
             $client->update([
                 'domain'      => $data['domain'],
