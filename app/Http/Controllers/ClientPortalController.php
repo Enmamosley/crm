@@ -141,14 +141,31 @@ class ClientPortalController extends Controller
         $emailServiceIds = Service::where('name', 'like', 'Correo Profesional%')
             ->pluck('id');
 
-        if ($emailServiceIds->isEmpty()) {
-            return false;
+        // Camino 1: Factura pagada con cotización que tiene ítems de correo
+        $viaQuote = $emailServiceIds->isNotEmpty()
+            && ClientInvoice::where('client_id', $client->id)
+                ->whereNotNull('paid_at')
+                ->whereHas('quote.items', fn ($q) => $q->whereIn('service_id', $emailServiceIds))
+                ->exists();
+
+        if ($viaQuote) {
+            return true;
         }
 
-        return ClientInvoice::where('client_id', $client->id)
-            ->whereNotNull('paid_at')
-            ->whereHas('quote.items', fn ($q) => $q->whereIn('service_id', $emailServiceIds))
-            ->exists();
+        // Camino 2: Compra directa — notes contiene "Compra directa: Correo Profesional…"
+        $emailServiceNames = Service::where('name', 'like', 'Correo Profesional%')
+            ->pluck('name');
+
+        foreach ($emailServiceNames as $name) {
+            if (ClientInvoice::where('client_id', $client->id)
+                ->whereNotNull('paid_at')
+                ->where('notes', 'Compra directa: ' . $name)
+                ->exists()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function mailboxes(string $token)
