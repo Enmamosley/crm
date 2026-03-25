@@ -1,3 +1,9 @@
+@php
+    $companyName = \App\Models\Setting::get('company_name', config('mail.from.name', 'CRM Mosley'));
+    $companyLogo = \App\Models\Setting::get('company_logo', '');
+    $companyEmail = config('mail.from.address', 'no-reply@mosley.digital');
+    $logoUrl = $companyLogo ? asset('storage/' . $companyLogo) : null;
+@endphp
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -8,6 +14,8 @@
         .wrap { max-width: 620px; margin: 0 auto; }
         .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; }
         .header { background: linear-gradient(135deg, #15803d, #16a34a); color: #fff; padding: 22px 24px; }
+        .logo-wrap { margin-bottom: 10px; }
+        .logo { max-height: 36px; max-width: 180px; display: block; }
         .header h1 { margin: 0; font-size: 20px; }
         .header p { margin: 8px 0 0; opacity: 0.92; font-size: 13px; }
         .content { padding: 22px 24px; line-height: 1.6; }
@@ -25,8 +33,11 @@
     <div class="wrap">
     <div class="card">
     <div class="header">
+        @if($logoUrl)
+        <div class="logo-wrap"><img src="{{ $logoUrl }}" alt="{{ $companyName }}" class="logo"></div>
+        @endif
         <h1>Link de pago</h1>
-        <p>Tu orden está lista para pagarse</p>
+        <p>{{ $companyName }}</p>
     </div>
     <div class="content">
         <p>Hola <strong>{{ $invoice->client->legal_name }}</strong>,</p>
@@ -74,7 +85,7 @@
     </div>
     </div>
     <div class="foot">
-        Correo automático de CRM Mosley.
+        Correo automatico de {{ $companyName }} - {{ $companyEmail }}.
     </div>
     </div>
 </body>
