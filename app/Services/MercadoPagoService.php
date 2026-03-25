@@ -134,7 +134,7 @@ class MercadoPagoService
         // Marcar factura como pagada
         if ($newStatus === 'approved' && !$payment->invoice->paid_at) {
             $invoice = $payment->invoice;
-            $invoice->update(['paid_at' => $paidAt]);
+            $invoice->update(['status' => 'sent', 'paid_at' => $paidAt]);
 
             // Auto-timbrar si no está timbrada y el payment_form coincide
             if (!$invoice->isStamped() && Setting::get('facturapi_api_key')) {
@@ -238,7 +238,7 @@ class MercadoPagoService
         ]);
 
         if ($isApproved) {
-            $invoice->update(['paid_at' => now()]);
+            $invoice->update(['status' => 'sent', 'paid_at' => now()]);
         }
 
         return $payment;

@@ -117,10 +117,10 @@ class DirectCheckoutController extends Controller
 
         try {
             return DB::transaction(function () use ($client, $service, $slug, $validated, $subtotal, $iva, $total) {
-                $invoice = ClientInvoice::create([
+                $invoice = $this->findOrCreateInvoice($client, $service, [
                     'client_id'          => $client->id,
                     'series'             => 'V',
-                    'payment_form'       => '04', // Tarjeta de crédito
+                    'payment_form'       => '04',
                     'payment_method'     => 'PUE',
                     'use_cfdi'           => $client->cfdi_use ?? 'S01',
                     'billing_preference' => $validated['billing_preference'] ?? 'none',
@@ -192,7 +192,7 @@ class DirectCheckoutController extends Controller
 
         try {
             return DB::transaction(function () use ($client, $service, $slug, $validated, $subtotal, $iva, $total) {
-                $invoice = ClientInvoice::create([
+                $invoice = $this->findOrCreateInvoice($client, $service, [
                     'client_id'          => $client->id,
                     'series'             => 'V',
                     'payment_form'       => '01',
@@ -252,7 +252,7 @@ class DirectCheckoutController extends Controller
 
         try {
             return DB::transaction(function () use ($client, $service, $slug, $validated, $subtotal, $iva, $total) {
-                $invoice = ClientInvoice::create([
+                $invoice = $this->findOrCreateInvoice($client, $service, [
                     'client_id'          => $client->id,
                     'series'             => 'V',
                     'payment_form'       => '03',
@@ -312,7 +312,7 @@ class DirectCheckoutController extends Controller
 
         try {
             return DB::transaction(function () use ($client, $service, $slug, $validated, $subtotal, $iva, $total, $request) {
-                $invoice = ClientInvoice::create([
+                $invoice = $this->findOrCreateInvoice($client, $service, [
                     'client_id'          => $client->id,
                     'series'             => 'V',
                     'payment_form'       => '03',
@@ -409,6 +409,26 @@ class DirectCheckoutController extends Controller
             ]);
         }
         return $client;
+    }
+
+    /**
+     * Reutiliza factura draft sin pagos para evitar duplicados si el usuario reenvía el formulario.
+     */
+    private function findOrCreateInvoice(Client $client, Service $service, array $invoiceData): ClientInvoice
+    {
+        $existing = ClientInvoice::where('client_id', $client->id)
+            ->where('status', 'draft')
+            ->where('total', $invoiceData['total'])
+            ->where('notes', 'Compra directa: ' . $service->name)
+            ->whereDoesntHave('payments')
+            ->first();
+
+        if ($existing) {
+            $existing->update($invoiceData);
+            return $existing;
+        }
+
+        return ClientInvoice::create($invoiceData);
     }
 
     private function provisionHosting(Client $client, Service $service, ?string $domain = null): void

@@ -282,7 +282,7 @@
                                 <p class="text-yellow-700 text-xs">Se genera una ficha de pago. Tienes <strong>3 días</strong> para pagar en cualquier tienda OXXO.</p>
                             </div>
                         </div>
-                        <button type="submit" class="w-full bg-yellow-500 text-white py-3.5 rounded-xl font-medium hover:bg-yellow-600 transition-all active:scale-[.98] text-sm">
+                        <button type="submit" class="w-full bg-yellow-500 text-white py-3.5 rounded-xl font-medium hover:bg-yellow-600 transition-all active:scale-[.98] text-sm btn-submit-once">
                             <i class="fas fa-barcode mr-1"></i> Generar ficha de pago
                         </button>
                     </form>
@@ -310,7 +310,7 @@
                                 <p class="text-blue-700 text-xs">Se genera una CLABE. Tu pago se acredita en <strong>minutos</strong>.</p>
                             </div>
                         </div>
-                        <button type="submit" class="w-full bg-blue-600 text-white py-3.5 rounded-xl font-medium hover:bg-blue-700 transition-all active:scale-[.98] text-sm">
+                        <button type="submit" class="w-full bg-blue-600 text-white py-3.5 rounded-xl font-medium hover:bg-blue-700 transition-all active:scale-[.98] text-sm btn-submit-once">
                             <i class="fas fa-building-columns mr-1"></i> Generar datos SPEI
                         </button>
                     </form>
@@ -351,7 +351,7 @@
                             <input type="file" name="proof" accept=".pdf,.jpg,.jpeg,.png"
                                 class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                         </div>
-                        <button type="submit" class="w-full bg-green-600 text-white py-3.5 rounded-xl font-medium hover:bg-green-700 transition-all active:scale-[.98] text-sm">
+                        <button type="submit" class="w-full bg-green-600 text-white py-3.5 rounded-xl font-medium hover:bg-green-700 transition-all active:scale-[.98] text-sm btn-submit-once">
                             <i class="fas fa-paper-plane mr-1"></i> Enviar solicitud de pago
                         </button>
                     </form>
@@ -629,6 +629,16 @@ document.addEventListener('DOMContentLoaded', function () {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-lock mr-1"></i> Pagar ${{ number_format($service->priceWithIva(), 2) }} MXN';
         }
+    });
+});
+
+// Anti doble-submit para OXXO, SPEI y Transferencia
+document.querySelectorAll('.btn-submit-once').forEach(btn => {
+    btn.closest('form').addEventListener('submit', function() {
+        if (btn.dataset.submitted) { event.preventDefault(); return; }
+        btn.dataset.submitted = '1';
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Procesando...';
     });
 });
 </script>
