@@ -57,6 +57,13 @@
                             @if($item->service?->description)
                                 <p class="text-xs text-gray-400 mt-0.5">{{ Str::limit($item->service->description, 80) }}</p>
                             @endif
+                            @if($item->service?->info_url)
+                                <a href="{{ $item->service->info_url }}" target="_blank" rel="noopener"
+                                   class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-800 mt-1 font-medium">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z"/></svg>
+                                    Más información
+                                </a>
+                            @endif
                         </td>
                         <td class="text-center px-4 py-3">{{ $item->quantity }}</td>
                         <td class="text-right px-4 py-3">${{ number_format($item->unit_price, 2) }}</td>

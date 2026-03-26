@@ -8,7 +8,7 @@ use Illuminate\Support\Str;
 
 class Service extends Model
 {
-    protected $fillable = ['service_category_id', 'name', 'slug', 'description', 'price', 'active', 'public', 'requires_domain', 'twentyi_package_bundle_id'];
+    protected $fillable = ['service_category_id', 'name', 'slug', 'description', 'info_url', 'price', 'active', 'public', 'requires_domain', 'twentyi_package_bundle_id'];
 
     protected function casts(): array
     {

@@ -30,6 +30,14 @@
                 <textarea name="description" rows="3" class="w-full border rounded-lg px-3 py-2">{{ old('description') }}</textarea>
             </div>
             <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Enlace "Más información" <span class="text-gray-400 font-normal">(opcional)</span></label>
+                <input type="url" name="info_url" value="{{ old('info_url') }}"
+                    placeholder="https://tudominio.com/detalles-del-servicio"
+                    class="w-full border rounded-lg px-3 py-2 text-sm">
+                <p class="text-xs text-gray-400 mt-1">Si lo defines, el cliente verá un botón "Más información" en el portal y en la cotización.</p>
+                @error('info_url') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+            </div>
+            <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-1">Precio base *</label>
                 <input type="number" name="price" value="{{ old('price') }}" step="0.01" min="0" required class="w-full border rounded-lg px-3 py-2">
             </div>
