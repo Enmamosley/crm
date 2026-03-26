@@ -269,18 +269,19 @@
             @forelse($invoice->payments->sortByDesc('created_at') as $pay)
             @php
                 $payColors = ['approved'=>'green','pending'=>'yellow','in_process'=>'blue','rejected'=>'red','cancelled'=>'gray','refunded'=>'purple'];
-                $payLabels = ['approved'=>'Aprobado','pending'=>'Pendiente','in_process'=>'En proceso','rejected'=>'Rechazado','cancelled'=>'Cancelado','refunded'=>'Devuelto','manual'=>'Manual'];
+                $payLabels = ['approved'=>'Aprobado','pending'=>'Pendiente','in_process'=>'En proceso','rejected'=>'Rechazado','cancelled'=>'Cancelado','refunded'=>'Devuelto'];
+                $payTypeLabels = ['manual'=>'Pago manual','transfer'=>'Transferencia bancaria','ticket'=>'OXXO / Efectivo','credit_card'=>'Tarjeta de crédito','debit_card'=>'Tarjeta de débito','bank_transfer'=>'SPEI','spei'=>'SPEI','account_money'=>'Saldo MP'];
+                $satFormNames  = ['01'=>'Efectivo','02'=>'Cheque nominativo','03'=>'Transferencia electrónica','04'=>'Tarjeta de crédito','05'=>'Monedero electrónico','06'=>'Dinero electrónico','08'=>'Vales de despensa','28'=>'Tarjeta de débito','29'=>'Tarjeta de servicios','99'=>'Por definir'];
                 $pc = $payColors[$pay->status] ?? 'gray';
+                $typeLabel = $payTypeLabels[$pay->payment_type] ?? ucfirst(str_replace('_',' ',$pay->payment_type ?? 'Otro'));
+                $methodLabel = $satFormNames[$pay->payment_method_id] ?? ($pay->payment_method_id && !in_array($pay->payment_method_id, ['bank_transfer','oxxo','visa','master']) ? $pay->payment_method_id : null);
             @endphp
             <div class="flex items-center justify-between py-3 border-b last:border-0">
                 <div>
                     <p class="text-sm font-medium">${{ number_format($pay->amount, 2) }} MXN</p>
                     <p class="text-xs text-gray-400">
-                        @if($pay->payment_type === 'manual') Pago manual
-                        @elseif($pay->payment_type === 'transfer') Transferencia bancaria (portal)
-                        @else {{ ucfirst(str_replace('_', ' ', $pay->payment_type ?? 'MP')) }}
-                        @endif
-                        @if($pay->payment_method_id && !in_array($pay->payment_method_id, ['bank_transfer'])) · {{ $pay->payment_method_id }} @endif
+                        {{ $typeLabel }}
+                        @if($methodLabel) · {{ $methodLabel }} @endif
                         · {{ ($pay->paid_at ?? $pay->created_at)->format('d/m/Y H:i') }}
                     </p>
                     @if($pay->payment_type === 'transfer' && $pay->status === 'pending')

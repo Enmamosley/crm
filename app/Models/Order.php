@@ -58,7 +58,7 @@ class Order extends Model
 
     public function isPaid(): bool
     {
-        return $this->paid_at !== null;
+        return $this->paid_at !== null || $this->status === 'paid';
     }
 
     /** Hay un CFDI activo (timbrado y no cancelado). */

@@ -77,6 +77,12 @@ class OrderController extends Controller
         $subtotal = 0; $iva = 0; $total = 0;
         $ivaRate  = (float) \App\Models\Setting::get('iva_percentage', 16) / 100;
 
+        // Auto-generar folio si no se proporcionó
+        if (empty($validated['folio_number'])) {
+            $max = Order::where('series', $validated['series'])->max('folio_number');
+            $validated['folio_number'] = ($max ?? 0) + 1;
+        }
+
         if (!empty($validated['quote_id'])) {
             $quote    = Quote::find($validated['quote_id']);
             $subtotal = $quote->subtotal;
