@@ -340,40 +340,47 @@
             margin-bottom: 2px;
         }
 
-        /* ── Signature ── */
-        .signature-section {
+        /* ── Acceptance bar ── */
+        .acceptance-bar {
+            margin-top: 32px;
+            background: #f0f7ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 6px;
+            padding: 14px 18px;
             display: table;
             width: 100%;
-            margin-top: 40px;
         }
-        .signature-box {
+        .acceptance-bar-left {
             display: table-cell;
-            width: 45%;
-            text-align: center;
-            vertical-align: bottom;
+            vertical-align: middle;
+            width: 70%;
         }
-        .signature-spacer {
+        .acceptance-bar-right {
             display: table-cell;
-            width: 10%;
+            vertical-align: middle;
+            width: 30%;
+            text-align: right;
         }
-        .signature-line {
-            border-top: 1px solid #cbd5e0;
-            margin: 0 20px;
-            padding-top: 8px;
-            font-size: 9px;
-            color: #718096;
-        }
-        .signature-name {
+        .acceptance-bar-title {
             font-size: 10px;
             font-weight: bold;
-            color: #2d3748;
-            margin-top: 3px;
+            color: #1e40af;
+            margin-bottom: 3px;
+        }
+        .acceptance-bar-text {
+            font-size: 9px;
+            color: #3b82f6;
+        }
+        .acceptance-bar-contact {
+            font-size: 10px;
+            font-weight: bold;
+            color: #1e3a5f;
         }
 
         /* ── Footer ── */
         .footer {
-            margin-top: 35px;
-            padding-top: 15px;
+            margin-top: 30px;
+            padding-top: 14px;
             border-top: 1.5px solid #e2e8f0;
             text-align: center;
         }
@@ -529,20 +536,19 @@
             </ol>
         </div>
 
-        <!-- Signature -->
-        <div class="signature-section">
-            <div class="signature-box">
-                <div class="signature-line">
-                    Firma del proveedor
-                    <div class="signature-name">{{ $settings['company_name'] }}</div>
-                </div>
+        <!-- Acceptance bar -->
+        <div class="acceptance-bar">
+            <div class="acceptance-bar-left">
+                <div class="acceptance-bar-title">¿Listo para comenzar?</div>
+                <div class="acceptance-bar-text">Contáctenos para confirmar esta cotización o solicitar ajustes antes de su vencimiento.</div>
             </div>
-            <div class="signature-spacer"></div>
-            <div class="signature-box">
-                <div class="signature-line">
-                    Firma del cliente
-                    <div class="signature-name">{{ $quote->lead->name }}</div>
-                </div>
+            <div class="acceptance-bar-right">
+                @if($settings['company_email'])
+                    <div class="acceptance-bar-contact">{{ $settings['company_email'] }}</div>
+                @endif
+                @if($settings['company_phone'])
+                    <div style="font-size:9px;color:#718096;">{{ $settings['company_phone'] }}</div>
+                @endif
             </div>
         </div>
 
