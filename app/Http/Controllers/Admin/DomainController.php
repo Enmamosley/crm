@@ -17,7 +17,13 @@ class DomainController extends Controller
         $environment = Setting::get('cosmotown_base_url', 'https://sandbox.cosmotown.com');
         $isSandbox   = str_contains($environment, 'sandbox');
 
-        return view('admin.domains.index', compact('configured', 'environment', 'isSandbox'));
+        // Mapa dominio → cliente para mostrar en la tabla
+        $clientsByDomain = Client::whereNotNull('domain')
+            ->get(['id', 'name', 'domain'])
+            ->keyBy('domain')
+            ->map(fn($c) => ['id' => $c->id, 'name' => $c->name]);
+
+        return view('admin.domains.index', compact('configured', 'environment', 'isSandbox', 'clientsByDomain'));
     }
 
     /**

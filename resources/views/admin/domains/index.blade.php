@@ -65,6 +65,7 @@
                         <thead class="bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wider">
                             <tr>
                                 <th class="px-6 py-3">Dominio</th>
+                                <th class="px-6 py-3">Cliente</th>
                                 <th class="px-6 py-3">Estado</th>
                                 <th class="px-6 py-3">Privacidad</th>
                                 <th class="px-6 py-3">Bloqueado</th>
@@ -78,6 +79,16 @@
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-3">
                                         <span class="font-medium font-mono text-blue-700" x-text="d.domain"></span>
+                                    </td>
+                                    <td class="px-6 py-3">
+                                        <template x-if="clientsByDomain[d.domain]">
+                                            <a :href="`/panel/clients/${clientsByDomain[d.domain].id}`"
+                                               class="text-xs text-indigo-600 hover:underline font-medium"
+                                               x-text="clientsByDomain[d.domain].name"></a>
+                                        </template>
+                                        <template x-if="!clientsByDomain[d.domain]">
+                                            <span class="text-xs text-gray-400">—</span>
+                                        </template>
                                     </td>
                                     <td class="px-6 py-3">
                                         <span x-show="d.auto_billing" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Auto-renueva</span>
@@ -203,7 +214,8 @@
         <ul class="space-y-1.5 text-xs text-gray-500">
             <li><i class="fas fa-check text-gray-400 mr-1.5 w-3"></i> Puedes verificar la disponibilidad de cualquier dominio usando la API de Cosmotown.</li>
             <li><i class="fas fa-check text-gray-400 mr-1.5 w-3"></i> Si el dominio está disponible, puedes registrarlo directamente desde aquí (requiere saldo en tu cuenta Cosmotown).</li>
-            <li><i class="fas fa-check text-gray-400 mr-1.5 w-3"></i> Una vez registrado, asígna el Package ID de 20i al cliente para gestionar sus buzones de correo.</li>
+            <li><i class="fas fa-check text-gray-400 mr-1.5 w-3"></i> Una vez registrado, haz clic en <strong>Info</strong> en la tabla de dominios para entrar al detalle y asignarlo a un cliente.</li>
+            <li class="text-yellow-600"><i class="fas fa-exclamation-triangle mr-1.5 w-3"></i> Los archivos locales del servidor se eliminan al hacer un rebuild del paquete de hosting en 20i.</li>
             <li class="text-yellow-600"><i class="fas fa-flask mr-1.5 w-3"></i> En sandbox los registros no son reales ni tienen costo.</li>
         </ul>
     </div>
@@ -216,6 +228,7 @@
 function domainList() {
     return {
         domains: [],
+        clientsByDomain: @json($clientsByDomain),
         loading: false,
         error: null,
         async loadDomains() {
@@ -336,7 +349,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (data.success) {
                 document.getElementById('register-success-msg').textContent =
-                    `"${lastCheckedDomain}" fue registrado correctamente. Ahora puedes asignarlo en la sección de correos del cliente.`;
+                    `"${lastCheckedDomain}" fue registrado correctamente. Entra al detalle del dominio para asignarlo a un cliente.`;
                 document.getElementById('register-success').classList.remove('hidden');
                 document.getElementById('register-error').classList.add('hidden');
                 show('result-unavailable'); // domain is now taken
