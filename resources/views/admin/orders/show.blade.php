@@ -126,7 +126,7 @@
                     {{ $labels[$order->status] ?? $order->status }}
                     @if($order->isStamped()) &bull; CFDI timbrado @endif
                 </span>
-                @if(in_array($order->status, ['draft', 'sent', 'pending']))
+                @if(in_array($order->status, ['draft', 'sent', 'pending', 'paid']))
                 <form action="{{ route('admin.orders.update-status', $order) }}" method="POST" class="inline-flex items-center gap-1 ml-2">
                     @csrf @method('PATCH')
                     <select name="status" class="text-xs border rounded px-2 py-1 bg-white">
@@ -462,6 +462,11 @@
 <div id="voidModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
         <h3 class="text-lg font-semibold mb-2">Anular Orden</h3>
+        @if($order->isPaid())
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-sm text-yellow-700">
+            <i class="fas fa-exclamation-triangle mr-1"></i> Esta orden ya fue <strong>pagada</strong>. Anularla no revierte los pagos registrados.
+        </div>
+        @endif
         <p class="text-sm text-gray-600 mb-6">Esta orden aún no ha sido timbrada, por lo que puede anularse sin trámite ante el SAT. Esta acción no se puede deshacer.</p>
         <form action="{{ route('admin.orders.void', $order) }}" method="POST">
             @csrf @method('PATCH')

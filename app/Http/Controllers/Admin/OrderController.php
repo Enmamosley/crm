@@ -306,7 +306,7 @@ class OrderController extends Controller
             return back()->with('error', 'No se puede anular esta orden. Si ya tiene un CFDI activo, usa "Cancelar ante SAT".');
         }
 
-        $order->update(['status' => 'cancelled']);
+        $order->update(['status' => 'cancelled', 'paid_at' => null]);
         ActivityLog::log('order_voided', $order, "Orden {$order->folio()} anulada manualmente");
 
         return redirect()->route('admin.orders.show', $order)
