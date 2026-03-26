@@ -13,10 +13,16 @@ class MagicLinkMail extends Mailable
     use Queueable, SerializesModels;
 
     public string $magicUrl;
+    public string $buttonText;
 
-    public function __construct(string $token)
+    /**
+     * @param string $url        URL completa de destino del botón del email.
+     * @param string $buttonText Texto del botón (por defecto neutro).
+     */
+    public function __construct(string $url, string $buttonText = 'Acceder →')
     {
-        $this->magicUrl = route('auth.magic.verify', ['token' => $token]);
+        $this->magicUrl   = $url;
+        $this->buttonText = $buttonText;
     }
 
     public function envelope(): Envelope

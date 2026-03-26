@@ -15,8 +15,8 @@
                     <img src="{{ asset('storage/' . $logo) }}" alt="" class="h-8">
                 @endif
                 <div>
-                    <h1 class="text-lg font-bold text-gray-900">Mi Portal</h1>
-                    <p class="text-xs text-gray-400">{{ $client->legal_name }}</p>
+                    <h1 class="text-lg font-bold text-gray-900">{{ $client->name }}</h1>
+                    <p class="text-xs text-gray-400">Portal de cliente</p>
                 </div>
             </div>
             <div class="flex items-center gap-4">

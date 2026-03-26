@@ -25,9 +25,9 @@
         </div>
         <div class="body">
             <p>Hola,</p>
-            <p>Haz clic en el botón de abajo para entrar al panel. Este enlace es válido durante <strong>15 minutos</strong> y solo puede usarse una vez.</p>
+            <p>Haz clic en el botón de abajo para acceder. Si es un enlace de administrador, es válido durante <strong>15 minutos</strong> y solo puede usarse una vez.</p>
             <p style="text-align:center; margin: 32px 0;">
-                <a href="{{ $magicUrl }}" class="btn">Entrar al panel →</a>
+                <a href="{{ $magicUrl }}" class="btn">{{ $buttonText }}</a>
             </p>
             <p>Si no solicitaste este enlace, puedes ignorar este mensaje.</p>
             <p class="hint">
