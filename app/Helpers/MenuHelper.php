@@ -18,27 +18,27 @@ class MenuHelper
     public static function getMainNavItems($user = null): array
     {
         $items = [
-            ['icon' => 'dashboard', 'name' => 'Dashboard', 'path' => '/admin'],
-            ['icon' => 'leads',     'name' => 'Leads',      'path' => '/admin/leads'],
-            ['icon' => 'quotes',    'name' => 'Cotizaciones','path' => '/admin/quotes'],
-            ['icon' => 'clients',   'name' => 'Clientes',   'path' => '/admin/clients'],
-            ['icon' => 'invoices',  'name' => 'Facturas',   'path' => '/admin/invoices'],
-            ['icon' => 'tickets',   'name' => 'Tickets',    'path' => '/admin/tickets'],
-            ['icon' => 'tasks',     'name' => 'Tareas',     'path' => '/admin/tasks'],
+            ['icon' => 'dashboard', 'name' => 'Dashboard', 'path' => '/panel'],
+            ['icon' => 'leads',     'name' => 'Leads',      'path' => '/panel/leads'],
+            ['icon' => 'quotes',    'name' => 'Cotizaciones','path' => '/panel/quotes'],
+            ['icon' => 'clients',   'name' => 'Clientes',   'path' => '/panel/clients'],
+            ['icon' => 'invoices',  'name' => 'Facturas',   'path' => '/panel/invoices'],
+            ['icon' => 'tickets',   'name' => 'Tickets',    'path' => '/panel/tickets'],
+            ['icon' => 'tasks',     'name' => 'Tareas',     'path' => '/panel/tasks'],
         ];
 
         // Solo admin y accounting ven recurrentes
         if ($user?->hasRole('admin', 'accounting')) {
-            $items[] = ['icon' => 'recurring', 'name' => 'Recurrentes', 'path' => '/admin/recurring-invoices'];
+            $items[] = ['icon' => 'recurring', 'name' => 'Recurrentes', 'path' => '/panel/recurring-invoices'];
         }
 
         // Solo admin ve categorías, servicios y control de agente
         if ($user?->isAdmin()) {
             array_splice($items, 2, 0, [
-                ['icon' => 'categories', 'name' => 'Categorías', 'path' => '/admin/categories'],
-                ['icon' => 'services',   'name' => 'Servicios',  'path' => '/admin/services'],
+                ['icon' => 'categories', 'name' => 'Categorías', 'path' => '/panel/categories'],
+                ['icon' => 'services',   'name' => 'Servicios',  'path' => '/panel/services'],
             ]);
-            $items[] = ['icon' => 'agent', 'name' => 'Control Agente', 'path' => '/admin/agent'];
+            $items[] = ['icon' => 'agent', 'name' => 'Control Agente', 'path' => '/panel/agent'];
         }
 
         return $items;
@@ -49,14 +49,14 @@ class MenuHelper
         $items = [];
 
         if ($user?->hasRole('admin', 'accounting')) {
-            $items[] = ['icon' => 'reports', 'name' => 'Reportes', 'path' => '/admin/reports'];
+            $items[] = ['icon' => 'reports', 'name' => 'Reportes', 'path' => '/panel/reports'];
         }
 
         if ($user?->isAdmin()) {
-            $items[] = ['icon' => 'activity', 'name' => 'Log Actividad',   'path' => '/admin/activity-log'];
-            $items[] = ['icon' => 'users',    'name' => 'Usuarios',        'path' => '/admin/users'];
-            $items[] = ['icon' => 'coupons',  'name' => 'Cupones',         'path' => '/admin/discount-codes'];
-            $items[] = ['icon' => 'tags',     'name' => 'Etiquetas',       'path' => '/admin/tags'];
+            $items[] = ['icon' => 'activity', 'name' => 'Log Actividad',   'path' => '/panel/activity-log'];
+            $items[] = ['icon' => 'users',    'name' => 'Usuarios',        'path' => '/panel/users'];
+            $items[] = ['icon' => 'coupons',  'name' => 'Cupones',         'path' => '/panel/discount-codes'];
+            $items[] = ['icon' => 'tags',     'name' => 'Etiquetas',       'path' => '/panel/tags'];
         }
 
         return $items;
@@ -65,9 +65,9 @@ class MenuHelper
     public static function getConfigItems(): array
     {
         return [
-            ['icon' => 'settings', 'name' => 'Configuración', 'path' => '/admin/settings'],
-            ['icon' => 'domains',  'name' => 'Dominios',      'path' => '/admin/domains'],
-            ['icon' => 'backups',  'name' => 'Backups',       'path' => '/admin/backups'],
+            ['icon' => 'settings', 'name' => 'Configuración', 'path' => '/panel/settings'],
+            ['icon' => 'domains',  'name' => 'Dominios',      'path' => '/panel/domains'],
+            ['icon' => 'backups',  'name' => 'Backups',       'path' => '/panel/backups'],
         ];
     }
 

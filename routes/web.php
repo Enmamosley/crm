@@ -28,13 +28,18 @@ use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\ClientPortalController;
 use App\Http\Controllers\DirectCheckoutController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\Auth\MagicLinkController;
 
-Route::get('/', fn() => redirect('/login'));
+Route::get('/', fn() => redirect('/buy'));
 
 // Auth
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+// Magic Link (acceso sin contraseña)
+Route::post('/auth/magic', [MagicLinkController::class, 'send'])->name('auth.magic.send')->middleware('throttle:5,1');
+Route::get('/auth/magic/{token}', [MagicLinkController::class, 'verify'])->name('auth.magic.verify')->where('token', '[A-Za-z0-9]{64}');
 
 // Compra directa (público)
 Route::prefix('buy')->name('buy.')->group(function () {
@@ -60,7 +65,7 @@ Route::prefix('buy')->name('buy.')->group(function () {
 });
 
 // Admin Panel
-Route::middleware('auth')->prefix('admin')->name('admin.')->group(function () {
+Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
     // Leads (admin + sales)

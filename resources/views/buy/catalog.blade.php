@@ -4,7 +4,51 @@
     <title>Servicios — {{ $companyName }}</title>
     @include('buy._head')
 </head>
-<body class="bg-gradient-to-br from-gray-50 via-white to-brand-50/30 min-h-screen">
+<body class="bg-gradient-to-br from-gray-50 via-white to-brand-50/30 min-h-screen" x-data="{ loginOpen: false, loginEmail: '', loginSent: false, loginLoading: false }">
+
+    {{-- Modal magic link --}}
+    <div x-show="loginOpen" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+         @keydown.escape.window="loginOpen = false">
+        <div class="bg-white rounded-2xl shadow-xl p-8 w-full max-w-sm mx-4 relative" @click.stop>
+            <div x-show="!loginSent">
+                <h2 class="text-xl font-bold text-gray-900 mb-1">Iniciar sesión</h2>
+                <p class="text-sm text-gray-500 mb-5">Ingresa tu correo y te enviaremos un enlace de acceso.</p>
+                <form @submit.prevent="
+                    loginLoading = true;
+                    fetch('{{ route('auth.magic.send') }}', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                        body: JSON.stringify({ email: loginEmail })
+                    })
+                    .then(r => { loginSent = true; loginLoading = false; })
+                    .catch(() => { loginLoading = false; })
+                ">
+                    <input type="email" x-model="loginEmail" required autofocus
+                        placeholder="tucorreo@empresa.com"
+                        class="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent mb-4 outline-none">
+                    <button type="submit"
+                        :disabled="loginLoading || !loginEmail.trim()"
+                        class="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold text-sm hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                        <svg x-show="loginLoading" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                        </svg>
+                        <span x-text="loginLoading ? 'Enviando...' : 'Enviar enlace'"></span>
+                    </button>
+                </form>
+            </div>
+            <div x-show="loginSent" class="text-center py-4">
+                <div class="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-envelope-open-text text-green-600 text-2xl"></i>
+                </div>
+                <h3 class="font-bold text-gray-900 mb-1">¡Revisa tu correo!</h3>
+                <p class="text-sm text-gray-500">Te enviamos un enlace de acceso a <strong x-text="loginEmail"></strong>. Es válido por 15 minutos.</p>
+            </div>
+            <button @click="loginOpen = false; loginSent = false; loginEmail = ''"
+                class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+        </div>
+    </div>
 
     <header class="bg-white/80 backdrop-blur-md shadow-sm border-b sticky top-0 z-10">
         <div class="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between">
@@ -18,12 +62,18 @@
                     <p class="text-sm text-gray-500">Elige el servicio que necesitas</p>
                 </div>
             </div>
-            <a href="{{ route('buy.cart') }}" class="relative text-gray-600 hover:text-brand-600 transition">
-                <i class="fas fa-shopping-cart text-xl"></i>
-                @if($cartCount > 0)
-                    <span class="absolute -top-2 -right-2 bg-brand-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">{{ $cartCount }}</span>
-                @endif
-            </a>
+            <div class="flex items-center gap-4">
+                <button @click="loginOpen = true"
+                    class="text-sm text-gray-600 hover:text-indigo-600 font-medium transition flex items-center gap-1.5">
+                    <i class="fas fa-lock text-xs"></i> Iniciar sesión
+                </button>
+                <a href="{{ route('buy.cart') }}" class="relative text-gray-600 hover:text-brand-600 transition">
+                    <i class="fas fa-shopping-cart text-xl"></i>
+                    @if($cartCount > 0)
+                        <span class="absolute -top-2 -right-2 bg-brand-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">{{ $cartCount }}</span>
+                    @endif
+                </a>
+            </div>
         </div>
     </header>
 

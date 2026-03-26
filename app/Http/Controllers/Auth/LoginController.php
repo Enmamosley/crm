@@ -33,7 +33,7 @@ class LoginController extends Controller
                 'ip_address'   => $request->ip(),
             ]);
 
-            return redirect()->intended('/admin');
+            return redirect()->intended('/panel');
         }
 
         ActivityLog::create([
