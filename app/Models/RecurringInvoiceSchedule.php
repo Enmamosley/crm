@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RecurringInvoiceSchedule extends Model
 {
@@ -35,6 +36,11 @@ class RecurringInvoiceSchedule extends Model
     public function quote(): BelongsTo
     {
         return $this->belongsTo(Quote::class);
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(RecurringInvoiceItem::class, 'recurring_invoice_schedule_id');
     }
 
     public function isDue(): bool

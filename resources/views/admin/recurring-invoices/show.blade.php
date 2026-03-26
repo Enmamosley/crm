@@ -23,7 +23,7 @@
         <div class="grid grid-cols-2 gap-4 text-sm">
             <div>
                 <span class="text-gray-500">Cliente</span>
-                <p class="font-medium">{{ $recurringInvoice->client->legal_name }}</p>
+                <p class="font-medium">{{ $recurringInvoice->client->name ?? $recurringInvoice->client->legal_name }}</p>
                 <p class="text-gray-500">{{ $recurringInvoice->client->tax_id }}</p>
             </div>
             <div>
@@ -99,6 +99,36 @@
             </div>
         </div>
     </div>
+
+    {{-- Servicios / Ítems --}}
+    @if($recurringInvoice->items->isNotEmpty())
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Servicios a facturar</h3>
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b text-gray-500 text-left">
+                    <th class="pb-2 font-medium">Descripción</th>
+                    <th class="pb-2 font-medium text-right w-20">Cant.</th>
+                    <th class="pb-2 font-medium text-right w-28">P. Unit.</th>
+                    <th class="pb-2 font-medium text-right w-28">Total</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                @foreach($recurringInvoice->items as $item)
+                <tr>
+                    <td class="py-2">
+                        {{ $item->description }}
+                        <span class="text-xs text-gray-400 ml-1">{{ $item->sat_product_key }}</span>
+                    </td>
+                    <td class="py-2 text-right">{{ $item->quantity }}</td>
+                    <td class="py-2 text-right">${{ number_format($item->unit_price, 2) }}</td>
+                    <td class="py-2 text-right font-medium">${{ number_format($item->quantity * $item->unit_price, 2) }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+    @endif
 
     @if($recurringInvoice->notes)
     <div class="bg-white rounded-lg shadow p-6 mb-6">

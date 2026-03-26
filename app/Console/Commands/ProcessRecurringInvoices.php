@@ -16,7 +16,7 @@ class ProcessRecurringInvoices extends Command
 
     public function handle(): int
     {
-        $schedules = RecurringInvoiceSchedule::with(['client', 'quote'])
+        $schedules = RecurringInvoiceSchedule::with(['client', 'quote', 'items'])
             ->where('active', true)
             ->where('next_issue_date', '<=', today())
             ->where(fn($q) => $q->whereNull('end_date')->orWhere('end_date', '>=', today()))
@@ -44,6 +44,21 @@ class ProcessRecurringInvoices extends Command
                     'notes'              => "Generada automáticamente desde programación recurrente #{$schedule->id}",
                     'status'             => 'draft',
                 ]);
+
+                // Copy line items from the schedule
+                foreach ($schedule->items as $item) {
+                    $order->items()->create([
+                        'description'     => $item->description,
+                        'sat_product_key' => $item->sat_product_key,
+                        'sat_unit_key'    => $item->sat_unit_key,
+                        'sat_unit_name'   => $item->sat_unit_name,
+                        'tax_object'      => $item->tax_object,
+                        'iva_exempt'      => $item->iva_exempt,
+                        'quantity'        => $item->quantity,
+                        'unit_price'      => $item->unit_price,
+                        'total'           => $item->total,
+                    ]);
+                }
 
                 if ($schedule->auto_stamp && \App\Models\Setting::get('facturapi_api_key')) {
                     try {
