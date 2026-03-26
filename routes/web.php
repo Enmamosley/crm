@@ -135,6 +135,7 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
     // Facturas (admin + accounting)
     Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show']);
     Route::patch('invoices/{invoice}/stamp', [InvoiceController::class, 'stamp'])->name('invoices.stamp');
+    Route::patch('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
     Route::delete('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
     Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
     Route::get('invoices/{invoice}/xml', [InvoiceController::class, 'downloadXml'])->name('invoices.xml');

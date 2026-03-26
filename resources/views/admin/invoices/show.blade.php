@@ -49,7 +49,14 @@
 @if($invoice->isCancellable())
     <button onclick="document.getElementById('cancelModal').classList.remove('hidden')"
         class="bg-gray-200 text-red-600 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 text-sm">
-        <i class="fas fa-ban mr-1"></i> Cancelar
+        <i class="fas fa-ban mr-1"></i> Cancelar ante SAT
+    </button>
+@endif
+
+@if($invoice->isVoidable())
+    <button onclick="document.getElementById('voidModal').classList.remove('hidden')"
+        class="bg-gray-100 text-red-500 border border-red-100 px-4 py-2 rounded-lg hover:bg-red-50 text-sm">
+        <i class="fas fa-times-circle mr-1"></i> Anular Orden
     </button>
 @endif
 @endsection
@@ -420,10 +427,10 @@
     </div>
 </div>
 
-{{-- Modal cancelar --}}
+{{-- Modal cancelar (SAT) --}}
 <div id="cancelModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-semibold mb-4">Cancelar Factura</h3>
+        <h3 class="text-lg font-semibold mb-4">Cancelar Factura ante el SAT</h3>
         <p class="text-sm text-gray-600 mb-4">Selecciona el motivo de cancelación (requerido por el SAT):</p>
         <form action="{{ route('admin.invoices.cancel', $invoice) }}" method="POST">
             @csrf @method('DELETE')
@@ -440,6 +447,26 @@
                 <button type="button" onclick="document.getElementById('cancelModal').classList.add('hidden')"
                     class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 text-sm">
                     Cerrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Modal anular orden (sin SAT) --}}
+<div id="voidModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-semibold mb-2">Anular Orden</h3>
+        <p class="text-sm text-gray-600 mb-6">Esta orden aún no ha sido timbrada, por lo que puede anularse sin trámite ante el SAT. Esta acción no se puede deshacer.</p>
+        <form action="{{ route('admin.invoices.void', $invoice) }}" method="POST">
+            @csrf @method('PATCH')
+            <div class="flex gap-3">
+                <button type="submit" class="flex-1 bg-red-500 text-white py-2 rounded-lg hover:bg-red-600 text-sm">
+                    Anular Orden
+                </button>
+                <button type="button" onclick="document.getElementById('voidModal').classList.add('hidden')"
+                    class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 text-sm">
+                    Cancelar
                 </button>
             </div>
         </form>

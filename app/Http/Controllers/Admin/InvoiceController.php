@@ -291,6 +291,22 @@ class InvoiceController extends Controller
     }
 
     /**
+     * Anular orden no timbrada (draft/sent) — sin pasar por el SAT.
+     */
+    public function void(Request $request, ClientInvoice $invoice)
+    {
+        if (!$invoice->isVoidable()) {
+            return back()->with('error', 'Solo se pueden anular órdenes que aún no han sido timbradas. Si ya hay un CFDI emitido, usa "Cancelar ante SAT".');
+        }
+
+        $invoice->update(['status' => 'cancelled', 'cancelled_at' => now()]);
+        ActivityLog::log('invoice_voided', $invoice, "Orden {$invoice->folio()} anulada manualmente");
+
+        return redirect()->route('admin.invoices.show', $invoice)
+            ->with('success', 'Orden anulada correctamente.');
+    }
+
+    /**
      * Cancelar factura timbrada.
      */
     public function cancel(Request $request, ClientInvoice $invoice)

@@ -67,6 +67,11 @@ class ClientInvoice extends Model
         return in_array($this->status, ['valid', 'pending']);
     }
 
+    public function isVoidable(): bool
+    {
+        return in_array($this->status, ['draft', 'sent']);
+    }
+
     public function folio(): string
     {
         return $this->series . ($this->folio_number ?? '');
