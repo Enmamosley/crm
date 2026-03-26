@@ -76,6 +76,7 @@ class DirectCheckoutController extends Controller
 
         try {
             $result = $service->checkAvailability($domain);
+            unset($result['price']);
             return response()->json($result);
         } catch (\Throwable $e) {
             return response()->json(['error' => 'No se pudo verificar el dominio.'], 500);

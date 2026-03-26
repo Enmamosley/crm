@@ -12,7 +12,6 @@
         domainChecked: false,
         domainAvailable: null,
         domainChecking: false,
-        domainPrice: '',
         domainError: '',
         async checkDomain() {
             const d = this.domainValue.trim();
@@ -21,7 +20,7 @@
             this.domainChecked = false;
             this.domainAvailable = null;
             this.domainError = '';
-            this.domainPrice = '';
+
             try {
                 const res = await fetch('{{ route('buy.domain.check') }}?domain=' + encodeURIComponent(d), {
                     headers: { 'Accept': 'application/json' }
@@ -35,7 +34,6 @@
                 } else {
                     this.domainAvailable = json.available;
                     this.domainChecked = true;
-                    if (json.price) this.domainPrice = 'USD ' + json.price;
                 }
             } catch (e) {
                 this.domainError = 'Error al verificar. Intenta de nuevo.';
@@ -97,7 +95,6 @@
             <div>
                 <span class="font-medium text-green-700" x-text="domainValue"></span>
                 <span class="text-green-600"> está disponible</span>
-                <span x-show="domainPrice" class="text-green-500 ml-2" x-text="domainPrice ? '— ' + domainPrice : ''"></span>
                 <p class="text-xs text-green-600 mt-0.5">Se registrará automáticamente al completar tu compra.</p>
             </div>
         </div>
