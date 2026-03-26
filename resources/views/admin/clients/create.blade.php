@@ -165,6 +165,35 @@
         </div>
     </div>
 
+    {{-- Dominio --}}
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-globe text-teal-500 mr-1"></i> Dominio</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm text-gray-600 mb-1">Dominio <span class="text-gray-400">(opcional)</span></label>
+                <input type="text" name="domain" value="{{ old('domain') }}"
+                    placeholder="ej: miempresa.com"
+                    class="w-full border rounded-lg px-3 py-2 text-sm font-mono">
+            </div>
+            <div>
+                <label class="block text-sm text-gray-600 mb-1">Tipo de dominio</label>
+                <div class="flex gap-4 mt-2">
+                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="radio" name="domain_type" value="cosmotown"
+                            {{ old('domain_type') === 'cosmotown' ? 'checked' : '' }}>
+                        <span>Cosmotown (reseller)</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm cursor-pointer">
+                        <input type="radio" name="domain_type" value="own"
+                            {{ old('domain_type', 'own') === 'own' ? 'checked' : '' }}>
+                        <span>Dominio propio</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+        <p class="text-xs text-gray-400 mt-2">También puedes asignar un dominio desde <a href="{{ route('admin.domains.index') }}" class="text-indigo-500 hover:underline">Gestión de Dominios →</a></p>
+    </div>
+
     {{-- Integración 20i --}}
     <div class="bg-white rounded-lg shadow p-6">
         <h3 class="text-sm font-semibold text-gray-700 mb-3"><i class="fas fa-server text-blue-500 mr-1"></i> Integración 20i</h3>

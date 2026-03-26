@@ -118,6 +118,8 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
     Route::post('domains/{domain}/dns', [DomainController::class, 'saveDns'])->name('domains.dns.save')->where('domain', '[a-zA-Z0-9\.\-]+');
     Route::post('domains/{domain}/nameservers', [DomainController::class, 'saveNameservers'])->name('domains.nameservers.save')->where('domain', '[a-zA-Z0-9\.\-]+');
     Route::post('domains/{domain}/renew', [DomainController::class, 'renew'])->name('domains.renew')->where('domain', '[a-zA-Z0-9\.\-]+');
+    Route::post('domains/{domain}/assign-client', [DomainController::class, 'assignClient'])->name('domains.assign-client')->where('domain', '[a-zA-Z0-9\.\-]+');
+    Route::delete('domains/{domain}/assign-client', [DomainController::class, 'unassignClient'])->name('domains.unassign-client')->where('domain', '[a-zA-Z0-9\.\-]+');
     Route::post('domains/status', [DomainController::class, 'status'])->name('domains.status');
 
     // Correos 20i

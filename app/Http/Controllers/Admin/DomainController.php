@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Client;
 use App\Models\Setting;
 use App\Services\CosmotownService;
 use Illuminate\Http\Request;
@@ -107,7 +108,44 @@ class DomainController extends Controller
         $environment = Setting::get('cosmotown_base_url', 'https://sandbox.cosmotown.com');
         $isSandbox   = str_contains($environment, 'sandbox');
 
-        return view('admin.domains.show', compact('domain', 'domainInfo', 'isSandbox'));
+        $clients        = Client::orderBy('name')->get(['id', 'name', 'email', 'domain']);
+        $assignedClient = Client::where('domain', $domain)->first();
+
+        return view('admin.domains.show', compact('domain', 'domainInfo', 'isSandbox', 'clients', 'assignedClient'));
+    }
+
+    /**
+     * Asignar un dominio de Cosmotown a un cliente.
+     */
+    public function assignClient(Request $request, string $domain)
+    {
+        $validated = $request->validate([
+            'client_id' => ['required', 'exists:clients,id'],
+        ]);
+
+        // Quitar el dominio de cualquier cliente que lo tuviera antes
+        Client::where('domain', $domain)->update(['domain' => null, 'domain_type' => null]);
+
+        $client              = Client::findOrFail($validated['client_id']);
+        $client->domain      = $domain;
+        $client->domain_type = 'cosmotown';
+        $client->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => "Dominio {$domain} asignado a {$client->name}.",
+            'client'  => ['id' => $client->id, 'name' => $client->name],
+        ]);
+    }
+
+    /**
+     * Desasignar el dominio del cliente actual.
+     */
+    public function unassignClient(string $domain)
+    {
+        Client::where('domain', $domain)->update(['domain' => null, 'domain_type' => null]);
+
+        return response()->json(['success' => true, 'message' => 'Dominio desasignado.']);
     }
 
     /**

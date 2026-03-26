@@ -210,6 +210,47 @@
         </div>
     </div>
 
+    {{-- Asignar a cliente --}}
+    <div class="bg-white rounded-lg shadow">
+        <div class="px-6 py-4 border-b">
+            <h3 class="font-semibold text-gray-800"><i class="fas fa-user-tag text-indigo-500 mr-1.5"></i> Cliente asignado</h3>
+        </div>
+        <div class="p-6" x-data="assignClient()">
+            {{-- Estado actual --}}
+            <div x-show="assigned" class="flex items-center gap-3 mb-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                <i class="fas fa-user-check text-indigo-500"></i>
+                <span class="text-sm font-medium text-indigo-800" x-text="assigned?.name"></span>
+                <a :href="`/panel/clients/${assigned?.id}`" class="text-xs text-indigo-600 hover:underline" target="_blank">Ver cliente →</a>
+                <button @click="unassign()" :disabled="saving" class="ml-auto text-xs text-red-500 hover:text-red-700">
+                    <i class="fas fa-times mr-1"></i> Desasignar
+                </button>
+            </div>
+            <div x-show="!assigned" class="mb-4 text-sm text-gray-400 italic">
+                Este dominio no está asignado a ningún cliente.
+            </div>
+
+            {{-- Selector --}}
+            <div class="flex gap-3 items-end flex-wrap">
+                <div class="flex-1 min-w-48">
+                    <label class="block text-xs text-gray-500 mb-1">Asignar a cliente</label>
+                    <select x-model="selectedClientId" class="w-full border rounded-lg px-3 py-2 text-sm">
+                        <option value="">— Selecciona un cliente —</option>
+                        @foreach($clients as $c)
+                            <option value="{{ $c->id }}">{{ $c->name }}@if($c->email) — {{ $c->email }}@endif</option>
+                        @endforeach
+                    </select>
+                </div>
+                <button @click="assign()" :disabled="saving || !selectedClientId"
+                    class="bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50">
+                    <i class="fas mr-1" :class="saving ? 'fa-spinner fa-spin' : 'fa-link'"></i>
+                    <span x-text="saving ? 'Guardando...' : 'Asignar'"></span>
+                </button>
+            </div>
+
+            <div x-show="message" class="mt-3 text-sm" :class="success ? 'text-green-600' : 'text-red-600'" x-text="message"></div>
+        </div>
+    </div>
+
     {{-- Renovar --}}
     <div class="bg-white rounded-lg shadow">
         <div class="px-6 py-4 border-b">
@@ -238,6 +279,62 @@
 </div>
 
 <script>
+function assignClient() {
+    return {
+        assigned: @json($assignedClient ? ['id' => $assignedClient->id, 'name' => $assignedClient->name] : null),
+        selectedClientId: '{{ $assignedClient?->id ?? '' }}',
+        saving: false,
+        message: '',
+        success: false,
+
+        async assign() {
+            if (!this.selectedClientId) return;
+            this.saving = true;
+            this.message = '';
+            try {
+                const resp = await fetch('{{ route("admin.domains.assign-client", $domain) }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body: JSON.stringify({ client_id: this.selectedClientId }),
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    this.assigned = data.client;
+                    this.message = data.message;
+                    this.success = true;
+                } else {
+                    this.message = data.error ?? data.message ?? 'Error al asignar.';
+                    this.success = false;
+                }
+            } catch (e) { this.message = 'Error: ' + e.message; this.success = false; }
+            finally { this.saving = false; }
+        },
+
+        async unassign() {
+            if (!confirm('¿Desasignar este dominio del cliente?')) return;
+            this.saving = true;
+            this.message = '';
+            try {
+                const resp = await fetch('{{ route("admin.domains.unassign-client", $domain) }}', {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    this.assigned = null;
+                    this.selectedClientId = '';
+                    this.message = data.message;
+                    this.success = true;
+                } else {
+                    this.message = data.error ?? 'Error al desasignar.';
+                    this.success = false;
+                }
+            } catch (e) { this.message = 'Error: ' + e.message; this.success = false; }
+            finally { this.saving = false; }
+        },
+    };
+}
+
 function domainDetail() {
     return {
         // Nameservers
