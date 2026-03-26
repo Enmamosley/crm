@@ -215,7 +215,6 @@
             <li><i class="fas fa-check text-gray-400 mr-1.5 w-3"></i> Puedes verificar la disponibilidad de cualquier dominio usando la API de Cosmotown.</li>
             <li><i class="fas fa-check text-gray-400 mr-1.5 w-3"></i> Si el dominio está disponible, puedes registrarlo directamente desde aquí (requiere saldo en tu cuenta Cosmotown).</li>
             <li><i class="fas fa-check text-gray-400 mr-1.5 w-3"></i> Una vez registrado, haz clic en <strong>Info</strong> en la tabla de dominios para entrar al detalle y asignarlo a un cliente.</li>
-            <li class="text-yellow-600"><i class="fas fa-exclamation-triangle mr-1.5 w-3"></i> Los archivos locales del servidor se eliminan al hacer un rebuild del paquete de hosting en 20i.</li>
             <li class="text-yellow-600"><i class="fas fa-flask mr-1.5 w-3"></i> En sandbox los registros no son reales ni tienen costo.</li>
         </ul>
     </div>
