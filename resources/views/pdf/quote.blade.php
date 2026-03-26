@@ -443,10 +443,10 @@
                     <div class="client-business">{{ $quote->lead->business }}</div>
                 @endif
                 @if($quote->lead->email)
-                    <div class="client-detail">✉ {{ $quote->lead->email }}</div>
+                    <div class="client-detail">Email: {{ $quote->lead->email }}</div>
                 @endif
                 @if($quote->lead->phone)
-                    <div class="client-detail">✆ {{ $quote->lead->phone }}</div>
+                    <div class="client-detail">Tel: {{ $quote->lead->phone }}</div>
                 @endif
             </div>
             <div class="info-box-right">
