@@ -51,7 +51,7 @@
     </div>
 
     <header class="bg-white/80 backdrop-blur-md shadow-sm border-b sticky top-0 z-10">
-        <div class="max-w-5xl mx-auto px-6 py-5 flex items-center justify-between">
+        <div class="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between">
             <div class="flex items-center gap-4">
                 @php $logo = \App\Models\Setting::get('company_logo'); @endphp
                 @if($logo)
@@ -77,44 +77,44 @@
         </div>
     </header>
 
-    <main class="max-w-5xl mx-auto px-6 py-10">
+    <main class="max-w-5xl mx-auto px-6 py-6">
         @forelse($services as $category => $items)
-            <div class="mb-12 animate-fade-in">
-                <div class="flex items-center gap-3 mb-6">
+            <div class="mb-7 animate-fade-in">
+                <div class="flex items-center gap-3 mb-4">
                     <div class="w-8 h-8 bg-brand-100 rounded-lg flex items-center justify-center">
                         <i class="fas fa-layer-group text-brand-600 text-sm"></i>
                     </div>
                     <h2 class="text-xl font-bold text-gray-900">{{ $category }}</h2>
                     <div class="flex-1 h-px bg-gray-200"></div>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     @foreach($items as $index => $service)
-                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between card-hover animate-slide-up"
+                        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex flex-col justify-between card-hover animate-slide-up"
                              style="animation-delay: {{ $index * 100 }}ms">
                             <div>
-                                <div class="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center mb-4">
+                                <div class="w-9 h-9 bg-brand-50 rounded-xl flex items-center justify-center mb-3">
                                     <i class="fas fa-cube text-brand-500"></i>
                                 </div>
-                                <h3 class="text-lg font-bold text-gray-900 mb-1">{{ $service->name }}</h3>
+                                <h3 class="text-base font-bold text-gray-900 mb-1">{{ $service->name }}</h3>
                                 @if($service->description)
-                                    <p class="text-sm text-gray-500 leading-relaxed mb-4">{{ $service->description }}</p>
+                                    <p class="text-sm text-gray-500 leading-relaxed mb-3">{{ $service->description }}</p>
                                 @else
-                                    <div class="mb-4"></div>
+                                    <div class="mb-3"></div>
                                 @endif
                             </div>
                             <div>
-                                <div class="border-t pt-4 mb-4">
+                                <div class="border-t pt-3 mb-3">
                                     <div class="flex items-end gap-1">
-                                        <span class="text-3xl font-extrabold text-gray-900">${{ number_format($service->price, 0) }}</span>
-                                        <span class="text-sm text-gray-400 mb-1">.{{ substr(number_format($service->price, 2), -2) }} + IVA</span>
+                                        <span class="text-2xl font-extrabold text-gray-900">${{ number_format($service->price, 0) }}</span>
+                                        <span class="text-sm text-gray-400 mb-0.5">.{{ substr(number_format($service->price, 2), -2) }} + IVA</span>
                                     </div>
-                                    <p class="text-xs text-gray-400 mt-1">Total: ${{ number_format($service->priceWithIva(), 2) }} MXN</p>
+                                    <p class="text-xs text-gray-400 mt-0.5">Total: ${{ number_format($service->priceWithIva(), 2) }} MXN</p>
                                 </div>
                                 <a href="{{ $service->slug ? route('buy.show', $service->slug) : '#' }}"
-                                   class="btn-primary block w-full text-center px-4 py-3 rounded-xl text-sm">
+                                   class="btn-primary block w-full text-center px-4 py-2.5 rounded-xl text-sm">
                                     Comprar ahora <i class="fas fa-arrow-right ml-1"></i>
                                 </a>
-                                <form action="{{ route('buy.cart.add') }}" method="POST" class="mt-2">
+                                <form action="{{ route('buy.cart.add') }}" method="POST" class="mt-1.5">
                                     @csrf
                                     <input type="hidden" name="service_id" value="{{ $service->id }}">
                                     <button type="submit" class="w-full text-center px-4 py-2.5 rounded-xl text-sm border border-brand-200 text-brand-600 hover:bg-brand-50 transition font-medium">
@@ -137,7 +137,7 @@
         @endforelse
     </main>
 
-    <footer class="text-center py-8 text-xs text-gray-400">
+    <footer class="text-center py-4 text-xs text-gray-400">
         <p>&copy; {{ date('Y') }} {{ $companyName }} · Todos los precios en MXN</p>
     </footer>
 </body>
