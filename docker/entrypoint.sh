@@ -31,6 +31,8 @@ if [ "$1" = "php-fpm" ]; then
     mkdir -p /var/www/html/storage/framework/sessions
     mkdir -p /var/www/html/storage/framework/views
     mkdir -p /var/www/html/storage/logs
+    mkdir -p /var/www/html/storage/app/public
+    mkdir -p /var/www/html/storage/app/clients
     mkdir -p "$(dirname "$KEY_FILE")"
     chown -R www-data:www-data /var/www/html/storage
 

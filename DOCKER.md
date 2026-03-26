@@ -147,6 +147,9 @@ volumes:
 - ❌ Caché de config/routes/views (se regenera al arrancar)
 - ❌ Código de la app (se reemplaza con la nueva imagen)
 
+> ⚠️ **NUNCA usar `docker-compose down -v`** — el flag `-v` destruye los volúmenes y con ellos todos los archivos subidos por usuarios y la base de datos.
+> Para deploys normales usar siempre: `docker-compose up --build -d`
+
 ---
 
 ## Redes
