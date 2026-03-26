@@ -33,7 +33,7 @@ document.addEventListener('alpine:init', () => {
                 <option value="">Selecciona un cliente...</option>
                 @foreach($clients as $c)
                     <option value="{{ $c->id }}" {{ old('client_id', $client?->id) == $c->id ? 'selected' : '' }}>
-                        {{ $c->legal_name }} — {{ $c->tax_id }}
+                        {{ $c->name ?? $c->legal_name }} — {{ $c->tax_id }}
                     </option>
                 @endforeach
             </select>

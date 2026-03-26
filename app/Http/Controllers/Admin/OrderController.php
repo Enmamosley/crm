@@ -33,7 +33,7 @@ class OrderController extends Controller
     {
         $client  = $request->filled('client_id') ? Client::find($request->client_id) : null;
         $quote   = $request->filled('quote_id')  ? Quote::with('items')->find($request->quote_id) : null;
-        $clients = Client::orderBy('legal_name')->get(['id', 'name', 'legal_name', 'tax_id']);
+        $clients = Client::orderBy('name')->get(['id', 'name', 'legal_name', 'tax_id']);
 
         $paymentForms = $this->paymentForms();
         $services     = Service::active()->orderBy('name')->get(['id', 'name', 'price']);

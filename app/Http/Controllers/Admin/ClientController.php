@@ -260,6 +260,8 @@ class ClientController extends Controller
 
         ActivityLog::log('domain_registered', $client, "Dominio {$client->domain} registrado manualmente en Cosmotown");
 
+        $client->update(['cosmotown_registered' => true]);
+
         return response()->json([
             'success' => true,
             'message' => "Dominio {$client->domain} registrado correctamente en Cosmotown.",

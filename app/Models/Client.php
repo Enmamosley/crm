@@ -18,12 +18,12 @@ class Client extends Model
         'address_zip', 'address_street', 'address_exterior', 'address_interior',
         'address_neighborhood', 'address_city', 'address_municipality',
         'address_state', 'address_country',
-        'facturapi_customer_id', 'twentyi_package_id', 'domain', 'domain_type', 'portal_token', 'portal_active', 'notes',
+        'facturapi_customer_id', 'twentyi_package_id', 'domain', 'domain_type', 'cosmotown_registered', 'portal_token', 'portal_active', 'notes',
     ];
 
     protected function casts(): array
     {
-        return ['portal_active' => 'boolean'];
+        return ['portal_active' => 'boolean', 'cosmotown_registered' => 'boolean'];
     }
 
     protected static function boot(): void
