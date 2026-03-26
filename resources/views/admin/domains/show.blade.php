@@ -435,4 +435,13 @@ function domainDetail() {
     };
 }
 </script>
+
+{{-- Raw API response: solo visible en modo debug para identificar campos --}}
+@if(config('app.debug'))
+<details class="mt-4">
+    <summary class="text-xs text-gray-400 cursor-pointer hover:text-gray-600">Ver respuesta cruda de API (debug)</summary>
+    <pre class="mt-2 text-xs bg-gray-900 text-green-400 p-4 rounded overflow-auto max-h-96">{{ json_encode($domainInfo['_raw'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) }}</pre>
+</details>
+@endif
+
 @endsection
