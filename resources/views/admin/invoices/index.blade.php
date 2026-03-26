@@ -30,8 +30,8 @@
                     $c = $colors[$invoice->status] ?? 'gray';
                 @endphp
                 <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 font-mono font-medium text-sm">{{ $invoice->folio() ?: '-' }}</td>
-                    <td class="px-6 py-4 text-sm">{{ $invoice->client?->legal_name }}</td>
+                    <td class="px-6 py-4 font-mono font-medium text-sm">{{ $invoice->folio_number ? $invoice->folio() : ($invoice->series . ' — s/n') }}</td>
+                    <td class="px-6 py-4 text-sm">{{ $invoice->client?->name ?? $invoice->client?->legal_name }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $invoice->quote?->quote_number ?? '-' }}</td>
                     <td class="px-6 py-4 text-right font-medium">${{ number_format($invoice->total, 2) }}</td>
                     <td class="px-6 py-4">

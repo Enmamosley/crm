@@ -30,8 +30,8 @@
                     $c = $colors[$order->status] ?? 'gray';
                 @endphp
                 <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 font-mono font-medium text-sm">{{ $order->folio() ?: '-' }}</td>
-                    <td class="px-6 py-4 text-sm">{{ $order->client?->legal_name }}</td>
+                    <td class="px-6 py-4 font-mono font-medium text-sm">{{ $order->folio_number ? $order->folio() : ($order->series . ' — s/n') }}</td>
+                    <td class="px-6 py-4 text-sm">{{ $order->client?->name ?? $order->client?->legal_name }}</td>
                     <td class="px-6 py-4 text-sm text-gray-500">{{ $order->quote?->quote_number ?? '-' }}</td>
                     <td class="px-6 py-4 text-right font-medium">${{ number_format($order->total, 2) }}</td>
                     <td class="px-6 py-4">
