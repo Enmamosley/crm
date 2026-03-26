@@ -30,8 +30,6 @@ use App\Http\Controllers\DirectCheckoutController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\Auth\MagicLinkController;
 
-Route::get('/', fn() => redirect('/buy'));
-
 // Auth
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login'])->middleware('throttle:login');
@@ -42,8 +40,9 @@ Route::post('/auth/magic', [MagicLinkController::class, 'send'])->name('auth.mag
 Route::get('/auth/magic/{token}', [MagicLinkController::class, 'verify'])->name('auth.magic.verify')->where('token', '[A-Za-z0-9]{64}');
 
 // Compra directa (público)
+Route::get('/', [DirectCheckoutController::class, 'catalog'])->name('buy.catalog');
 Route::prefix('buy')->name('buy.')->group(function () {
-    Route::get('/', [DirectCheckoutController::class, 'catalog'])->name('catalog');
+    Route::get('/', fn() => redirect('/'));
     Route::get('domain/check', [DirectCheckoutController::class, 'checkDomain'])->name('domain.check')->middleware('throttle:30,1');
     Route::get('cart', [CartController::class, 'index'])->name('cart');
     Route::post('cart/add', [CartController::class, 'add'])->name('cart.add');
