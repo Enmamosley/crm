@@ -22,7 +22,7 @@ class MenuHelper
             ['icon' => 'leads',     'name' => 'Leads',      'path' => '/panel/leads'],
             ['icon' => 'quotes',    'name' => 'Cotizaciones','path' => '/panel/quotes'],
             ['icon' => 'clients',   'name' => 'Clientes',   'path' => '/panel/clients'],
-            ['icon' => 'invoices',  'name' => 'Facturas',   'path' => '/panel/invoices'],
+            ['icon' => 'invoices',  'name' => 'Facturas',   'path' => '/panel/orders'],
             ['icon' => 'tickets',   'name' => 'Tickets',    'path' => '/panel/tickets'],
             ['icon' => 'tasks',     'name' => 'Tareas',     'path' => '/panel/tasks'],
         ];

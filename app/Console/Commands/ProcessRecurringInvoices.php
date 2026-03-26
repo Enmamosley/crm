@@ -3,7 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\ActivityLog;
-use App\Models\ClientInvoice;
+use App\Models\Order;
 use App\Models\RecurringInvoiceSchedule;
 use App\Services\FacturapiService;
 use Illuminate\Console\Command;
@@ -25,11 +25,11 @@ class ProcessRecurringInvoices extends Command
         $created = 0;
         foreach ($schedules as $schedule) {
             try {
-                $nextFolio = ClientInvoice::where('client_id', $schedule->client_id)
+                $nextFolio = Order::where('client_id', $schedule->client_id)
                     ->where('series', $schedule->series)
                     ->max('folio_number');
 
-                $invoice = ClientInvoice::create([
+                $order = Order::create([
                     'client_id'          => $schedule->client_id,
                     'quote_id'           => $schedule->quote_id,
                     'series'             => $schedule->series,
@@ -47,10 +47,10 @@ class ProcessRecurringInvoices extends Command
 
                 if ($schedule->auto_stamp && \App\Models\Setting::get('facturapi_api_key')) {
                     try {
-                        (new FacturapiService())->stampInvoice($invoice);
+                        (new FacturapiService())->stampInvoice($order);
                     } catch (\Throwable $e) {
                         Log::error('Auto-stamp recurring invoice failed', [
-                            'invoice_id'  => $invoice->id,
+                            'invoice_id'  => $order->id,
                             'schedule_id' => $schedule->id,
                             'error'       => $e->getMessage(),
                         ]);
@@ -60,7 +60,7 @@ class ProcessRecurringInvoices extends Command
                 $schedule->advanceNextDate();
                 $created++;
 
-                ActivityLog::log('recurring_invoice_created', $invoice, "Factura recurrente generada: {$invoice->folio()} para {$schedule->client->legal_name}");
+                ActivityLog::log('recurring_invoice_created', $order, "Factura recurrente generada: {$order->folio()} para {$schedule->client->legal_name}");
             } catch (\Throwable $e) {
                 Log::error('Recurring invoice processing failed', [
                     'schedule_id' => $schedule->id,

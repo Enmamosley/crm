@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Payment extends Model
 {
     protected $fillable = [
-        'client_invoice_id', 'mp_payment_id',
+        'order_id', 'mp_payment_id',
         'amount', 'currency', 'status', 'status_detail',
         'payment_type', 'payment_method_id', 'mp_data',
         'proof_path', 'payment_notes', 'paid_at',
@@ -23,9 +23,9 @@ class Payment extends Model
         ];
     }
 
-    public function invoice(): BelongsTo
+    public function order(): BelongsTo
     {
-        return $this->belongsTo(ClientInvoice::class, 'client_invoice_id');
+        return $this->belongsTo(Order::class, 'order_id');
     }
 
     public function isPending(): bool

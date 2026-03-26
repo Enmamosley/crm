@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use App\Mail\PaymentReminder;
 use App\Models\ActivityLog;
-use App\Models\ClientInvoice;
+use App\Models\Order;
 use App\Models\DunningAttempt;
 use App\Models\Notification;
 use App\Models\User;
@@ -22,7 +22,7 @@ class ProcessDunning extends Command
 
     public function handle(): void
     {
-        $unpaid = ClientInvoice::whereNull('paid_at')
+        $unpaid = Order::whereNull('paid_at')
             ->where('status', 'valid')
             ->where('stamped_at', '<=', now()->subDays(3))
             ->with('client')
@@ -30,8 +30,8 @@ class ProcessDunning extends Command
 
         $processed = 0;
 
-        foreach ($unpaid as $invoice) {
-            $attempts = DunningAttempt::where('client_invoice_id', $invoice->id)->count();
+        foreach ($unpaid as $order) {
+            $attempts = DunningAttempt::where('order_id', $order->id)->count();
 
             if ($attempts >= count(self::SCHEDULE)) {
                 continue; // Max attempts reached
@@ -40,44 +40,44 @@ class ProcessDunning extends Command
             $nextAttemptDays = self::SCHEDULE[$attempts] ?? null;
             if (!$nextAttemptDays) continue;
 
-            $dueDate = $invoice->stamped_at->addDays($nextAttemptDays);
+            $dueDate = $order->stamped_at->addDays($nextAttemptDays);
             if (now()->lt($dueDate)) continue;
 
             // Check if this attempt was already created
-            $existing = DunningAttempt::where('client_invoice_id', $invoice->id)
+            $existing = DunningAttempt::where('order_id', $order->id)
                 ->where('attempt_number', $attempts + 1)
                 ->exists();
             if ($existing) continue;
 
             $attempt = DunningAttempt::create([
-                'client_invoice_id' => $invoice->id,
+                'order_id' => $order->id,
                 'attempt_number'    => $attempts + 1,
                 'status'            => 'pending',
                 'scheduled_at'      => now(),
             ]);
 
             // Send reminder email
-            if ($invoice->client && $invoice->client->email) {
+            if ($order->client && $order->client->email) {
                 try {
-                    Mail::to($invoice->client->email)->send(new PaymentReminder($invoice));
+                    Mail::to($order->client->email)->send(new PaymentReminder($order));
                     $attempt->update(['status' => 'sent', 'sent_at' => now()]);
                     $processed++;
 
-                    ActivityLog::log('dunning_sent', $invoice,
-                        "Recordatorio #{$attempt->attempt_number} enviado para factura {$invoice->folio()}");
+                    ActivityLog::log('dunning_sent', $order,
+                        "Recordatorio #{$attempt->attempt_number} enviado para factura {$order->folio()}");
 
                     // Notify admins
                     $admins = User::where('role', 'admin')->pluck('id');
                     foreach ($admins as $adminId) {
                         Notification::notify($adminId, 'dunning_sent',
-                            "Cobro #{$attempt->attempt_number}: {$invoice->folio()}",
-                            "Se envió recordatorio de cobro a {$invoice->client->legal_name}",
-                            route('admin.invoices.show', $invoice));
+                            "Cobro #{$attempt->attempt_number}: {$order->folio()}",
+                            "Se envió recordatorio de cobro a {$order->client->legal_name}",
+                            route('admin.invoices.show', $order));
                     }
                 } catch (\Throwable $e) {
                     $attempt->update(['status' => 'failed', 'notes' => $e->getMessage()]);
                     Log::error('Dunning email failed', [
-                        'invoice_id' => $invoice->id,
+                        'invoice_id' => $order->id,
                         'attempt'    => $attempt->attempt_number,
                         'error'      => $e->getMessage(),
                     ]);

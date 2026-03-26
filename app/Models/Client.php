@@ -43,7 +43,7 @@ class Client extends Model
 
     public function invoices(): HasMany
     {
-        return $this->hasMany(ClientInvoice::class);
+        return $this->hasMany(Order::class);
     }
 
     public function documents(): HasMany

@@ -10,7 +10,7 @@ use App\Http\Controllers\Admin\QuoteController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\AgentControlController;
 use App\Http\Controllers\Admin\ClientController;
-use App\Http\Controllers\Admin\InvoiceController;
+use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\MailboxController;
 use App\Http\Controllers\Admin\DomainController;
@@ -132,17 +132,17 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
     Route::post('clients/{client}/dns', [DnsController::class, 'store'])->name('clients.dns.store');
     Route::delete('clients/{client}/dns/{record}', [DnsController::class, 'destroy'])->name('clients.dns.destroy');
 
-    // Facturas (admin + accounting)
-    Route::resource('invoices', InvoiceController::class)->only(['index', 'create', 'store', 'show']);
-    Route::patch('invoices/{invoice}/stamp', [InvoiceController::class, 'stamp'])->name('invoices.stamp');
-    Route::patch('invoices/{invoice}/void', [InvoiceController::class, 'void'])->name('invoices.void');
-    Route::delete('invoices/{invoice}/cancel', [InvoiceController::class, 'cancel'])->name('invoices.cancel');
-    Route::get('invoices/{invoice}/pdf', [InvoiceController::class, 'downloadPdf'])->name('invoices.pdf');
-    Route::get('invoices/{invoice}/xml', [InvoiceController::class, 'downloadXml'])->name('invoices.xml');
-    Route::post('invoices/{invoice}/send-link', [InvoiceController::class, 'sendPaymentLink'])->name('invoices.send-link');
-    Route::post('invoices/{invoice}/pay-manual', [InvoiceController::class, 'registerManualPayment'])->name('invoices.pay-manual');
-    Route::patch('payments/{payment}/approve', [InvoiceController::class, 'approveTransfer'])->name('payments.approve');
-    Route::patch('invoices/{invoice}/status', [InvoiceController::class, 'updateStatus'])->name('invoices.update-status');
+    // Órdenes y Facturación (admin + accounting)
+    Route::resource('orders', OrderController::class)->only(['index', 'create', 'store', 'show']);
+    Route::patch('orders/{order}/stamp', [OrderController::class, 'stamp'])->name('orders.stamp');
+    Route::patch('orders/{order}/void', [OrderController::class, 'void'])->name('orders.void');
+    Route::delete('orders/{order}/fiscal-document', [OrderController::class, 'cancelFiscalDocument'])->name('orders.fiscal-document.cancel');
+    Route::get('orders/{order}/pdf', [OrderController::class, 'downloadPdf'])->name('orders.pdf');
+    Route::get('orders/{order}/xml', [OrderController::class, 'downloadXml'])->name('orders.xml');
+    Route::post('orders/{order}/send-link', [OrderController::class, 'sendPaymentLink'])->name('orders.send-link');
+    Route::post('orders/{order}/pay-manual', [OrderController::class, 'registerManualPayment'])->name('orders.pay-manual');
+    Route::patch('payments/{payment}/approve', [OrderController::class, 'approveTransfer'])->name('payments.approve');
+    Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
 
     // Usuarios (admin only)
     Route::middleware('role:admin')->resource('users', UserController::class);
@@ -219,8 +219,8 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
 // Portal Cliente (acceso público por token, validado)
 Route::prefix('portal')->name('portal.')->middleware('portal')->group(function () {
     Route::get('{token}', [ClientPortalController::class, 'show'])->name('dashboard');
-    Route::get('{token}/invoices/{invoice}/pdf', [ClientPortalController::class, 'downloadInvoicePdf'])->name('invoice.pdf');
-    Route::get('{token}/invoices/{invoice}/xml', [ClientPortalController::class, 'downloadInvoiceXml'])->name('invoice.xml');
+    Route::get('{token}/orders/{order}/pdf', [ClientPortalController::class, 'downloadInvoicePdf'])->name('invoice.pdf');
+    Route::get('{token}/orders/{order}/xml', [ClientPortalController::class, 'downloadInvoiceXml'])->name('invoice.xml');
     Route::get('{token}/documents/{document}', [ClientPortalController::class, 'downloadDocument'])->name('document.download');
 
     // Gestión de correos
@@ -231,11 +231,11 @@ Route::prefix('portal')->name('portal.')->middleware('portal')->group(function (
     Route::post('{token}/mailboxes/{mailbox}/webmail', [ClientPortalController::class, 'webmail'])->name('mailbox.webmail');
 
     // Pagos Mercado Pago
-    Route::get('{token}/invoices/{invoice}/checkout', [ClientPortalController::class, 'checkout'])->name('checkout');
-    Route::post('{token}/invoices/{invoice}/pay/card', [ClientPortalController::class, 'payWithCard'])->name('pay.card')->middleware('throttle:payments');
-    Route::post('{token}/invoices/{invoice}/pay/oxxo', [ClientPortalController::class, 'payWithOxxo'])->name('pay.oxxo')->middleware('throttle:payments');
-    Route::post('{token}/invoices/{invoice}/pay/spei', [ClientPortalController::class, 'payWithSpei'])->name('pay.spei')->middleware('throttle:payments');
-    Route::post('{token}/invoices/{invoice}/pay/transfer', [ClientPortalController::class, 'payWithTransfer'])->name('pay.transfer')->middleware('throttle:payments');
+    Route::get('{token}/orders/{order}/checkout', [ClientPortalController::class, 'checkout'])->name('checkout');
+    Route::post('{token}/orders/{order}/pay/card', [ClientPortalController::class, 'payWithCard'])->name('pay.card')->middleware('throttle:payments');
+    Route::post('{token}/orders/{order}/pay/oxxo', [ClientPortalController::class, 'payWithOxxo'])->name('pay.oxxo')->middleware('throttle:payments');
+    Route::post('{token}/orders/{order}/pay/spei', [ClientPortalController::class, 'payWithSpei'])->name('pay.spei')->middleware('throttle:payments');
+    Route::post('{token}/orders/{order}/pay/transfer', [ClientPortalController::class, 'payWithTransfer'])->name('pay.transfer')->middleware('throttle:payments');
     Route::get('{token}/payments/{payment}', [ClientPortalController::class, 'paymentStatus'])->name('payment.status');
 
     // Cotizaciones (aceptar/rechazar)

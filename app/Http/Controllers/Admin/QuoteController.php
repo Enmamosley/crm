@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\QuoteSent;
 use App\Models\ActivityLog;
 use App\Models\Client;
-use App\Models\ClientInvoice;
+use App\Models\Order;
 use App\Models\Lead;
 use App\Models\Quote;
 use App\Models\Service;
@@ -179,7 +179,7 @@ class QuoteController extends Controller
                 ->with('info', 'Esta cotización ya tiene una orden de servicio generada.');
         }
 
-        $invoice = ClientInvoice::create([
+        $order = Order::create([
             'client_id'      => $client->id,
             'quote_id'       => $quote->id,
             'series'         => 'F',
@@ -196,9 +196,9 @@ class QuoteController extends Controller
             $quote->update(['status' => 'aceptada']);
         }
 
-        ActivityLog::log('quote_converted', $invoice, "Cotización {$quote->quote_number} convertida a orden de servicio");
+        ActivityLog::log('quote_converted', $order, "Cotización {$quote->quote_number} convertida a orden de servicio");
 
-        return redirect()->route('admin.invoices.show', $invoice)
+        return redirect()->route('admin.invoices.show', $order)
             ->with('success', '¡Orden creada! Configura los datos fiscales y envía el link de cobro al cliente.');
     }
 

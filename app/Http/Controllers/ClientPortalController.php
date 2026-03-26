@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\ClientDocument;
-use App\Models\ClientInvoice;
+use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Quote;
 use App\Models\QuoteItem;
@@ -65,19 +65,19 @@ class ClientPortalController extends Controller
         return redirect()->away($url);
     }
 
-    public function downloadInvoicePdf(string $token, ClientInvoice $invoice)
+    public function downloadInvoicePdf(string $token, Order $order)
     {
         $client = Client::where('portal_token', $token)
             ->where('portal_active', true)
             ->firstOrFail();
 
-        abort_if($invoice->client_id !== $client->id, 403);
+        abort_if($order->client_id !== $client->id, 403);
 
-        if (!$invoice->isStamped()) {
+        if (!$order->isStamped()) {
             abort(404, 'Factura no disponible.');
         }
 
-        $pdf = (new FacturapiService())->downloadPdf($invoice);
+        $pdf = (new FacturapiService())->downloadPdf($order);
 
         if (!$pdf) {
             abort(500, 'No se pudo obtener el PDF.');
@@ -85,23 +85,23 @@ class ClientPortalController extends Controller
 
         return response($pdf, 200, [
             'Content-Type'        => 'application/pdf',
-            'Content-Disposition' => 'inline; filename="factura-' . $invoice->folio() . '.pdf"',
+            'Content-Disposition' => 'inline; filename="factura-' . $order->folio() . '.pdf"',
         ]);
     }
 
-    public function downloadInvoiceXml(string $token, ClientInvoice $invoice)
+    public function downloadInvoiceXml(string $token, Order $order)
     {
         $client = Client::where('portal_token', $token)
             ->where('portal_active', true)
             ->firstOrFail();
 
-        abort_if($invoice->client_id !== $client->id, 403);
+        abort_if($order->client_id !== $client->id, 403);
 
-        if (!$invoice->isStamped()) {
+        if (!$order->isStamped()) {
             abort(404, 'Factura no disponible.');
         }
 
-        $xml = (new FacturapiService())->downloadXml($invoice);
+        $xml = (new FacturapiService())->downloadXml($order);
 
         if (!$xml) {
             abort(500, 'No se pudo obtener el XML.');
@@ -109,7 +109,7 @@ class ClientPortalController extends Controller
 
         return response($xml, 200, [
             'Content-Type'        => 'application/xml',
-            'Content-Disposition' => 'attachment; filename="factura-' . $invoice->folio() . '.xml"',
+            'Content-Disposition' => 'attachment; filename="factura-' . $order->folio() . '.xml"',
         ]);
     }
 
@@ -143,7 +143,7 @@ class ClientPortalController extends Controller
 
         // Camino 1: Factura pagada con cotización que tiene ítems de correo
         $viaQuote = $emailServiceIds->isNotEmpty()
-            && ClientInvoice::where('client_id', $client->id)
+            && Order::where('client_id', $client->id)
                 ->whereNotNull('paid_at')
                 ->whereHas('quote.items', fn ($q) => $q->whereIn('service_id', $emailServiceIds))
                 ->exists();
@@ -157,7 +157,7 @@ class ClientPortalController extends Controller
             ->pluck('name');
 
         foreach ($emailServiceNames as $name) {
-            if (ClientInvoice::where('client_id', $client->id)
+            if (Order::where('client_id', $client->id)
                 ->whereNotNull('paid_at')
                 ->where('notes', 'Compra directa: ' . $name)
                 ->exists()) {
@@ -269,13 +269,13 @@ class ClientPortalController extends Controller
 
     // ── Pagos Mercado Pago ────────────────────────────────
 
-    public function checkout(string $token, ClientInvoice $invoice)
+    public function checkout(string $token, Order $order)
     {
         $client = $this->resolveClient($token);
-        abort_if($invoice->client_id !== $client->id, 403);
-        abort_if($invoice->status === 'cancelled', 404, 'Factura cancelada.');
+        abort_if($order->client_id !== $client->id, 403);
+        abort_if($order->status === 'cancelled', 404, 'Factura cancelada.');
 
-        if ($invoice->paid_at) {
+        if ($order->paid_at) {
             return redirect()->route('portal.dashboard', $token)
                 ->with('success', 'Esta factura ya fue pagada.');
         }
@@ -294,12 +294,12 @@ class ClientPortalController extends Controller
         return view('portal.checkout', compact('client', 'invoice', 'mpPublicKey', 'bankData', 'hasBankData'));
     }
 
-    public function payWithCard(Request $request, string $token, ClientInvoice $invoice)
+    public function payWithCard(Request $request, string $token, Order $order)
     {
         $client = $this->resolveClient($token);
-        abort_if($invoice->client_id !== $client->id, 403);
+        abort_if($order->client_id !== $client->id, 403);
 
-        if ($invoice->paid_at) {
+        if ($order->paid_at) {
             return response()->json(['success' => false, 'error' => 'Esta factura ya fue pagada.'], 422);
         }
 
@@ -313,12 +313,12 @@ class ClientPortalController extends Controller
         ]);
 
         if (!empty($validated['billing_preference'])) {
-            $invoice->update(['billing_preference' => $validated['billing_preference']]);
+            $order->update(['billing_preference' => $validated['billing_preference']]);
         }
 
         try {
             $payment = (new MercadoPagoService())->createCardPayment(
-                $invoice,
+                $order,
                 $validated['token'],
                 $validated['payment_method_id'],
                 $validated['email'],
@@ -338,12 +338,12 @@ class ClientPortalController extends Controller
         }
     }
 
-    public function payWithOxxo(Request $request, string $token, ClientInvoice $invoice)
+    public function payWithOxxo(Request $request, string $token, Order $order)
     {
         $client = $this->resolveClient($token);
-        abort_if($invoice->client_id !== $client->id, 403);
+        abort_if($order->client_id !== $client->id, 403);
 
-        if ($invoice->paid_at) {
+        if ($order->paid_at) {
             return back()->with('error', 'Esta factura ya fue pagada.');
         }
 
@@ -352,23 +352,23 @@ class ClientPortalController extends Controller
             'billing_preference' => 'nullable|in:fiscal,publico_general,none',
         ]);
         if (!empty($validated['billing_preference'])) {
-            $invoice->update(['billing_preference' => $validated['billing_preference']]);
+            $order->update(['billing_preference' => $validated['billing_preference']]);
         }
 
         try {
-            $payment = (new MercadoPagoService())->createOxxoPayment($invoice, $validated['email']);
+            $payment = (new MercadoPagoService())->createOxxoPayment($order, $validated['email']);
             return redirect()->route('portal.payment.status', [$token, $payment]);
         } catch (\Throwable $e) {
             return back()->with('error', 'Error al generar referencia OXXO: ' . $e->getMessage());
         }
     }
 
-    public function payWithSpei(Request $request, string $token, ClientInvoice $invoice)
+    public function payWithSpei(Request $request, string $token, Order $order)
     {
         $client = $this->resolveClient($token);
-        abort_if($invoice->client_id !== $client->id, 403);
+        abort_if($order->client_id !== $client->id, 403);
 
-        if ($invoice->paid_at) {
+        if ($order->paid_at) {
             return back()->with('error', 'Esta factura ya fue pagada.');
         }
 
@@ -377,23 +377,23 @@ class ClientPortalController extends Controller
             'billing_preference' => 'nullable|in:fiscal,publico_general,none',
         ]);
         if (!empty($validated['billing_preference'])) {
-            $invoice->update(['billing_preference' => $validated['billing_preference']]);
+            $order->update(['billing_preference' => $validated['billing_preference']]);
         }
 
         try {
-            $payment = (new MercadoPagoService())->createSpeiPayment($invoice, $validated['email']);
+            $payment = (new MercadoPagoService())->createSpeiPayment($order, $validated['email']);
             return redirect()->route('portal.payment.status', [$token, $payment]);
         } catch (\Throwable $e) {
             return back()->with('error', 'Error al generar referencia SPEI: ' . $e->getMessage());
         }
     }
 
-    public function payWithTransfer(Request $request, string $token, ClientInvoice $invoice)
+    public function payWithTransfer(Request $request, string $token, Order $order)
     {
         $client = $this->resolveClient($token);
-        abort_if($invoice->client_id !== $client->id, 403);
+        abort_if($order->client_id !== $client->id, 403);
 
-        if ($invoice->paid_at) {
+        if ($order->paid_at) {
             return back()->with('error', 'Esta factura ya fue pagada.');
         }
 
@@ -408,8 +408,8 @@ class ClientPortalController extends Controller
             $proofPath = $request->file('proof')->store('payment-proofs', 'public');
         }
 
-        $payment = $invoice->payments()->create([
-            'amount'            => $invoice->total,
+        $payment = $order->payments()->create([
+            'amount'            => $order->total,
             'currency'          => 'MXN',
             'status'            => 'pending',
             'payment_type'      => 'transfer',
@@ -419,7 +419,7 @@ class ClientPortalController extends Controller
             'paid_at'           => null,
         ]);
 
-        $invoice->update(['billing_preference' => $validated['billing_preference']]);
+        $order->update(['billing_preference' => $validated['billing_preference']]);
 
         return redirect()->route('portal.payment.status', [$token, $payment]);
     }
@@ -427,7 +427,7 @@ class ClientPortalController extends Controller
     public function paymentStatus(string $token, Payment $payment)
     {
         $client = $this->resolveClient($token);
-        abort_if($payment->invoice->client_id !== $client->id, 403);
+        abort_if($payment->order->client_id !== $client->id, 403);
 
         // Refrescar estado desde MP si sigue pendiente
         if ($payment->isPending() && $payment->mp_payment_id) {
@@ -437,7 +437,7 @@ class ClientPortalController extends Controller
             } catch (\Throwable) {}
         }
 
-        $invoice = $payment->invoice;
+        $order = $payment->order;
 
         return view('portal.payment-status', compact('client', 'payment', 'invoice'));
     }
@@ -466,7 +466,7 @@ class ClientPortalController extends Controller
         ActivityLog::log('quote_accepted', $quote, "Cotización {$quote->quote_number} aceptada por el cliente desde el portal");
 
         // Generar factura automáticamente a partir de la cotización
-        $existingInvoice = ClientInvoice::where('client_id', $client->id)
+        $existingInvoice = Order::where('client_id', $client->id)
             ->where('quote_id', $quote->id)
             ->whereNotIn('status', ['cancelled'])
             ->first();
@@ -481,7 +481,7 @@ class ClientPortalController extends Controller
                 ->with('success', '¡Cotización aceptada!');
         }
 
-        $invoice = ClientInvoice::create([
+        $order = Order::create([
             'client_id'      => $client->id,
             'quote_id'       => $quote->id,
             'series'         => 'F',
@@ -495,11 +495,11 @@ class ClientPortalController extends Controller
             'notes'          => "Generada automáticamente al aceptar cotización {$quote->quote_number}",
         ]);
 
-        ActivityLog::log('invoice_created', $invoice, "Factura generada automáticamente al aceptar cotización {$quote->quote_number}");
+        ActivityLog::log('invoice_created', $order, "Factura generada automáticamente al aceptar cotización {$quote->quote_number}");
 
         // Si Mercado Pago está configurado, llevar directo al checkout
         if (Setting::get('mp_public_key')) {
-            return redirect()->route('portal.checkout', [$token, $invoice])
+            return redirect()->route('portal.checkout', [$token, $order])
                 ->with('success', '¡Cotización aceptada! Se generó tu factura, procede al pago.');
         }
 

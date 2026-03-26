@@ -14,7 +14,7 @@
 
 @php $existingInvoice = $quote->invoices->first(); @endphp
 @if($existingInvoice)
-    <a href="{{ route('admin.invoices.show', $existingInvoice) }}"
+    <a href="{{ route('admin.orders.show', $existingInvoice) }}"
         class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 text-sm">
         <i class="fas fa-file-invoice mr-1"></i> Ver Orden
     </a>
@@ -215,7 +215,7 @@
                 $invLabels = ['draft'=>'Borrador','sent'=>'Pagada','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
                 $ic = $invColors[$inv->status] ?? 'gray';
             @endphp
-            <a href="{{ route('admin.invoices.show', $inv) }}"
+            <a href="{{ route('admin.orders.show', $inv) }}"
                 class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 mb-1">
                 <div>
                     <p class="text-sm font-medium">{{ $inv->folio() ?: 'Sin folio' }}</p>

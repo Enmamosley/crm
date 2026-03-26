@@ -227,16 +227,16 @@
 <div class="bg-white rounded-lg shadow mt-6">
     <div class="p-6 border-b flex justify-between items-center">
         <h3 class="text-lg font-semibold"><i class="fas fa-exclamation-triangle text-orange-500 mr-2"></i>Facturas Pendientes de Pago</h3>
-        <a href="{{ route('admin.invoices.index') }}" class="text-blue-600 hover:underline text-sm">Ver todas</a>
+        <a href="{{ route('admin.orders.index') }}" class="text-blue-600 hover:underline text-sm">Ver todas</a>
     </div>
     <div class="divide-y">
-        @foreach($unpaid_invoices as $invoice)
-            <a href="{{ route('admin.invoices.show', $invoice) }}" class="flex items-center justify-between p-4 hover:bg-gray-50">
+        @foreach($unpaid_invoices as $order)
+            <a href="{{ route('admin.orders.show', $order) }}" class="flex items-center justify-between p-4 hover:bg-gray-50">
                 <div>
-                    <p class="font-medium text-gray-800">{{ $invoice->folio() ?: 'Sin folio' }} — {{ $invoice->client->legal_name ?? 'N/A' }}</p>
-                    <p class="text-sm text-gray-500">{{ $invoice->created_at->format('d/m/Y') }} · {{ $invoice->status === 'valid' ? 'Timbrada' : 'Borrador' }}</p>
+                    <p class="font-medium text-gray-800">{{ $order->folio() ?: 'Sin folio' }} — {{ $order->client->legal_name ?? 'N/A' }}</p>
+                    <p class="text-sm text-gray-500">{{ $order->created_at->format('d/m/Y') }} · {{ $order->status === 'valid' ? 'Timbrada' : 'Borrador' }}</p>
                 </div>
-                <p class="font-bold text-orange-600">${{ number_format($invoice->total, 2) }}</p>
+                <p class="font-bold text-orange-600">${{ number_format($order->total, 2) }}</p>
             </a>
         @endforeach
     </div>

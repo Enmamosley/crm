@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Client;
-use App\Models\ClientInvoice;
+use App\Models\Order;
 use App\Models\Lead;
 use App\Models\Payment;
 use App\Models\Quote;
@@ -35,17 +35,17 @@ class DashboardController extends Controller
 
                 // Financieros
                 'total_clientes' => Client::count(),
-                'facturas_pendientes' => ClientInvoice::whereNull('paid_at')
-                    ->whereIn('status', ['valid', 'pending', 'draft'])
+                'facturas_pendientes' => Order::whereNull('paid_at')
+                    ->whereIn('status', ['sent', 'pending', 'draft'])
                     ->count(),
-                'monto_por_cobrar' => ClientInvoice::whereNull('paid_at')
-                    ->whereIn('status', ['valid', 'pending', 'draft'])
+                'monto_por_cobrar' => Order::whereNull('paid_at')
+                    ->whereIn('status', ['sent', 'pending', 'draft'])
                     ->sum('total'),
                 'ingresos_mes' => Payment::where('status', 'approved')
                     ->where('paid_at', '>=', $currentMonth)
                     ->sum('amount'),
                 'ingresos_total' => Payment::where('status', 'approved')->sum('amount'),
-                'facturas_timbradas' => ClientInvoice::where('status', 'valid')->count(),
+                'facturas_timbradas' => \App\Models\FiscalDocument::where('status', 'valid')->count(),
 
                 // Conversión
                 'tasa_conversion' => Lead::count() > 0
@@ -63,9 +63,9 @@ class DashboardController extends Controller
 
         $recent_leads = Lead::latest()->take(10)->get();
         $recent_quotes = Quote::with('lead')->latest()->take(5)->get();
-        $unpaid_invoices = ClientInvoice::with('client')
+        $unpaid_invoices = Order::with('client')
             ->whereNull('paid_at')
-            ->whereIn('status', ['valid', 'pending', 'draft'])
+            ->whereIn('status', ['sent', 'pending', 'draft'])
             ->latest()
             ->take(5)
             ->get();

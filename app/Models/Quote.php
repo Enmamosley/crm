@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\ClientInvoice;
+use App\Models\Order;
 
 class Quote extends Model
 {
@@ -39,7 +39,7 @@ class Quote extends Model
 
     public function invoices(): HasMany
     {
-        return $this->hasMany(ClientInvoice::class);
+        return $this->hasMany(Order::class);
     }
 
     public function recalculate(): void

@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use App\Mail\PaymentReminder;
 use App\Models\ActivityLog;
-use App\Models\ClientInvoice;
+use App\Models\Order;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -19,25 +19,25 @@ class SendPaymentReminders extends Command
         $days = (int) $this->option('days');
         $cutoff = now()->subDays($days);
 
-        $invoices = ClientInvoice::with('client')
+        $invoices = Order::with('client')
             ->whereNull('paid_at')
             ->where('status', 'valid')
             ->where('stamped_at', '<=', $cutoff)
             ->get();
 
         $sent = 0;
-        foreach ($invoices as $invoice) {
-            if (!$invoice->client->email) {
+        foreach ($invoices as $order) {
+            if (!$order->client->email) {
                 continue;
             }
 
             try {
-                Mail::to($invoice->client->email)->send(new PaymentReminder($invoice));
+                Mail::to($order->client->email)->send(new PaymentReminder($order));
                 $sent++;
-                ActivityLog::log('reminder_sent', $invoice, "Recordatorio de pago enviado para factura {$invoice->folio()}");
+                ActivityLog::log('reminder_sent', $order, "Recordatorio de pago enviado para factura {$order->folio()}");
             } catch (\Throwable $e) {
                 Log::error('Payment reminder email failed', [
-                    'invoice_id' => $invoice->id,
+                    'invoice_id' => $order->id,
                     'error'      => $e->getMessage(),
                 ]);
             }

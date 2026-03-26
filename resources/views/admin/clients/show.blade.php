@@ -11,7 +11,7 @@
     <i class="fas fa-file-alt mr-1"></i> Nueva Cotización
 </a>
 @endif
-<a href="{{ route('admin.invoices.create', ['client_id' => $client->id]) }}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
+<a href="{{ route('admin.orders.create', ['client_id' => $client->id]) }}" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 text-sm">
     <i class="fas fa-file-invoice mr-1"></i> Nueva Factura
 </a>
 @if($client->twentyi_package_id)
@@ -103,7 +103,7 @@
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-6 border-b flex items-center justify-between">
                 <h3 class="text-lg font-semibold">Facturas</h3>
-                <a href="{{ route('admin.invoices.create', ['client_id' => $client->id]) }}" class="text-sm text-blue-600 hover:underline">
+                <a href="{{ route('admin.orders.create', ['client_id' => $client->id]) }}" class="text-sm text-blue-600 hover:underline">
                     <i class="fas fa-plus mr-1"></i> Nueva
                 </a>
             </div>
@@ -119,24 +119,24 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y">
-                    @forelse($client->invoices as $invoice)
+                    @forelse($client->invoices as $order)
                         <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-3 font-mono text-sm font-medium">{{ $invoice->folio() }}</td>
-                            <td class="px-6 py-3 text-sm">{{ $invoice->quote?->quote_number ?? '-' }}</td>
-                            <td class="px-6 py-3 text-right text-sm font-medium">${{ number_format($invoice->total, 2) }}</td>
+                            <td class="px-6 py-3 font-mono text-sm font-medium">{{ $order->folio() }}</td>
+                            <td class="px-6 py-3 text-sm">{{ $order->quote?->quote_number ?? '-' }}</td>
+                            <td class="px-6 py-3 text-right text-sm font-medium">${{ number_format($order->total, 2) }}</td>
                             <td class="px-6 py-3">
                                 @php
                                     $colors = ['draft'=>'gray','sent'=>'blue','pending'=>'yellow','valid'=>'green','cancelled'=>'red'];
                                     $labels = ['draft'=>'Borrador','sent'=>'Pagada','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
-                                    $c = $colors[$invoice->status] ?? 'gray';
+                                    $c = $colors[$order->status] ?? 'gray';
                                 @endphp
                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-{{ $c }}-100 text-{{ $c }}-700">
-                                    {{ $labels[$invoice->status] ?? $invoice->status }}
+                                    {{ $labels[$order->status] ?? $order->status }}
                                 </span>
                             </td>
-                            <td class="px-6 py-3 text-xs text-gray-500">{{ $invoice->created_at->format('d/m/Y') }}</td>
+                            <td class="px-6 py-3 text-xs text-gray-500">{{ $order->created_at->format('d/m/Y') }}</td>
                             <td class="px-6 py-3 text-right">
-                                <a href="{{ route('admin.invoices.show', $invoice) }}" class="text-blue-600 hover:text-blue-800 text-sm">Ver</a>
+                                <a href="{{ route('admin.orders.show', $order) }}" class="text-blue-600 hover:text-blue-800 text-sm">Ver</a>
                             </td>
                         </tr>
                     @empty

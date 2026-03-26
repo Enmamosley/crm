@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
 use App\Models\Client;
-use App\Models\ClientInvoice;
+use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Service;
 use App\Models\Setting;
@@ -415,9 +415,9 @@ class DirectCheckoutController extends Controller
     /**
      * Reutiliza factura draft sin pagos para evitar duplicados si el usuario reenvía el formulario.
      */
-    private function findOrCreateInvoice(Client $client, Service $service, array $invoiceData): ClientInvoice
+    private function findOrCreateInvoice(Client $client, Service $service, array $invoiceData): Order
     {
-        $existing = ClientInvoice::where('client_id', $client->id)
+        $existing = Order::where('client_id', $client->id)
             ->where('status', 'draft')
             ->where('total', $invoiceData['total'])
             ->where('notes', 'Compra directa: ' . $service->name)
@@ -429,7 +429,7 @@ class DirectCheckoutController extends Controller
             return $existing;
         }
 
-        return ClientInvoice::create($invoiceData);
+        return Order::create($invoiceData);
     }
 
     private function provisionHosting(Client $client, Service $service, ?string $domain = null): void

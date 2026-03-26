@@ -2,7 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\ClientInvoice;
+use App\Models\Order;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
@@ -13,7 +13,7 @@ class InvoiceCreated extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public function __construct(public ClientInvoice $invoice) {}
+    public function __construct(public Order $order) {}
 
     public function envelope(): Envelope
     {

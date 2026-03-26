@@ -4,7 +4,7 @@ namespace App\Services;
 
 use App\Mail\PaymentConfirmed;
 use App\Models\ActivityLog;
-use App\Models\ClientInvoice;
+use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
@@ -27,7 +27,7 @@ class MercadoPagoService
      * Pago con tarjeta (token generado por MercadoPago.js).
      */
     public function createCardPayment(
-        ClientInvoice $invoice,
+        Order $order,
         string $token,
         string $paymentMethodId,
         string $email,
@@ -35,48 +35,48 @@ class MercadoPagoService
         ?string $issuerId = null,
     ): Payment {
         $payload = [
-            'transaction_amount' => (float) $invoice->total,
+            'transaction_amount' => (float) $order->total,
             'token'              => $token,
-            'description'        => "Factura {$invoice->folio()} – {$invoice->client->legal_name}",
+            'description'        => "Factura {$order->folio()} – {$order->client->legal_name}",
             'installments'       => $installments,
             'payment_method_id'  => $paymentMethodId,
             'payer'              => ['email' => $email],
-            'external_reference' => "invoice_{$invoice->id}",
+            'external_reference' => "invoice_{$order->id}",
         ];
 
         if ($issuerId) {
             $payload['issuer_id'] = (int) $issuerId;
         }
 
-        return $this->processPayment($invoice, $payload);
+        return $this->processPayment($order, $payload);
     }
 
     /**
      * Pago en OXXO (genera ticket con código de barras).
      */
-    public function createOxxoPayment(ClientInvoice $invoice, string $email): Payment
+    public function createOxxoPayment(Order $order, string $email): Payment
     {
-        return $this->processPayment($invoice, [
-            'transaction_amount' => (float) $invoice->total,
-            'description'        => "Factura {$invoice->folio()} – {$invoice->client->legal_name}",
+        return $this->processPayment($order, [
+            'transaction_amount' => (float) $order->total,
+            'description'        => "Factura {$order->folio()} – {$order->client->legal_name}",
             'payment_method_id'  => 'oxxo',
             'payer'              => ['email' => $email],
-            'external_reference' => "invoice_{$invoice->id}",
+            'external_reference' => "invoice_{$order->id}",
         ]);
     }
 
     /**
      * Pago por transferencia SPEI.
      */
-    public function createSpeiPayment(ClientInvoice $invoice, string $email): Payment
+    public function createSpeiPayment(Order $order, string $email): Payment
     {
-        return $this->processPayment($invoice, [
-            'transaction_amount' => (float) $invoice->total,
-            'description'        => "Factura {$invoice->folio()} – {$invoice->client->legal_name}",
+        return $this->processPayment($order, [
+            'transaction_amount' => (float) $order->total,
+            'description'        => "Factura {$order->folio()} – {$order->client->legal_name}",
             'payment_method_id'  => 'clabe',
             'payment_type_id'    => 'bank_transfer',
             'payer'              => ['email' => $email],
-            'external_reference' => "invoice_{$invoice->id}",
+            'external_reference' => "invoice_{$order->id}",
         ]);
     }
 
@@ -133,30 +133,30 @@ class MercadoPagoService
 
         // Marcar factura como pagada
         if ($newStatus === 'approved' && !$payment->invoice->paid_at) {
-            $invoice = $payment->invoice;
-            $invoice->update(['status' => 'sent', 'paid_at' => $paidAt]);
+            $order = $payment->invoice;
+            $order->update(['status' => 'sent', 'paid_at' => $paidAt]);
 
             // Auto-timbrar si no está timbrada y el payment_form coincide
-            if (!$invoice->isStamped() && Setting::get('facturapi_api_key')) {
+            if (!$order->isStamped() && Setting::get('facturapi_api_key')) {
                 try {
-                    $invoice->update(['payment_form' => $payment->satPaymentForm()]);
-                    (new FacturapiService())->stampInvoice($invoice);
-                    ActivityLog::log('auto_stamped', $invoice, "Factura {$invoice->folio()} timbrada automáticamente tras pago MP");
+                    $order->update(['payment_form' => $payment->satPaymentForm()]);
+                    (new FacturapiService())->stampInvoice($order);
+                    ActivityLog::log('auto_stamped', $order, "Factura {$order->folio()} timbrada automáticamente tras pago MP");
                 } catch (\Throwable $e) {
-                    Log::error('Auto-stamp failed after payment', ['invoice_id' => $invoice->id, 'error' => $e->getMessage()]);
+                    Log::error('Auto-stamp failed after payment', ['invoice_id' => $order->id, 'error' => $e->getMessage()]);
                 }
             }
 
             // Enviar email de confirmación
-            if ($invoice->client->email) {
+            if ($order->client->email) {
                 try {
-                    Mail::to($invoice->client->email)->send(new PaymentConfirmed($payment));
+                    Mail::to($order->client->email)->send(new PaymentConfirmed($payment));
                 } catch (\Throwable $e) {
                     Log::error('Payment confirmation email failed', ['payment_id' => $payment->id, 'error' => $e->getMessage()]);
                 }
             }
 
-            ActivityLog::log('payment_approved', $payment, "Pago #{$payment->id} aprobado por \${$payment->amount} para factura {$invoice->folio()}");
+            ActivityLog::log('payment_approved', $payment, "Pago #{$payment->id} aprobado por \${$payment->amount} para factura {$order->folio()}");
         }
 
         return $payment;
@@ -198,9 +198,9 @@ class MercadoPagoService
 
     // ── Internos ─────────────────────────────────────────
 
-    private function processPayment(ClientInvoice $invoice, array $payload): Payment
+    private function processPayment(Order $order, array $payload): Payment
     {
-        $idempotencyKey = "inv_{$invoice->id}_" . now()->timestamp;
+        $idempotencyKey = "inv_{$order->id}_" . now()->timestamp;
 
         $response = $this->http()
             ->withHeaders(['X-Idempotency-Key' => $idempotencyKey])
@@ -210,7 +210,7 @@ class MercadoPagoService
 
         if ($response->failed()) {
             Log::error('MP payment creation failed', [
-                'invoice_id' => $invoice->id,
+                'invoice_id' => $order->id,
                 'status'     => $response->status(),
                 'body'       => $data,
             ]);
@@ -225,9 +225,9 @@ class MercadoPagoService
         $isApproved = ($data['status'] ?? '') === 'approved';
 
         $payment = Payment::create([
-            'client_invoice_id' => $invoice->id,
+            'order_id' => $order->id,
             'mp_payment_id'     => (string) ($data['id'] ?? ''),
-            'amount'            => $data['transaction_amount'] ?? $invoice->total,
+            'amount'            => $data['transaction_amount'] ?? $order->total,
             'currency'          => $data['currency_id'] ?? 'MXN',
             'status'            => $data['status'] ?? 'pending',
             'status_detail'     => $data['status_detail'] ?? null,
@@ -238,7 +238,7 @@ class MercadoPagoService
         ]);
 
         if ($isApproved) {
-            $invoice->update(['status' => 'sent', 'paid_at' => now()]);
+            $order->update(['status' => 'sent', 'paid_at' => now()]);
         }
 
         return $payment;

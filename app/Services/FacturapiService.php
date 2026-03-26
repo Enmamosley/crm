@@ -3,7 +3,8 @@
 namespace App\Services;
 
 use App\Models\Client;
-use App\Models\ClientInvoice;
+use App\Models\FiscalDocument;
+use App\Models\Order;
 use App\Models\Setting;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -59,31 +60,29 @@ class FacturapiService
     /**
      * Timbra la factura en FacturAPI y actualiza el registro local.
      */
-    public function stampInvoice(ClientInvoice $invoice): array
+    public function stampInvoice(Order $order): array
     {
-        $client = $invoice->client;
-        $quote  = $invoice->quote?->load('items.service');
-        $invoice->load('items'); // Ítems manuales si no hay cotización
+        $client = $order->client;
+        $quote  = $order->quote?->load('items.service');
+        $order->load('items'); // Ítems manuales si no hay cotización
 
         // Asegurar que el cliente exista en FacturAPI
         if (!$client->facturapi_customer_id) {
             $syncResult = $this->syncCustomer($client);
             $client->refresh();
 
-            // Si sigue sin ID, usar objeto inline
             if (!$client->facturapi_customer_id) {
                 \Log::warning('FacturAPI syncCustomer failed, will use inline customer', ['sync_result' => $syncResult]);
             }
         }
 
         // Customer: público en general o datos del cliente
-        if (($invoice->billing_preference ?? 'fiscal') === 'publico_general') {
-            // RFC genérico SAT para Público en General
+        if (($order->billing_preference ?? 'fiscal') === 'publico_general') {
             $customer = [
                 'legal_name' => 'PUBLICO EN GENERAL',
                 'tax_id'     => 'XAXX010101000',
-                'tax_system' => '616',  // Sin obligaciones fiscales
-                'use'        => 'S01',  // Sin efectos fiscales
+                'tax_system' => '616',
+                'use'        => 'S01',
                 'address'    => ['zip' => '06300'],
             ];
         } elseif ($client->facturapi_customer_id) {
@@ -105,11 +104,10 @@ class FacturapiService
             foreach ($quote->items as $item) {
                 $svc = $item->service;
 
-                // Campos fiscales del servicio, con defaults seguros
-                $productKey = $svc?->sat_product_key ?: '80101501'; // Servicios profesionales (genérico SAT)
-                $unitKey    = $svc?->sat_unit_key    ?: 'E48';      // E48 = Servicio
+                $productKey = $svc?->sat_product_key ?: '80101501';
+                $unitKey    = $svc?->sat_unit_key    ?: 'E48';
                 $unitName   = $svc?->sat_unit_name   ?: 'Servicio';
-                $taxObject  = $svc?->tax_object      ?: '02';       // 02 = Sí objeto de impuesto
+                $taxObject  = $svc?->tax_object      ?: '02';
                 $isExempt   = $svc?->iva_exempt      ?? false;
 
                 $product = [
@@ -122,29 +120,15 @@ class FacturapiService
                 ];
 
                 if (!$isExempt && $taxObject !== '01') {
-                    $product['taxes'] = [[
-                        'type'   => 'IVA',
-                        'rate'   => $ivaRate,
-                        'factor' => 'Tasa',
-                    ]];
+                    $product['taxes'] = [['type' => 'IVA', 'rate' => $ivaRate, 'factor' => 'Tasa']];
                 } else {
-                    // Exento o no objeto: IVA tasa 0
-                    $product['taxes'] = [[
-                        'type'   => 'IVA',
-                        'rate'   => 0,
-                        'factor' => 'Exento',
-                    ]];
+                    $product['taxes'] = [['type' => 'IVA', 'rate' => 0, 'factor' => 'Exento']];
                 }
 
-                $items[] = [
-                    'quantity'   => $item->quantity,
-                    'product'    => $product,
-                    'tax_object' => $taxObject,  // nivel item, no dentro de product
-                ];
+                $items[] = ['quantity' => $item->quantity, 'product' => $product, 'tax_object' => $taxObject];
             }
-        } elseif ($invoice->items->isNotEmpty()) {
-            // Ítems manuales (sin cotización)
-            foreach ($invoice->items as $item) {
+        } elseif ($order->items->isNotEmpty()) {
+            foreach ($order->items as $item) {
                 $taxObject = $item->tax_object ?: '02';
                 $isExempt  = $item->iva_exempt ?? false;
 
@@ -158,42 +142,30 @@ class FacturapiService
                 ];
 
                 if (!$isExempt && $taxObject !== '01') {
-                    $product['taxes'] = [[
-                        'type'   => 'IVA',
-                        'rate'   => $ivaRate,
-                        'factor' => 'Tasa',
-                    ]];
+                    $product['taxes'] = [['type' => 'IVA', 'rate' => $ivaRate, 'factor' => 'Tasa']];
                 } else {
-                    $product['taxes'] = [[
-                        'type'   => 'IVA',
-                        'rate'   => 0,
-                        'factor' => 'Exento',
-                    ]];
+                    $product['taxes'] = [['type' => 'IVA', 'rate' => 0, 'factor' => 'Exento']];
                 }
 
-                $items[] = [
-                    'quantity'   => (float) $item->quantity,
-                    'product'    => $product,
-                    'tax_object' => $taxObject,
-                ];
+                $items[] = ['quantity' => (float) $item->quantity, 'product' => $product, 'tax_object' => $taxObject];
             }
         }
 
         $payload = array_filter([
             'customer'       => $customer,
             'items'          => $items,
-            'payment_form'   => $invoice->payment_form,
-            'payment_method' => $invoice->payment_method,
-            'use'            => ($invoice->billing_preference === 'publico_general') ? 'S01' : $invoice->use_cfdi,
-            'series'         => $invoice->series,
-            'folio_number'   => $invoice->folio_number,
+            'payment_form'   => $order->payment_form,
+            'payment_method' => $order->payment_method,
+            'use'            => ($order->billing_preference === 'publico_general') ? 'S01' : $order->use_cfdi,
+            'series'         => $order->series,
+            'folio_number'   => $order->folio_number,
         ]);
 
         $response = $this->post('/invoices', $payload);
         $data     = $response->json();
 
         if ($response->successful()) {
-            $invoice->update([
+            $order->fiscalDocument()->create([
                 'facturapi_invoice_id' => $data['id'],
                 'status'               => $data['status'] === 'valid' ? 'valid' : 'pending',
                 'facturapi_data'       => $data,
@@ -207,19 +179,22 @@ class FacturapiService
     /**
      * Cancela una factura timbrada en FacturAPI.
      */
-    public function cancelInvoice(ClientInvoice $invoice, string $motive = '02'): array
+    public function cancelInvoice(Order $order, string $motive = '02'): array
     {
-        if (!$invoice->facturapi_invoice_id) {
-            return ['success' => false, 'message' => 'La factura no está timbrada.'];
+        $doc = $order->fiscalDocument;
+
+        if (!$doc?->facturapi_invoice_id) {
+            return ['success' => false, 'message' => 'La orden no tiene un CFDI timbrado.'];
         }
 
-        $response = $this->delete("/invoices/{$invoice->facturapi_invoice_id}?motive={$motive}");
+        $response = $this->delete("/invoices/{$doc->facturapi_invoice_id}?motive={$motive}");
         $data     = $response->json();
 
         if ($response->successful()) {
-            $invoice->update([
-                'status'       => 'cancelled',
-                'cancelled_at' => now(),
+            $doc->update([
+                'status'               => 'cancelled',
+                'cancelled_at'         => now(),
+                'cancellation_motive'  => $motive,
             ]);
         }
 
@@ -233,13 +208,15 @@ class FacturapiService
     /**
      * Crea un CFDI de complemento de pago para facturas PPD.
      */
-    public function createPaymentComplement(ClientInvoice $invoice, Payment $payment): array
+    public function createPaymentComplement(Order $order, Payment $payment): array
     {
-        if (!$invoice->facturapi_invoice_id) {
-            return ['success' => false, 'message' => 'La factura no está timbrada.'];
+        $doc = $order->fiscalDocument;
+
+        if (!$doc?->facturapi_invoice_id) {
+            return ['success' => false, 'message' => 'La orden no tiene un CFDI timbrado.'];
         }
 
-        $client = $invoice->client;
+        $client = $order->client;
         if (!$client->facturapi_customer_id) {
             $this->syncCustomer($client);
             $client->refresh();
@@ -259,13 +236,13 @@ class FacturapiService
                             'amount'       => (float) $payment->amount,
                             'related_documents' => [
                                 [
-                                    'uuid'                 => $invoice->facturapi_data['uuid'] ?? '',
-                                    'series'               => $invoice->series,
-                                    'folio_number'         => $invoice->folio_number,
-                                    'last_balance'         => (float) $invoice->total,
-                                    'amount'               => (float) $payment->amount,
-                                    'installment'          => 1,
-                                    'currency'             => $payment->currency ?? 'MXN',
+                                    'uuid'          => $doc->facturapi_data['uuid'] ?? '',
+                                    'series'        => $order->series,
+                                    'folio_number'  => $order->folio_number,
+                                    'last_balance'  => (float) $order->total,
+                                    'amount'        => (float) $payment->amount,
+                                    'installment'   => 1,
+                                    'currency'      => $payment->currency ?? 'MXN',
                                 ],
                             ],
                         ],
@@ -283,20 +260,19 @@ class FacturapiService
     /**
      * Descarga el PDF de la factura timbrada.
      */
-    public function downloadPdf(ClientInvoice $invoice): ?string
+    public function downloadPdf(Order $order): ?string
     {
-        if (!$invoice->facturapi_invoice_id) return null;
+        $id = $order->fiscalDocument?->facturapi_invoice_id;
+        if (!$id) return null;
         $response = Http::withBasicAuth($this->apiKey, '')
-            ->get("{$this->baseUrl}/invoices/{$invoice->facturapi_invoice_id}/pdf");
+            ->get("{$this->baseUrl}/invoices/{$id}/pdf");
         return $response->successful() ? $response->body() : null;
     }
 
-    /**
-     * Descarga el XML de la factura timbrada.
-     */
-    public function downloadXml(ClientInvoice $invoice): ?string
+    public function downloadXml(Order $order): ?string
     {
-        if (!$invoice->facturapi_invoice_id) return null;
+        $id = $order->fiscalDocument?->facturapi_invoice_id;
+        if (!$id) return null;
         $response = Http::withBasicAuth($this->apiKey, '')
             ->get("{$this->baseUrl}/invoices/{$invoice->facturapi_invoice_id}/xml");
         return $response->successful() ? $response->body() : null;

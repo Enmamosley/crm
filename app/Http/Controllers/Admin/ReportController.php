@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\ClientInvoice;
+use App\Models\Order;
 use App\Models\Lead;
 use App\Models\Payment;
 use Illuminate\Http\Request;
@@ -21,20 +21,20 @@ class ReportController extends Controller
         $from = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
         $to   = $request->input('to', now()->format('Y-m-d'));
 
-        $invoices = ClientInvoice::with('client')
+        $invoices = Order::with('client')
             ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
             ->get();
 
-        $payments = Payment::with('invoice.client')
+        $payments = Payment::with('order.client')
             ->where('status', 'approved')
             ->whereBetween('paid_at', [$from, "{$to} 23:59:59"])
             ->get();
 
         $stats = [
-            'total_facturado'    => $invoices->where('status', 'valid')->sum('total'),
+            'total_facturado'    => $invoices->whereNotNull('paid_at')->sum('total'),
             'total_cobrado'      => $payments->sum('amount'),
-            'facturas_emitidas'  => $invoices->where('status', 'valid')->count(),
-            'facturas_pendientes' => $invoices->whereNull('paid_at')->whereIn('status', ['valid', 'draft'])->count(),
+            'facturas_emitidas'  => $invoices->count(),
+            'facturas_pendientes' => $invoices->whereNull('paid_at')->whereIn('status', ['sent', 'draft'])->count(),
             'pagos_recibidos'    => $payments->count(),
         ];
 
@@ -74,7 +74,7 @@ class ReportController extends Controller
         $from = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
         $to   = $request->input('to', now()->format('Y-m-d'));
 
-        $invoices = ClientInvoice::with('client')
+        $invoices = Order::with('client')
             ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
             ->get();
 

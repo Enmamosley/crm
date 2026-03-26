@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class InvoiceItem extends Model
 {
     protected $fillable = [
-        'client_invoice_id',
+        'order_id',
         'description',
         'sat_product_key',
         'sat_unit_key',
@@ -25,8 +25,8 @@ class InvoiceItem extends Model
         return ['iva_exempt' => 'boolean'];
     }
 
-    public function invoice(): BelongsTo
+    public function order(): BelongsTo
     {
-        return $this->belongsTo(ClientInvoice::class, 'client_invoice_id');
+        return $this->belongsTo(Order::class, 'order_id');
     }
 }

@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class DunningAttempt extends Model
 {
     protected $fillable = [
-        'client_invoice_id', 'attempt_number', 'status',
+        'order_id', 'attempt_number', 'status',
         'scheduled_at', 'sent_at', 'notes',
     ];
 
@@ -20,8 +20,8 @@ class DunningAttempt extends Model
         ];
     }
 
-    public function invoice(): BelongsTo
+    public function order(): BelongsTo
     {
-        return $this->belongsTo(ClientInvoice::class, 'client_invoice_id');
+        return $this->belongsTo(Order::class, 'order_id');
     }
 }

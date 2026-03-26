@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ActivityLog;
 use App\Models\CartItem;
 use App\Models\Client;
-use App\Models\ClientInvoice;
+use App\Models\Order;
 use App\Models\DiscountCode;
 use App\Models\Service;
 use App\Models\Setting;
@@ -338,9 +338,9 @@ class CartController extends Controller
         }
     }
 
-    private function createInvoiceFromCart(Client $client, array $cartData, string $paymentForm): ClientInvoice
+    private function createInvoiceFromCart(Client $client, array $cartData, string $paymentForm): Order
     {
-        return ClientInvoice::create([
+        return Order::create([
             'client_id'      => $client->id,
             'series'         => 'V',
             'payment_form'   => $paymentForm,
