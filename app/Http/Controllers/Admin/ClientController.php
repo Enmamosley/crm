@@ -21,7 +21,8 @@ class ClientController extends Controller
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(function ($q) use ($s) {
-                $q->where('legal_name', 'like', "%{$s}%")
+                $q->where('name', 'like', "%{$s}%")
+                  ->orWhere('legal_name', 'like', "%{$s}%")
                   ->orWhere('tax_id', 'like', "%{$s}%")
                   ->orWhere('email', 'like', "%{$s}%");
             });
@@ -48,6 +49,7 @@ class ClientController extends Controller
 
         $validated = $request->validate([
             'lead_id'              => 'required|exists:leads,id',
+            'name'                 => 'required|string|max:255',
             'billing_type'         => 'nullable|in:fiscal,publico_general',
             'legal_name'           => $isPublico ? 'nullable|string|max:255' : 'required|string|max:255',
             'tax_id'               => $isPublico ? 'nullable|string|max:20'  : 'required|string|max:20',
@@ -117,6 +119,7 @@ class ClientController extends Controller
         $isPublico = $request->input('billing_type') === 'publico_general';
 
         $validated = $request->validate([
+            'name'                 => 'required|string|max:255',
             'billing_type'         => 'nullable|in:fiscal,publico_general',
             'legal_name'           => $isPublico ? 'nullable|string|max:255' : 'required|string|max:255',
             'tax_id'               => $isPublico ? 'nullable|string|max:20'  : 'required|string|max:20',

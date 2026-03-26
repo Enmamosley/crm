@@ -24,7 +24,7 @@
     <table class="w-full">
         <thead class="bg-gray-50">
             <tr>
-                <th class="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Nombre fiscal</th>
+                <th class="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Cliente</th>
                 <th class="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">RFC</th>
                 <th class="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Lead</th>
                 <th class="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Email</th>
@@ -35,7 +35,12 @@
         <tbody class="divide-y">
             @forelse($clients as $client)
                 <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 font-medium">{{ $client->legal_name }}</td>
+                    <td class="px-6 py-4">
+                        <p class="font-medium">{{ $client->name ?? $client->legal_name }}</p>
+                        @if($client->name && $client->legal_name !== $client->name)
+                            <p class="text-xs text-gray-400">{{ $client->legal_name }}</p>
+                        @endif
+                    </td>
                     <td class="px-6 py-4 font-mono text-sm">{{ $client->tax_id }}</td>
                     <td class="px-6 py-4 text-sm text-gray-600">{{ $client->lead?->name ?? '-' }}</td>
                     <td class="px-6 py-4 text-sm">{{ $client->email ?? '-' }}</td>

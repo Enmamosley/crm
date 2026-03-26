@@ -1,6 +1,6 @@
 @extends('layouts.admin')
-@section('title', $client->legal_name)
-@section('header', $client->legal_name)
+@section('title', $client->name ?? $client->legal_name)
+@section('header', $client->name ?? $client->legal_name)
 
 @section('actions')
 <a href="{{ $client->portalUrl() }}" target="_blank" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 text-sm">
@@ -35,16 +35,32 @@
     {{-- Columna izquierda: datos y facturas --}}
     <div class="lg:col-span-2 space-y-6">
 
+        {{-- Información del cliente --}}
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-4">Información del Cliente</h3>
+            <div class="grid grid-cols-2 gap-4 text-sm">
+                <div class="col-span-2"><span class="text-gray-500">Nombre:</span><p class="font-medium text-base">{{ $client->name ?? $client->legal_name }}</p></div>
+                <div><span class="text-gray-500">Email:</span><p class="font-medium">{{ $client->email ?? '-' }}</p></div>
+                <div><span class="text-gray-500">Teléfono:</span><p class="font-medium">{{ $client->phone ?? '-' }}</p></div>
+                @if($client->notes)
+                <div class="col-span-2"><span class="text-gray-500">Notas:</span><p class="font-medium text-gray-700">{{ $client->notes }}</p></div>
+                @endif
+            </div>
+        </div>
+
         {{-- Datos fiscales --}}
         <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold mb-4">Datos Fiscales</h3>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold">Datos Fiscales</h3>
+                @if($client->billing_type === 'publico_general')
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-700">Público en General</span>
+                @endif
+            </div>
             <div class="grid grid-cols-2 gap-4 text-sm">
-                <div><span class="text-gray-500">Nombre/Razón Social:</span><p class="font-medium">{{ $client->legal_name }}</p></div>
+                <div><span class="text-gray-500">Razón Social:</span><p class="font-medium">{{ $client->legal_name }}</p></div>
                 <div><span class="text-gray-500">RFC:</span><p class="font-medium font-mono">{{ $client->tax_id }}</p></div>
                 <div><span class="text-gray-500">Régimen Fiscal:</span><p class="font-medium">{{ $client->tax_system }}</p></div>
                 <div><span class="text-gray-500">Uso CFDI:</span><p class="font-medium">{{ $client->cfdi_use }}</p></div>
-                <div><span class="text-gray-500">Email:</span><p class="font-medium">{{ $client->email ?? '-' }}</p></div>
-                <div><span class="text-gray-500">Teléfono:</span><p class="font-medium">{{ $client->phone ?? '-' }}</p></div>
                 <div class="col-span-2">
                     <span class="text-gray-500">Dirección Fiscal:</span>
                     <p class="font-medium">
@@ -52,7 +68,7 @@
                             $client->address_street, $client->address_exterior,
                             $client->address_neighborhood, $client->address_city,
                             $client->address_state, 'CP ' . $client->address_zip
-                        ])) }}
+                        ])) ?: '-' }}
                     </p>
                 </div>
             </div>

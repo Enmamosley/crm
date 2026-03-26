@@ -12,7 +12,8 @@ class Client extends Model
 {
     use SoftDeletes;
     protected $fillable = [
-        'lead_id', 'billing_type', 'legal_name', 'tax_id', 'tax_system', 'cfdi_use',
+        'lead_id', 'name',
+        'billing_type', 'legal_name', 'tax_id', 'tax_system', 'cfdi_use',
         'email', 'phone',
         'address_zip', 'address_street', 'address_exterior', 'address_interior',
         'address_neighborhood', 'address_city', 'address_municipality',
