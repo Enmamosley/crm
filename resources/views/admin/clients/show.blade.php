@@ -212,10 +212,16 @@
 
                     @if($client->domain_type === 'cosmotown')
                         <div class="flex items-center gap-2">
-                            <button onclick="rebuildDomain()" id="btn-rebuild-domain"
-                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition">
-                                <i class="fas fa-globe"></i> Registrar dominio
-                            </button>
+                            @if($client->cosmotown_registered)
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium bg-green-100 text-green-700">
+                                    <i class="fas fa-check-circle"></i> Dominio registrado
+                                </span>
+                            @else
+                                <button onclick="rebuildDomain()" id="btn-rebuild-domain"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition">
+                                    <i class="fas fa-globe"></i> Registrar dominio
+                                </button>
+                            @endif
                             <span class="text-xs text-gray-400">Cosmotown</span>
                         </div>
                     @endif
