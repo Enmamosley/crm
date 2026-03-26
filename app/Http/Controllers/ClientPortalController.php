@@ -292,6 +292,8 @@ class ClientPortalController extends Controller
         ];
         $hasBankData = !empty($bankData['clabe']) || !empty($bankData['account']);
 
+        $invoice = $order;
+
         return view('portal.checkout', compact('client', 'invoice', 'mpPublicKey', 'bankData', 'hasBankData'));
     }
 

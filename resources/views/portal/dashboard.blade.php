@@ -156,8 +156,8 @@
                 <div class="space-y-2">
                     @foreach($client->invoices as $invoice)
                     @php
-                        $iColors = ['draft'=>'gray','sent'=>'blue','pending'=>'yellow','valid'=>'green','cancelled'=>'red'];
-                        $iLabels = ['draft'=>'Borrador','sent'=>'Pagada','pending'=>'Procesando','valid'=>'Timbrada','cancelled'=>'Cancelada'];
+                        $iColors = ['draft'=>'gray','sent'=>'blue','pending'=>'yellow','valid'=>'green','paid'=>'green','cancelled'=>'red'];
+                        $iLabels = ['draft'=>'Borrador','sent'=>'Pagada','pending'=>'Procesando','valid'=>'Timbrada','paid'=>'Pagada','cancelled'=>'Cancelada'];
                         $ic = $iColors[$invoice->status] ?? 'gray';
                     @endphp
                     <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-4 flex items-center justify-between hover:shadow-md transition-shadow">
@@ -185,7 +185,7 @@
                             <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-{{ $ic }}-100 text-{{ $ic }}-700">
                                 {{ $iLabels[$invoice->status] ?? $invoice->status }}
                             </span>
-                            @if(!$invoice->paid_at && $invoice->status !== 'cancelled' && \App\Models\Setting::get('mp_public_key'))
+                            @if(!$invoice->paid_at && !in_array($invoice->status, ['cancelled', 'paid', 'valid']) && \App\Models\Setting::get('mp_public_key'))
                                 <a href="{{ route('portal.checkout', [$client->portal_token, $invoice]) }}"
                                    class="btn-primary text-xs px-3 py-1.5 rounded-lg">
                                     <i class="fas fa-credit-card mr-1"></i> Pagar

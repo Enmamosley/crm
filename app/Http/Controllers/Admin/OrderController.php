@@ -232,7 +232,16 @@ class OrderController extends Controller
             'status' => 'required|in:draft,sent,pending,paid',
         ]);
 
-        $order->update(['status' => $validated['status']]);
+        $updates = ['status' => $validated['status']];
+
+        // Registrar fecha de pago si se marca como pagada, limpiarla si se desmarca
+        if ($validated['status'] === 'paid') {
+            $updates['paid_at'] = $updates['paid_at'] ?? now();
+        } elseif (in_array($validated['status'], ['draft', 'sent', 'pending'])) {
+            $updates['paid_at'] = null;
+        }
+
+        $order->update($updates);
 
         $labels = ['draft' => 'Borrador', 'sent' => 'Enviada', 'pending' => 'Procesando', 'paid' => 'Pagada'];
         ActivityLog::log('order_status_changed', $order,
