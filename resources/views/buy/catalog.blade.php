@@ -57,7 +57,7 @@
                 @if($logo)
                     <img src="{{ asset('storage/' . $logo) }}" alt="{{ $companyName }}" class="h-10">
                 @endif
-                <div class="text-center">
+                <div>
                     <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">{{ $companyName }}</h1>
                     <p class="text-sm text-gray-500">Elige el servicio que necesitas</p>
                 </div>
