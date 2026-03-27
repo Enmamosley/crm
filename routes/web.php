@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\LeadController;
 use App\Http\Controllers\Admin\ServiceCategoryController;
 use App\Http\Controllers\Admin\ServiceController;
+use App\Http\Controllers\Admin\ServiceBundleController;
 use App\Http\Controllers\Admin\QuoteController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\AgentControlController;
@@ -76,6 +77,7 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::resource('categories', ServiceCategoryController::class);
         Route::resource('services', ServiceController::class);
+        Route::resource('service-bundles', ServiceBundleController::class);
     });
 
     // Quotes

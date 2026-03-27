@@ -30,8 +30,9 @@ class QuoteController extends Controller
         $services = Service::active()->with('category')->get();
         $selectedLead = $request->filled('lead_id') ? Lead::find($request->lead_id) : null;
         $ivaPercentage = Setting::get('iva_percentage', 16);
+        $bundles = \App\Models\ServiceBundle::active()->with(['services', 'items'])->get();
 
-        return view('admin.quotes.create', compact('leads', 'services', 'selectedLead', 'ivaPercentage'));
+        return view('admin.quotes.create', compact('leads', 'services', 'selectedLead', 'ivaPercentage', 'bundles'));
     }
 
     public function store(Request $request)

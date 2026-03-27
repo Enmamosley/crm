@@ -37,6 +37,7 @@ class MenuHelper
             array_splice($items, 2, 0, [
                 ['icon' => 'categories', 'name' => 'Categorías', 'path' => '/panel/categories'],
                 ['icon' => 'services',   'name' => 'Servicios',  'path' => '/panel/services'],
+                ['icon' => 'bundles',    'name' => 'Paquetes',   'path' => '/panel/service-bundles'],
             ]);
             $items[] = ['icon' => 'agent', 'name' => 'Control Agente', 'path' => '/panel/agent'];
         }

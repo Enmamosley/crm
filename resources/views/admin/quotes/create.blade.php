@@ -33,9 +33,34 @@
             <div class="bg-white rounded-lg shadow p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h3 class="text-lg font-semibold">Servicios</h3>
-                    <button type="button" onclick="addItem()" class="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 text-sm">
-                        <i class="fas fa-plus mr-1"></i> Agregar Servicio
-                    </button>
+                    <div class="flex gap-2">
+                        <div class="relative" x-data="{ open: false }">
+                            <button type="button" @click="open = !open"
+                                    class="bg-indigo-600 text-white px-3 py-1 rounded-lg hover:bg-indigo-700 text-sm inline-flex items-center gap-1">
+                                <i class="fas fa-box mr-1"></i> Agregar Paquete
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            <div x-show="open" @click.outside="open = false" x-cloak
+                                 class="absolute right-0 mt-1 w-64 bg-white border rounded-lg shadow-lg z-10 max-h-64 overflow-y-auto">
+                                @if($bundles->isEmpty())
+                                <p class="px-4 py-3 text-sm text-gray-400">No hay paquetes activos.</p>
+                                @else
+                                @foreach($bundles as $bundle)
+                                <button type="button"
+                                        @click="open = false"
+                                        onclick="addBundle({{ $bundle->id }})"
+                                        class="w-full text-left px-4 py-2.5 text-sm hover:bg-gray-50 border-b last:border-0">
+                                    <span class="font-medium text-gray-800">{{ $bundle->name }}</span>
+                                    <span class="block text-xs text-gray-400">{{ $bundle->items->count() }} servicios</span>
+                                </button>
+                                @endforeach
+                                @endif
+                            </div>
+                        </div>
+                        <button type="button" onclick="addItem()" class="bg-green-600 text-white px-3 py-1 rounded-lg hover:bg-green-700 text-sm">
+                            <i class="fas fa-plus mr-1"></i> Agregar Servicio
+                        </button>
+                    </div>
                 </div>
 
                 <div id="items-container">
@@ -105,6 +130,41 @@
 <script>
     const ivaPercentage = {{ $ivaPercentage }};
     let itemIndex = 1;
+    const bundlesData = @json($bundles->map(fn($b) => [
+        'id' => $b->id,
+        'services' => $b->services->map(fn($s) => [
+            'id' => $s->id,
+            'name' => $s->name,
+            'price' => (float) $s->price,
+            'quantity' => $s->pivot->quantity,
+        ])
+    ])->keyBy('id'));
+
+    function addBundle(bundleId) {
+        const bundle = bundlesData[bundleId];
+        if (!bundle) return;
+        bundle.services.forEach(service => {
+            addItemWithValues(service.id, service.quantity, service.price);
+        });
+    }
+
+    function addItemWithValues(serviceId, qty, price) {
+        const container = document.getElementById('items-container');
+        const firstRow = container.querySelector('.items-row');
+        const newRow = firstRow.cloneNode(true);
+        newRow.dataset.index = itemIndex;
+        newRow.querySelectorAll('select, input').forEach(el => {
+            el.name = el.name.replace(/\[\d+\]/, `[${itemIndex}]`);
+        });
+        const sel = newRow.querySelector('.service-select');
+        sel.value = serviceId;
+        newRow.querySelector('.qty-input').value = qty;
+        newRow.querySelector('.price-input').value = price.toFixed(2);
+        newRow.querySelector('.row-total').value = '$' + (qty * price).toFixed(2);
+        container.appendChild(newRow);
+        itemIndex++;
+        calculateTotals();
+    }
 
     function addItem() {
         const container = document.getElementById('items-container');
