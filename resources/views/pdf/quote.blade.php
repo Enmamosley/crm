@@ -27,14 +27,14 @@
         }
 
         .page-wrapper {
-            padding: 40px 50px 30px 50px;
+            padding: 24px 50px 20px 50px;
         }
 
         /* ── Header ── */
         .header {
             display: table;
             width: 100%;
-            margin-bottom: 35px;
+            margin-bottom: 20px;
         }
         .header-left {
             display: table-cell;
@@ -48,7 +48,7 @@
             text-align: right;
         }
 
-        .logo { max-height: 55px; max-width: 180px; margin-bottom: 12px; }
+        .logo { max-height: 45px; max-width: 160px; margin-bottom: 8px; }
 
         .company-name {
             font-size: 20px;
@@ -71,8 +71,8 @@
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 3px;
-            padding: 8px 22px;
-            margin-bottom: 14px;
+            padding: 5px 18px;
+            margin-bottom: 8px;
         }
         .quote-number {
             font-size: 22px;
@@ -81,7 +81,7 @@
             letter-spacing: 0.5px;
         }
         .quote-meta {
-            margin-top: 12px;
+            margin-top: 6px;
             font-size: 9.5px;
             color: #718096;
         }
@@ -93,14 +93,14 @@
         .divider {
             border: none;
             border-top: 1.5px solid #e2e8f0;
-            margin: 0 0 30px 0;
+            margin: 0 0 18px 0;
         }
 
         /* ── Client & Date ── */
         .info-section {
             display: table;
             width: 100%;
-            margin-bottom: 30px;
+            margin-bottom: 18px;
         }
         .info-box {
             display: table-cell;
@@ -120,8 +120,8 @@
             text-transform: uppercase;
             letter-spacing: 2px;
             color: #a0aec0;
-            margin-bottom: 10px;
-            padding-bottom: 6px;
+            margin-bottom: 6px;
+            padding-bottom: 4px;
             border-bottom: 1.5px solid #e2e8f0;
         }
 
@@ -148,7 +148,7 @@
         }
 
         .date-row {
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
         .date-label {
             font-size: 9px;
@@ -172,7 +172,7 @@
         .items-table thead th {
             background-color: #1e3a5f;
             color: #ffffff;
-            padding: 11px 14px;
+            padding: 7px 14px;
             text-align: left;
             font-size: 8.5px;
             font-weight: bold;
@@ -196,7 +196,7 @@
         }
 
         .items-table tbody td {
-            padding: 12px 14px;
+            padding: 8px 14px;
             font-size: 10.5px;
             border-bottom: 1px solid #edf2f7;
             vertical-align: top;
@@ -250,7 +250,7 @@
             border-collapse: collapse;
         }
         .totals-table td {
-            padding: 9px 14px;
+            padding: 5px 14px;
             font-size: 11px;
         }
         .totals-table .label-cell {
@@ -273,8 +273,8 @@
         }
         .totals-table .grand-total-row td {
             border-top: 2px solid #1e3a5f;
-            padding-top: 12px;
-            padding-bottom: 12px;
+            padding-top: 8px;
+            padding-bottom: 8px;
         }
         .totals-table .grand-total-row .label-cell {
             font-size: 13px;
@@ -297,7 +297,7 @@
 
         /* ── Notes ── */
         .notes-section {
-            margin-top: 28px;
+            margin-top: 16px;
             page-break-inside: avoid;
         }
         .notes-header {
@@ -319,7 +319,7 @@
 
         /* ── Terms / Validity ── */
         .terms-section {
-            margin-top: 25px;
+            margin-top: 14px;
             page-break-inside: avoid;
         }
         .terms-header {
@@ -342,7 +342,7 @@
 
         /* ── Acceptance bar ── */
         .acceptance-bar {
-            margin-top: 32px;
+            margin-top: 18px;
             background: #f0f7ff;
             border: 1px solid #bfdbfe;
             border-radius: 6px;
@@ -379,8 +379,8 @@
 
         /* ── Footer ── */
         .footer {
-            margin-top: 30px;
-            padding-top: 14px;
+            margin-top: 16px;
+            padding-top: 10px;
             border-top: 1.5px solid #e2e8f0;
             text-align: center;
         }
