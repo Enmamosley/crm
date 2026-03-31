@@ -34,10 +34,13 @@ class DmChampFunctionController extends Controller
 
         $phone = $this->normalizePhone($phone);
 
-        // Buscar por cliente o lead
-        $client = Client::where('phone', $phone)
-            ->orWhere('phone', $request->input('phone'))
-            ->first();
+        $rawPhone = $request->input('phone');
+        $client = Client::where(function ($q) use ($phone, $rawPhone) {
+            $q->where('phone', $phone);
+            if ($rawPhone !== $phone) {
+                $q->orWhere('phone', $rawPhone);
+            }
+        })->first();
 
         if (! $client) {
             return response()->json([
@@ -102,14 +105,17 @@ class DmChampFunctionController extends Controller
             $phone = $this->normalizePhone($phone);
         }
 
+        // Verificar si ya es cliente
         if ($phone) {
-            $phone = $this->normalizePhone($phone);
-        }
+            $existingClient = Client::where('phone', $phone)->first();
+            if ($existingClient) {
+                return response()->json([
+                    'creado'  => false,
+                    'mensaje' => "{$existingClient->name} ya es cliente registrado. Le daremos seguimiento.",
+                ]);
+            }
 
-        // Evitar duplicados por teléfono
-        if ($phone) {
             $existing = Lead::where('phone', $phone)->first();
-
             if ($existing) {
                 return response()->json([
                     'creado'  => false,
@@ -168,10 +174,11 @@ class DmChampFunctionController extends Controller
                 // Buscar por cualquiera de las palabras encontradas
                 $query->where(function ($q) use ($palabras) {
                     foreach ($palabras as $palabra) {
-                        $q->orWhere('name', 'like', "%{$palabra}%")
-                          ->orWhere('description', 'like', "%{$palabra}%")
-                          ->orWhereHas('category', function ($catQ) use ($palabra) {
-                              $catQ->where('name', 'like', "%{$palabra}%");
+                        $escaped = str_replace(['%', '_'], ['\%', '\_'], $palabra);
+                        $q->orWhere('name', 'like', "%{$escaped}%")
+                          ->orWhere('description', 'like', "%{$escaped}%")
+                          ->orWhereHas('category', function ($catQ) use ($escaped) {
+                              $catQ->where('name', 'like', "%{$escaped}%");
                           });
                     }
                 });
@@ -183,29 +190,24 @@ class DmChampFunctionController extends Controller
 
         $services = $query->orderBy('price')->get(['id', 'name', 'description', 'price', 'service_category_id', 'info_url']);
 
-        if ($services->isEmpty()) {
+        if ($services->isEmpty() && !empty($buscar)) {
+            // Query fresca sin filtros de búsqueda para mostrar catálogo completo
+            $todos = Service::where('active', true)
+                ->where('public', true)
+                ->with('category:id,name')
+                ->orderBy('price')
+                ->get();
+
             return response()->json([
                 'encontrados' => 0,
                 'mensaje'     => 'No encontré servicios con ese criterio. Aquí está el catálogo completo:',
-                'servicios'   => $query->distinct()->get(['id', 'name', 'description', 'price', 'service_category_id', 'info_url'])
-                    ->map(fn($s) => [
-                        'nombre'      => $s->name,
-                        'descripcion' => $s->description,
-                        'precio'      => '$' . number_format($s->price, 2) . ' MXN',
-                        'categoria'   => $s->category?->name,
-                    ])->values()->all() ?? [],
+                'servicios'   => $todos->map(fn($s) => $this->formatService($s))->values(),
             ]);
         }
 
         return response()->json([
             'encontrados' => $services->count(),
-            'servicios'   => $services->map(fn($s) => [
-                'nombre'      => $s->name,
-                'descripcion' => $s->description,
-                'precio'      => '$' . number_format($s->price, 2) . ' MXN',
-                'categoria'   => $s->category?->name,
-                'mas_info'    => $s->info_url,
-            ])->values(),
+            'servicios'   => $services->map(fn($s) => $this->formatService($s))->values(),
             'mensaje' => "Encontré {$services->count()} servicio(s) disponible(s).",
         ]);
     }
@@ -213,6 +215,19 @@ class DmChampFunctionController extends Controller
     // ─────────────────────────────────────────────────────────────
     //  Helpers
     // ─────────────────────────────────────────────────────────────
+    private function formatService(Service $s): array
+    {
+        return [
+            'nombre'        => $s->name,
+            'descripcion'   => $s->description,
+            'precio'        => '$' . number_format($s->price, 2) . ' MXN',
+            'precio_con_iva'=> '$' . number_format($s->priceWithIva(), 2) . ' MXN',
+            'categoria'     => $s->category?->name,
+            'mas_info'      => $s->info_url,
+            'comprar'       => $s->slug ? $s->publicUrl() : null,
+        ];
+    }
+
     private function error(string $message): JsonResponse
     {
         return response()->json(['error' => true, 'mensaje' => $message], 422);
