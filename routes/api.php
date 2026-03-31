@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\LeadController;
 use App\Http\Controllers\Api\QuoteController;
 use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\SettingController;
+use App\Http\Controllers\Api\DmChampFunctionController;
 use App\Http\Controllers\MercadoPagoWebhookController;
 
 Route::get('/user', function (Request $request) {
@@ -62,3 +63,12 @@ Route::post('webhooks/mercadopago', [MercadoPagoWebhookController::class, 'handl
 Route::post('webhooks/dmchamp', [\App\Http\Controllers\DmChampWebhookController::class, 'handle'])
     ->middleware('throttle:webhooks')
     ->name('dmchamp.webhook');
+
+// Custom Functions de DM Champ — autenticadas con token estático DMCHAMP_FUNCTION_TOKEN
+Route::prefix('v1/dmchamp')->middleware(['throttle:60,1'])->group(function () {
+    Route::middleware(\App\Http\Middleware\DmChampTokenMiddleware::class)->group(function () {
+        Route::get('cliente',   [DmChampFunctionController::class, 'estadoCuenta']);
+        Route::post('lead',     [DmChampFunctionController::class, 'crearLead']);
+        Route::get('servicios', [DmChampFunctionController::class, 'servicios']);
+    });
+});
