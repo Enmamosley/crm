@@ -8,6 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
+        Schema::dropIfExists('recurring_invoice_items');
         Schema::create('recurring_invoice_items', function (Blueprint $table) {
             $table->id();
             $table->foreignId('recurring_invoice_schedule_id')
