@@ -105,7 +105,7 @@ class ReportController extends Controller
         $from = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
         $to   = $request->input('to', now()->format('Y-m-d'));
 
-        $payments = Payment::with('invoice.client')
+        $payments = Payment::with('order.client')
             ->where('status', 'approved')
             ->whereBetween('paid_at', [$from, "{$to} 23:59:59"])
             ->get();
@@ -114,8 +114,8 @@ class ReportController extends Controller
             'ID', 'Factura', 'Cliente', 'Monto', 'Moneda', 'Tipo Pago', 'MP ID', 'Fecha Pago',
         ], $payments->map(fn($p) => [
             $p->id,
-            $p->invoice->folio(),
-            $p->invoice->client->legal_name ?? '',
+            $p->order->folio(),
+            $p->order->client->legal_name ?? '',
             $p->amount,
             $p->currency,
             $p->payment_type,

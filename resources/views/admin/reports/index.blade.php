@@ -146,8 +146,8 @@
                 @forelse($payments as $payment)
                 <tr class="hover:bg-gray-50">
                     <td class="px-4 py-3 font-medium">#{{ $payment->id }}</td>
-                    <td class="px-4 py-3">{{ $payment->invoice->folio() }}</td>
-                    <td class="px-4 py-3">{{ $payment->invoice->client->legal_name ?? '-' }}</td>
+                    <td class="px-4 py-3">{{ $payment->order->folio() }}</td>
+                    <td class="px-4 py-3">{{ $payment->order->client->legal_name ?? '-' }}</td>
                     <td class="px-4 py-3 text-right font-semibold">${{ number_format($payment->amount, 2) }}</td>
                     <td class="px-4 py-3 text-center text-gray-500">{{ $payment->payment_type ?? '-' }}</td>
                     <td class="px-4 py-3 text-right text-gray-500">{{ $payment->paid_at?->format('d/m/Y H:i') }}</td>
