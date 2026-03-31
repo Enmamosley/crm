@@ -91,7 +91,8 @@ class RecurringInvoiceController extends Controller
             return $schedule;
         });
 
-        ActivityLog::log('recurring_created', $schedule, "Programación recurrente creada para {$schedule->client->name ?? $schedule->client->legal_name}");
+        $clientName = $schedule->client->name ?? $schedule->client->legal_name;
+        ActivityLog::log('recurring_created', $schedule, "Programación recurrente creada para {$clientName}");
 
         return redirect()->route('admin.recurring-invoices.show', $schedule)
             ->with('success', 'Programación de factura recurrente creada.');
