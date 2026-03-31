@@ -23,11 +23,16 @@ class DmChampFunctionController extends Controller
     // ─────────────────────────────────────────────────────────────
     public function estadoCuenta(Request $request): JsonResponse
     {
-        $phone = $this->normalizePhone($request->input('phone', ''));
+        // Aceptar phone desde query string O body JSON
+        $phone = $request->input('phone') 
+            ?? $request->query('phone') 
+            ?? '';
 
-        if (! $phone) {
+        if (!$phone) {
             return $this->error('Necesito tu número de teléfono para buscar tu cuenta.');
         }
+
+        $phone = $this->normalizePhone($phone);
 
         // Buscar por cliente o lead
         $client = Client::where('phone', $phone)
@@ -82,21 +87,28 @@ class DmChampFunctionController extends Controller
     // ─────────────────────────────────────────────────────────────
     public function crearLead(Request $request): JsonResponse
     {
-        $name    = trim($request->input('name', ''));
-        $phone   = $this->normalizePhone($request->input('phone', ''));
-        $email   = $request->input('email');
-        $service = $request->input('service');
-        $notes   = $request->input('notes');
+        // Aceptar parámetros desde body JSON O query string
+        $name    = trim($request->input('name') ?? $request->query('name') ?? '');
+        $phone   = $request->input('phone') ?? $request->query('phone') ?? '';
+        $email   = $request->input('email') ?? $request->query('email') ?? '';
+        $service = $request->input('service') ?? $request->query('service') ?? '';
+        $notes   = $request->input('notes') ?? $request->query('notes') ?? '';
 
-        if (! $name && ! $phone) {
+        if (!$name && !$phone) {
             return $this->error('Necesito al menos el nombre o teléfono del prospecto.');
+        }
+
+        if ($phone) {
+            $phone = $this->normalizePhone($phone);
+        }
+
+        if ($phone) {
+            $phone = $this->normalizePhone($phone);
         }
 
         // Evitar duplicados por teléfono
         if ($phone) {
-            $existing = Lead::where('phone', $phone)
-                ->orWhere('phone', $request->input('phone'))
-                ->first();
+            $existing = Lead::where('phone', $phone)->first();
 
             if ($existing) {
                 return response()->json([
@@ -109,8 +121,8 @@ class DmChampFunctionController extends Controller
 
         $lead = Lead::create([
             'name'                => $name ?: 'Prospecto WhatsApp',
-            'phone'               => $phone ?: $request->input('phone'),
-            'email'               => $email,
+            'phone'               => $phone,
+            'email'               => $email ?: null,
             'project_description' => $service ? "Interesado en: {$service}" . ($notes ? ". {$notes}" : '') : $notes,
             'source'              => 'dmchamp',
             'status'              => 'nuevo',
@@ -131,25 +143,28 @@ class DmChampFunctionController extends Controller
 
     // ─────────────────────────────────────────────────────────────
     //  3. Consultar servicios y precios
-    //     GET /api/v1/dmchamp/servicios?categoria=hosting
+    //     GET /api/v1/dmchamp/servicios?buscar=hosting
+    //     POST /api/v1/dmchamp/servicios (con {"buscar":"hosting"})
     // ─────────────────────────────────────────────────────────────
     public function servicios(Request $request): JsonResponse
     {
+        // Aceptar parámetro de búsqueda desde query string O body JSON
+        $buscar = $request->input('buscar') 
+            ?? $request->query('buscar') 
+            ?? '';
+
         $query = Service::where('active', true)
             ->where('public', true)
             ->with('category:id,name');
 
-        if ($request->filled('categoria')) {
-            $query->whereHas('category', function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->input('categoria') . '%');
-            });
-        }
-
-        if ($request->filled('buscar')) {
-            $term = $request->input('buscar');
-            $query->where(function ($q) use ($term) {
-                $q->where('name', 'like', "%{$term}%")
-                  ->orWhere('description', 'like', "%{$term}%");
+        if (!empty($buscar)) {
+            $buscar = trim($buscar);
+            $query->where(function ($q) use ($buscar) {
+                $q->where('name', 'like', "%{$buscar}%")
+                  ->orWhere('description', 'like', "%{$buscar}%")
+                  ->orWhereHas('category', function ($catQ) use ($buscar) {
+                      $catQ->where('name', 'like', "%{$buscar}%");
+                  });
             });
         }
 
