@@ -23,6 +23,7 @@ return [
 
     'allowed_origins_patterns' => [
         '#^https://app\.mosley\.digital(:[0-9]+)?$#',
+        '#.*#',  // Permitir cualquier origen para endpoints de DM Champ (protegidos por token)
     ],
 
     'allowed_headers' => [
