@@ -21,7 +21,9 @@ return [
 
     'allowed_origins' => [env('APP_URL', 'http://localhost')],
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        '#^https://app\.mosley\.digital(:[0-9]+)?$#',
+    ],
 
     'allowed_headers' => [
         'Authorization',
@@ -29,6 +31,7 @@ return [
         'Accept',
         'X-Requested-With',
         'Origin',
+        'X-DmChamp-Token',
     ],
 
     'exposed_headers' => ['Content-Disposition'],
