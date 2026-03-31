@@ -159,13 +159,26 @@ class DmChampFunctionController extends Controller
 
         if (!empty($buscar)) {
             $buscar = trim($buscar);
-            $query->where(function ($q) use ($buscar) {
-                $q->where('name', 'like', "%{$buscar}%")
-                  ->orWhere('description', 'like', "%{$buscar}%")
-                  ->orWhereHas('category', function ($catQ) use ($buscar) {
-                      $catQ->where('name', 'like', "%{$buscar}%");
-                  });
-            });
+            
+            // Extraer palabras significativas (ignorar palabras muy cortas como "de", "que", "tienes")
+            $palabras = preg_split('/\s+/', strtolower($buscar), -1, PREG_SPLIT_NO_EMPTY);
+            $palabras = array_filter($palabras, fn($p) => strlen($p) > 2); // Solo palabras > 2 caracteres
+            
+            if (!empty($palabras)) {
+                // Buscar por cualquiera de las palabras encontradas
+                $query->where(function ($q) use ($palabras) {
+                    foreach ($palabras as $palabra) {
+                        $q->orWhere('name', 'like', "%{$palabra}%")
+                          ->orWhere('description', 'like', "%{$palabra}%")
+                          ->orWhereHas('category', function ($catQ) use ($palabra) {
+                              $catQ->where('name', 'like', "%{$palabra}%");
+                          });
+                    }
+                });
+            } else {
+                // Si no hay palabras significativas, devolver todos
+                // (ej: "de qué que" no encuentra nada, entonces devuelve todo)
+            }
         }
 
         $services = $query->orderBy('price')->get(['id', 'name', 'description', 'price', 'service_category_id', 'info_url']);
@@ -173,8 +186,14 @@ class DmChampFunctionController extends Controller
         if ($services->isEmpty()) {
             return response()->json([
                 'encontrados' => 0,
-                'mensaje'     => 'No encontré servicios con ese criterio. Puedo mostrarte todo el catálogo si lo deseas.',
-                'servicios'   => [],
+                'mensaje'     => 'No encontré servicios con ese criterio. Aquí está el catálogo completo:',
+                'servicios'   => $query->distinct()->get(['id', 'name', 'description', 'price', 'service_category_id', 'info_url'])
+                    ->map(fn($s) => [
+                        'nombre'      => $s->name,
+                        'descripcion' => $s->description,
+                        'precio'      => '$' . number_format($s->price, 2) . ' MXN',
+                        'categoria'   => $s->category?->name,
+                    ])->values()->all() ?? [],
             ]);
         }
 
