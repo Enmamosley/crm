@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'dmchamp' => [
+        'api_key'        => env('DMCHAMP_API_KEY'),
+        'webhook_secret' => env('DMCHAMP_WEBHOOK_SECRET'),
+    ],
+
 ];

@@ -57,3 +57,8 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
 Route::post('webhooks/mercadopago', [MercadoPagoWebhookController::class, 'handle'])
     ->middleware('throttle:webhooks')
     ->name('mercadopago.webhook');
+
+// Webhook de DM Champ (público, validado por firma HMAC interna)
+Route::post('webhooks/dmchamp', [\App\Http\Controllers\DmChampWebhookController::class, 'handle'])
+    ->middleware('throttle:webhooks')
+    ->name('dmchamp.webhook');
