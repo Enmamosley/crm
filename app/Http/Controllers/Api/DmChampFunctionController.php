@@ -228,25 +228,19 @@ class DmChampFunctionController extends Controller
 
         $services = $query->orderBy('price')->get();
 
-        // Si buscó algo y no encontró, mostrar catálogo completo
+        // Si buscó algo y no encontró coincidencia exacta, mostrar catálogo completo
         if ($services->isEmpty() && !empty($buscar)) {
-            $todos = Service::where('active', true)
+            $services = Service::where('active', true)
                 ->where('public', true)
                 ->with('category:id,name')
                 ->orderBy('price')
                 ->get();
-
-            return response()->json([
-                'encontrados' => 0,
-                'mensaje'     => 'No encontré servicios con ese criterio. Aquí está nuestro catálogo completo:',
-                'servicios'   => $todos->map(fn($s) => $this->formatService($s))->values(),
-            ]);
         }
 
         return response()->json([
             'encontrados' => $services->count(),
             'servicios'   => $services->map(fn($s) => $this->formatService($s))->values(),
-            'mensaje'     => "Encontré {$services->count()} servicio(s) disponible(s).",
+            'mensaje'     => "Tenemos {$services->count()} servicio(s) disponibles.",
         ]);
     }
 
