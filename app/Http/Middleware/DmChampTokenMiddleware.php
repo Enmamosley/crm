@@ -14,7 +14,6 @@ class DmChampTokenMiddleware
         Log::info('DmChamp:middleware', [
             'url'    => $request->fullUrl(),
             'method' => $request->method(),
-            'headers'=> $request->headers->all(),
         ]);
 
         $expected = config('services.dmchamp.function_token');

@@ -35,16 +35,16 @@
         <p>{{ $companyName }}</p>
     </div>
     <div class="content">
-        <p>Hola <strong>{{ $payment->invoice->client->legal_name }}</strong>,</p>
+        <p>Hola <strong>{{ $payment->order?->client?->legal_name }}</strong>,</p>
         <p>Hemos recibido su pago correctamente:</p>
         <div class="detail">
-            <p><strong>Factura:</strong> {{ $payment->invoice->folio() }}<br>
+            <p><strong>Factura:</strong> {{ $payment->order?->folio() ?? 'sin folio' }}<br>
             <strong>Monto:</strong> ${{ number_format($payment->amount, 2) }} {{ $payment->currency }}<br>
             <strong>Método:</strong> {{ ucfirst(str_replace('_', ' ', $payment->payment_type ?? 'N/A')) }}<br>
             <strong>Fecha:</strong> {{ $payment->paid_at?->format('d/m/Y H:i') }}</p>
         </div>
-        @if($payment->invoice->client->portal_token)
-        <a href="{{ $payment->invoice->client->portalUrl() }}" class="btn">Ver en Portal</a>
+        @if($payment->order?->client?->portal_token)
+        <a href="{{ $payment->order->client->portalUrl() }}" class="btn">Ver en Portal</a>
         @endif
     </div>
     </div>

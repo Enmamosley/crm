@@ -180,6 +180,23 @@ class DmChampFunctionController extends Controller
     {
         Log::info('DmChamp:servicios', ['body' => $request->all()]);
 
+        try {
+            return $this->consultarServicios($request);
+        } catch (\Throwable $e) {
+            Log::error('DmChamp:servicios:error', [
+                'message' => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'encontrados' => 0,
+                'servicios'   => [],
+                'mensaje'     => 'No fue posible consultar el catálogo en este momento. Intenta de nuevo en unos minutos.',
+            ], 200);
+        }
+    }
+
+    private function consultarServicios(Request $request): JsonResponse
+    {
         $buscar = trim($request->input('buscar') ?? '');
 
         $query = Service::where('active', true)

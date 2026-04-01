@@ -18,7 +18,7 @@ class PaymentConfirmed extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Pago confirmado — Factura ' . $this->payment->invoice->folio(),
+            subject: 'Pago confirmado — Factura ' . ($this->payment->order?->folio() ?? 'sin folio'),
         );
     }
 
