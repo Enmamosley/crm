@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Service;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Endpoints para DM Champ Custom Functions.
@@ -28,6 +29,8 @@ class DmChampFunctionController extends Controller
     // ─────────────────────────────────────────────────────────────
     public function estadoCuenta(Request $request): JsonResponse
     {
+        Log::info('DmChamp:estadoCuenta', ['body' => $request->all()]);
+
         $phone = $this->extractPhone($request);
 
         if (!$phone) {
@@ -90,6 +93,8 @@ class DmChampFunctionController extends Controller
     // ─────────────────────────────────────────────────────────────
     public function crearLead(Request $request): JsonResponse
     {
+        Log::info('DmChamp:crearLead', ['body' => $request->all()]);
+
         $system = $request->input('system', []);
 
         // Datos automáticos de DM Champ + datos del input
@@ -173,6 +178,8 @@ class DmChampFunctionController extends Controller
     // ─────────────────────────────────────────────────────────────
     public function servicios(Request $request): JsonResponse
     {
+        Log::info('DmChamp:servicios', ['body' => $request->all()]);
+
         $buscar = trim($request->input('buscar') ?? '');
 
         $query = Service::where('active', true)
