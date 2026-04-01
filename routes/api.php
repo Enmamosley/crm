@@ -66,7 +66,7 @@ Route::post('webhooks/dmchamp', [\App\Http\Controllers\DmChampWebhookController:
 
 // Custom Functions de DM Champ — autenticadas con token estático DMCHAMP_FUNCTION_TOKEN
 // DM Champ envía siempre POST con JSON body + campo "system" automático
-Route::prefix('v1/dmchamp')->middleware(['throttle:60,1'])->group(function () {
+Route::prefix('v1/dmchamp')->middleware(['throttle:60,1', 'no.cache'])->group(function () {
     Route::middleware(\App\Http\Middleware\DmChampTokenMiddleware::class)->group(function () {
         Route::post('cliente',   [DmChampFunctionController::class, 'estadoCuenta']);
         Route::post('lead',      [DmChampFunctionController::class, 'crearLead']);
