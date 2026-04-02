@@ -33,7 +33,8 @@ class CosmotownService
             'header'  => 'X-API-TOKEN: ' . (substr($this->apiKey, 0, 6) ?: '(vacío)') . '...',
         ]);
 
-        $http = Http::withHeaders(['X-API-TOKEN' => $this->apiKey]);
+        $http = Http::withHeaders(['X-API-TOKEN' => $this->apiKey])
+            ->withOptions(['curl' => [CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4]]);
 
         $response = match(strtoupper($method)) {
             'GET'  => $http->timeout(10)->get($url, $payload),
