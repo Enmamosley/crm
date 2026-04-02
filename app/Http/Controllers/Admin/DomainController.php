@@ -112,7 +112,8 @@ class DomainController extends Controller
         }
 
         // Cosmotown puede devolver la info en el nivel raíz o anidada bajo 'domain'
-        $d = $raw['domain'] ?? $raw;
+        // Si 'domain' es un string (el nombre), los datos están en el nivel raíz
+        $d = is_array($raw['domain'] ?? null) ? $raw['domain'] : $raw;
 
         // Normalizar campos a nombres conocidos
         $domainInfo = [
