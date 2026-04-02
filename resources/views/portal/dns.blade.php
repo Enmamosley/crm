@@ -7,6 +7,7 @@
     @vite('resources/css/app.css')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>[x-cloak]{display:none!important}</style>
 </head>
 <body class="bg-gray-50 min-h-screen">
 
@@ -23,7 +24,7 @@
         </div>
     </header>
 
-    <main class="max-w-5xl mx-auto px-6 py-8 space-y-6">
+    <main class="max-w-5xl mx-auto px-6 py-8 space-y-6" x-data="{ editId: null, editType: '', editHost: '', editValue: '', editTtl: 3600, editPriority: 10 }">
 
         @if(session('success'))
             <div class="bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm flex items-center gap-2">
@@ -66,10 +67,12 @@
                                     $color = $typeColors[$type] ?? 'gray';
                                     $host  = $record['host'] ?? $record['name'] ?? '@';
                                     $value = $record['ip'] ?? $record['ipv6'] ?? $record['target'] ?? $record['txt'] ?? $record['content'] ?? '-';
-                                    $ttl   = $record['ttl'] ?? '-';
+                                    $ttl   = $record['ttl'] ?? 3600;
+                                    $pri   = $record['pri'] ?? $record['priority'] ?? 10;
                                     $id    = $record['id'] ?? null;
                                 @endphp
-                                <tr class="hover:bg-gray-50">
+                                {{-- Fila normal --}}
+                                <tr class="hover:bg-gray-50" x-show="editId !== '{{ $id }}'">
                                     <td class="px-4 py-3">
                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-bold bg-{{ $color }}-100 text-{{ $color }}-700">{{ $type }}</span>
                                     </td>
@@ -77,17 +80,68 @@
                                     <td class="px-4 py-3 font-mono text-gray-600 text-xs max-w-[200px] truncate" title="{{ $value }}">{{ $value }}</td>
                                     <td class="px-4 py-3 text-center text-gray-400 text-xs">{{ $ttl }}</td>
                                     <td class="px-4 py-3 text-right">
-                                        @if($id)
-                                        <form action="{{ route('portal.dns.destroy', [$client->portal_token, $id]) }}" method="POST"
-                                              onsubmit="return confirm('¿Eliminar este registro?')">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="text-red-400 hover:text-red-600 text-xs" title="Eliminar">
-                                                <i class="fas fa-trash"></i>
+                                        <div class="flex items-center justify-end gap-2">
+                                            @if($id)
+                                            <button type="button" title="Editar"
+                                                @click="editId='{{ $id }}'; editType='{{ $type }}'; editHost='{{ $host }}'; editValue='{{ addslashes($value) }}'; editTtl={{ (int)$ttl }}; editPriority={{ (int)$pri }}"
+                                                class="text-blue-400 hover:text-blue-600 text-xs">
+                                                <i class="fas fa-edit"></i>
                                             </button>
-                                        </form>
-                                        @endif
+                                            <form action="{{ route('portal.dns.destroy', [$client->portal_token, $id]) }}" method="POST"
+                                                  onsubmit="return confirm('¿Eliminar este registro?')">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="text-red-400 hover:text-red-600 text-xs" title="Eliminar">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                            @endif
+                                        </div>
                                     </td>
                                 </tr>
+                                {{-- Fila de edición inline --}}
+                                @if($id)
+                                <tr x-show="editId === '{{ $id }}'" x-cloak>
+                                    <td colspan="5" class="px-4 py-3 bg-blue-50">
+                                        <form action="{{ route('portal.dns.update', [$client->portal_token, $id]) }}" method="POST">
+                                            @csrf @method('PUT')
+                                            <div class="flex flex-wrap items-end gap-2">
+                                                <div>
+                                                    <label class="block text-xs text-gray-500 mb-1">Tipo</label>
+                                                    <select name="type" x-model="editType" class="border rounded px-2 py-1.5 text-xs">
+                                                        @foreach(['A','AAAA','CNAME','MX','TXT'] as $t)
+                                                            <option value="{{ $t }}">{{ $t }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs text-gray-500 mb-1">Host</label>
+                                                    <input type="text" name="host" x-model="editHost" class="border rounded px-2 py-1.5 text-xs font-mono w-28">
+                                                </div>
+                                                <div class="flex-1 min-w-32">
+                                                    <label class="block text-xs text-gray-500 mb-1" x-text="['MX','CNAME'].includes(editType) ? 'Destino' : editType === 'TXT' ? 'Valor' : 'IP'"></label>
+                                                    <input type="text" name="value" x-model="editValue" class="border rounded px-2 py-1.5 text-xs font-mono w-full">
+                                                </div>
+                                                <div>
+                                                    <label class="block text-xs text-gray-500 mb-1">TTL</label>
+                                                    <input type="number" name="ttl" x-model="editTtl" min="60" max="86400" class="border rounded px-2 py-1.5 text-xs w-20">
+                                                </div>
+                                                <div x-show="editType === 'MX'">
+                                                    <label class="block text-xs text-gray-500 mb-1">Prioridad</label>
+                                                    <input type="number" name="priority" x-model="editPriority" min="0" class="border rounded px-2 py-1.5 text-xs w-16">
+                                                </div>
+                                                <div class="flex gap-2">
+                                                    <button type="submit" class="bg-blue-600 text-white px-3 py-1.5 rounded text-xs hover:bg-blue-700">
+                                                        <i class="fas fa-save mr-1"></i> Guardar
+                                                    </button>
+                                                    <button type="button" @click="editId=null" class="bg-gray-200 text-gray-700 px-3 py-1.5 rounded text-xs hover:bg-gray-300">
+                                                        Cancelar
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </td>
+                                </tr>
+                                @endif
                                 @endforeach
                             </tbody>
                         </table>

@@ -869,6 +869,39 @@ class ClientPortalController extends Controller
         return back()->with('success', 'Registro DNS añadido.');
     }
 
+    public function updateDns(Request $request, string $token, string $recordId)
+    {
+        $client = $this->resolveClient($token);
+
+        if (!$client->twentyi_package_id) {
+            return back()->with('error', 'Sin paquete de hosting.');
+        }
+
+        $validated = $request->validate([
+            'type'     => 'required|in:A,AAAA,CNAME,MX,TXT',
+            'host'     => 'required|string|max:255',
+            'value'    => 'required|string|max:2048',
+            'ttl'      => 'nullable|integer|min:60|max:86400',
+            'priority' => 'nullable|integer|min:0|max:65535',
+        ]);
+
+        try {
+            (new TwentyIService())->updateDnsRecord(
+                $client,
+                $recordId,
+                $validated['type'],
+                $validated['host'],
+                $validated['value'],
+                $validated['ttl']      ?? 3600,
+                $validated['priority'] ?? 10,
+            );
+        } catch (\Throwable $e) {
+            return back()->with('error', 'Error al editar registro: ' . $e->getMessage());
+        }
+
+        return back()->with('success', 'Registro DNS actualizado.');
+    }
+
     public function destroyDns(Request $request, string $token, string $recordId)
     {
         $client = $this->resolveClient($token);

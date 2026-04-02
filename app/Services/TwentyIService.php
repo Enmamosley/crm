@@ -380,6 +380,15 @@ class TwentyIService
     }
 
     /**
+     * Edita un registro DNS: elimina el antiguo y crea el nuevo.
+     */
+    public function updateDnsRecord(Client $client, int|string $recordId, string $type, string $host, string $value, int $ttl = 3600, int $priority = 10): void
+    {
+        $this->deleteDnsRecord($client, $recordId);
+        $this->addDnsRecord($client, $type, $host, $value, $ttl, $priority);
+    }
+
+    /**
      * Elimina un registro DNS por su ID.
      * Endpoint no documentado: POST /package/{packageId}/dns/{domainName}
      */

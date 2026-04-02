@@ -267,5 +267,6 @@ Route::prefix('portal')->name('portal.')->middleware('portal')->group(function (
     // DNS 20i (hosting)
     Route::get('{token}/dns', [ClientPortalController::class, 'dns'])->name('dns');
     Route::post('{token}/dns', [ClientPortalController::class, 'storeDns'])->name('dns.store');
+    Route::put('{token}/dns/{record}', [ClientPortalController::class, 'updateDns'])->name('dns.update');
     Route::delete('{token}/dns/{record}', [ClientPortalController::class, 'destroyDns'])->name('dns.destroy');
 });
