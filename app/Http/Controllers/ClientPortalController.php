@@ -758,7 +758,27 @@ class ClientPortalController extends Controller
         }
 
         try {
-            $cosmotown->saveDnsSettings($client->domain, $validated['records']);
+            // Denormalizar: convertir nombres de campo del frontend → Cosmotown
+            $records = [];
+            foreach ($validated['records'] as $type => $typeRecords) {
+                foreach ((array) $typeRecords as $rec) {
+                    $record = [
+                        'type'   => strtoupper($type),
+                        'host'   => $rec['host'] ?? '@',
+                        'ttl'    => (int) ($rec['ttl'] ?? 300),
+                    ];
+                    if (strtoupper($type) === 'TXT') {
+                        $record['data'] = $rec['content'] ?? $rec['pointto'] ?? '';
+                    } else {
+                        $record['pointsTo'] = $rec['pointto'] ?? $rec['content'] ?? '';
+                    }
+                    if (strtoupper($type) === 'MX') {
+                        $record['priority'] = (int) ($rec['priority'] ?? 10);
+                    }
+                    $records[] = $record;
+                }
+            }
+            $cosmotown->saveDnsSettings($client->domain, $records);
             return response()->json(['success' => true]);
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 502);

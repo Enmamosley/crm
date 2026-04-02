@@ -212,8 +212,29 @@ class DomainController extends Controller
             return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
         }
 
+        // Denormalizar: convertir nombres de campo del frontend → Cosmotown
+        $records = [];
+        foreach ($validated['records'] as $type => $typeRecords) {
+            foreach ((array) $typeRecords as $rec) {
+                $record = [
+                    'type'   => strtoupper($type),
+                    'host'   => $rec['host'] ?? '@',
+                    'ttl'    => (int) ($rec['ttl'] ?? 300),
+                ];
+                if (strtoupper($type) === 'TXT') {
+                    $record['data'] = $rec['content'] ?? $rec['pointto'] ?? '';
+                } else {
+                    $record['pointsTo'] = $rec['pointto'] ?? $rec['content'] ?? '';
+                }
+                if (strtoupper($type) === 'MX') {
+                    $record['priority'] = (int) ($rec['priority'] ?? 10);
+                }
+                $records[] = $record;
+            }
+        }
+
         try {
-            $service->saveDnsSettings($domain, $validated['records']);
+            $service->saveDnsSettings($domain, $records);
             return response()->json(['success' => true]);
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 502);

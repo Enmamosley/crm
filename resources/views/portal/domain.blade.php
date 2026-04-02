@@ -156,23 +156,19 @@
                             <div class="space-y-1.5">
                                 <template x-for="(rec, idx) in (dnsRecords[type] || [])" :key="type + '-' + idx">
                                     <div class="flex items-center gap-2 text-sm">
-                                        <template x-if="!editingDns">
-                                            <div class="flex items-center gap-3 w-full bg-gray-50 rounded px-3 py-2">
-                                                <span class="font-mono text-gray-600 w-28 truncate" x-text="rec.host || '@'"></span>
-                                                <span class="text-gray-400">→</span>
-                                                <span class="font-mono text-gray-800 flex-1 truncate" x-text="rec.pointto || rec.content || ''"></span>
-                                                <span class="text-gray-400 text-xs" x-text="'TTL: ' + (rec.ttl || 300)"></span>
-                                            </div>
-                                        </template>
-                                        <template x-if="editingDns">
-                                            <div class="flex items-center gap-2 w-full">
-                                                <input x-model="rec.host" placeholder="host" class="border rounded px-2 py-1.5 text-xs font-mono w-24">
-                                                <input x-model="rec.pointto" x-show="type !== 'TXT'" placeholder="apunta a" class="border rounded px-2 py-1.5 text-xs font-mono flex-1">
-                                                <input x-model="rec.content" x-show="type === 'TXT'" placeholder="contenido" class="border rounded px-2 py-1.5 text-xs font-mono flex-1">
-                                                <input x-model.number="rec.ttl" placeholder="TTL" class="border rounded px-2 py-1.5 text-xs font-mono w-16">
-                                                <button @click="dnsRecords[type].splice(idx, 1)" class="text-red-400 hover:text-red-600"><i class="fas fa-trash text-xs"></i></button>
-                                            </div>
-                                        </template>
+                                        <div x-show="!editingDns" class="flex items-center gap-3 w-full bg-gray-50 rounded px-3 py-2">
+                                            <span class="font-mono text-gray-600 w-28 truncate" x-text="rec.host || '@'"></span>
+                                            <span class="text-gray-400">→</span>
+                                            <span class="font-mono text-gray-800 flex-1 truncate" x-text="rec.pointto || rec.content || ''"></span>
+                                            <span class="text-gray-400 text-xs" x-text="'TTL: ' + (rec.ttl || 300)"></span>
+                                        </div>
+                                        <div x-show="editingDns" class="flex items-center gap-2 w-full">
+                                            <input x-model="rec.host" placeholder="host" class="border rounded px-2 py-1.5 text-xs font-mono w-24">
+                                            <input x-model="rec.pointto" x-show="type !== 'TXT'" placeholder="apunta a" class="border rounded px-2 py-1.5 text-xs font-mono flex-1">
+                                            <input x-model="rec.content" x-show="type === 'TXT'" placeholder="contenido" class="border rounded px-2 py-1.5 text-xs font-mono flex-1">
+                                            <input x-model.number="rec.ttl" placeholder="TTL" class="border rounded px-2 py-1.5 text-xs font-mono w-16">
+                                            <button @click="dnsRecords[type].splice(idx, 1)" class="text-red-400 hover:text-red-600"><i class="fas fa-trash text-xs"></i></button>
+                                        </div>
                                     </div>
                                 </template>
                             </div>
@@ -257,7 +253,18 @@ function domainPortal() {
                 });
                 const data = await resp.json();
                 if (!resp.ok) { this.dnsError = data.error ?? 'Error'; return; }
-                this.dnsRecords = data.records ?? { A: [], AAAA: [], CNAME: [], MX: [], TXT: [], PTR: [] };
+                const raw = data.records ?? {};
+                const normalized = {};
+                ['A', 'AAAA', 'CNAME', 'MX', 'TXT', 'PTR'].forEach(t => {
+                    normalized[t] = (raw[t] || []).map(r => ({
+                        host:     r.host     ?? r.Host     ?? '@',
+                        pointto:  r.pointto  ?? r.pointsTo ?? r.value   ?? '',
+                        content:  r.content  ?? r.data     ?? r.pointto ?? r.pointsTo ?? '',
+                        ttl:      r.ttl      ?? r.TTL      ?? 300,
+                        priority: r.priority ?? r.Priority ?? (t === 'MX' ? 10 : 0),
+                    }));
+                });
+                this.dnsRecords = normalized;
                 this.dnsLoaded = true;
             } catch (e) { this.dnsError = 'Error: ' + e.message; }
             finally { this.dnsLoading = false; }
