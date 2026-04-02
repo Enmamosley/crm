@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Setting;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class CosmotownService
 {
@@ -14,6 +15,38 @@ class CosmotownService
     {
         $this->apiKey  = Setting::get('cosmotown_api_key', '');
         $this->baseUrl = rtrim(Setting::get('cosmotown_base_url', 'https://sandbox.cosmotown.com'), '/');
+
+        Log::debug('CosmotownService:init', [
+            'baseUrl'    => $this->baseUrl,
+            'apiKey_len' => strlen($this->apiKey),
+            'apiKey_preview' => $this->apiKey ? substr($this->apiKey, 0, 6) . '...' : '(vacío)',
+        ]);
+    }
+
+    private function request(string $method, string $endpoint, array $payload = []): \Illuminate\Http\Client\Response
+    {
+        $url = "{$this->baseUrl}{$endpoint}";
+
+        Log::debug("Cosmotown:{$method}:{$endpoint}", [
+            'url'     => $url,
+            'payload' => $payload,
+            'header'  => 'X-API-TOKEN: ' . (substr($this->apiKey, 0, 6) ?: '(vacío)') . '...',
+        ]);
+
+        $http = Http::withHeaders(['X-API-TOKEN' => $this->apiKey]);
+
+        $response = match(strtoupper($method)) {
+            'GET'  => $http->timeout(10)->get($url, $payload),
+            'POST' => $http->timeout(30)->post($url, $payload),
+            default => throw new \InvalidArgumentException("Método HTTP no soportado: {$method}"),
+        };
+
+        Log::debug("Cosmotown:response:{$endpoint}", [
+            'status' => $response->status(),
+            'body'   => $response->body(),
+        ]);
+
+        return $response;
     }
 
     /**
@@ -26,11 +59,7 @@ class CosmotownService
     {
         $domain = strtolower(trim($domain));
 
-        $response = Http::withHeaders(['X-API-TOKEN' => $this->apiKey])
-            ->timeout(10)
-            ->post("{$this->baseUrl}/v1/reseller/searchdomains", [
-                'domains' => [$domain],
-            ]);
+        $response = $this->request('POST', '/v1/reseller/searchdomains', ['domains' => [$domain]]);
 
         if ($response->failed()) {
             throw new \RuntimeException("Cosmotown API error {$response->status()}: {$response->body()}");
@@ -60,13 +89,9 @@ class CosmotownService
     {
         $domain = strtolower(trim($domain));
 
-        $response = Http::withHeaders(['X-API-TOKEN' => $this->apiKey])
-            ->timeout(30)
-            ->post("{$this->baseUrl}/v1/reseller/registerdomains", [
-                'items' => [
-                    ['name' => $domain, 'years' => $years],
-                ],
-            ]);
+        $response = $this->request('POST', '/v1/reseller/registerdomains', [
+            'items' => [['name' => $domain, 'years' => $years]],
+        ]);
 
         if ($response->failed()) {
             throw new \RuntimeException("Cosmotown registration error {$response->status()}: {$response->body()}");
@@ -83,12 +108,10 @@ class CosmotownService
      */
     public function listDomains(int $limit = 100, int $offset = 0): array
     {
-        $response = Http::withHeaders(['X-API-TOKEN' => $this->apiKey])
-            ->timeout(10)
-            ->get("{$this->baseUrl}/v1/reseller/listdomains", [
-                'limit'  => $limit,
-                'offset' => $offset,
-            ]);
+        $response = $this->request('GET', '/v1/reseller/listdomains', [
+            'limit'  => $limit,
+            'offset' => $offset,
+        ]);
 
         if ($response->failed()) {
             throw new \RuntimeException("Cosmotown API error {$response->status()}: {$response->body()}");
@@ -103,11 +126,9 @@ class CosmotownService
      */
     public function domainInfo(string $domain): array
     {
-        $response = Http::withHeaders(['X-API-TOKEN' => $this->apiKey])
-            ->timeout(10)
-            ->get("{$this->baseUrl}/v1/reseller/domaininfo", [
-                'domain' => strtolower(trim($domain)),
-            ]);
+        $response = $this->request('GET', '/v1/reseller/domaininfo', [
+            'domain' => strtolower(trim($domain)),
+        ]);
 
         if ($response->failed()) {
             throw new \RuntimeException("Cosmotown API error {$response->status()}: {$response->body()}");
@@ -122,12 +143,10 @@ class CosmotownService
      */
     public function saveNameservers(string $domain, array $nameservers): void
     {
-        $response = Http::withHeaders(['X-API-TOKEN' => $this->apiKey])
-            ->timeout(15)
-            ->post("{$this->baseUrl}/v1/reseller/savedomainnameservers", [
-                'domain'      => strtolower(trim($domain)),
-                'nameservers' => $nameservers,
-            ]);
+        $response = $this->request('POST', '/v1/reseller/savedomainnameservers', [
+            'domain'      => strtolower(trim($domain)),
+            'nameservers' => $nameservers,
+        ]);
 
         if ($response->failed()) {
             throw new \RuntimeException("Cosmotown API error {$response->status()}: {$response->body()}");
@@ -140,11 +159,9 @@ class CosmotownService
      */
     public function getDnsSettings(string $domain): array
     {
-        $response = Http::withHeaders(['X-API-TOKEN' => $this->apiKey])
-            ->timeout(10)
-            ->get("{$this->baseUrl}/v1/reseller/getdomaindnssettings", [
-                'domain' => strtolower(trim($domain)),
-            ]);
+        $response = $this->request('GET', '/v1/reseller/getdomaindnssettings', [
+            'domain' => strtolower(trim($domain)),
+        ]);
 
         if ($response->failed()) {
             throw new \RuntimeException("Cosmotown API error {$response->status()}: {$response->body()}");
@@ -159,12 +176,10 @@ class CosmotownService
      */
     public function saveDnsSettings(string $domain, array $records): void
     {
-        $response = Http::withHeaders(['X-API-TOKEN' => $this->apiKey])
-            ->timeout(15)
-            ->post("{$this->baseUrl}/v1/reseller/savedomaindnssettings", [
-                'domain'  => strtolower(trim($domain)),
-                'records' => $records,
-            ]);
+        $response = $this->request('POST', '/v1/reseller/savedomaindnssettings', [
+            'domain'  => strtolower(trim($domain)),
+            'records' => $records,
+        ]);
 
         if ($response->failed()) {
             throw new \RuntimeException("Cosmotown API error {$response->status()}: {$response->body()}");
@@ -177,13 +192,9 @@ class CosmotownService
      */
     public function renew(string $domain, int $years = 1): array
     {
-        $response = Http::withHeaders(['X-API-TOKEN' => $this->apiKey])
-            ->timeout(30)
-            ->post("{$this->baseUrl}/v1/reseller/renewdomains", [
-                'items' => [
-                    ['name' => strtolower(trim($domain)), 'years' => $years],
-                ],
-            ]);
+        $response = $this->request('POST', '/v1/reseller/renewdomains', [
+            'items' => [['name' => strtolower(trim($domain)), 'years' => $years]],
+        ]);
 
         if ($response->failed()) {
             throw new \RuntimeException("Cosmotown API error {$response->status()}: {$response->body()}");
@@ -198,11 +209,9 @@ class CosmotownService
      */
     public function domainStatus(array $domains): array
     {
-        $response = Http::withHeaders(['X-API-TOKEN' => $this->apiKey])
-            ->timeout(10)
-            ->post("{$this->baseUrl}/v1/reseller/domainstatus", [
-                'domains' => array_map('strtolower', $domains),
-            ]);
+        $response = $this->request('POST', '/v1/reseller/domainstatus', [
+            'domains' => array_map('strtolower', $domains),
+        ]);
 
         if ($response->failed()) {
             throw new \RuntimeException("Cosmotown API error {$response->status()}: {$response->body()}");
@@ -217,9 +226,7 @@ class CosmotownService
      */
     public function ping(): array
     {
-        $response = Http::withHeaders(['X-API-TOKEN' => $this->apiKey])
-            ->timeout(5)
-            ->get("{$this->baseUrl}/v1/reseller/ping");
+        $response = $this->request('GET', '/v1/reseller/ping');
 
         if ($response->failed()) {
             throw new \RuntimeException("Cosmotown API error {$response->status()}: {$response->body()}");
