@@ -16,7 +16,7 @@ class CosmotownService
         $this->apiKey  = Setting::get('cosmotown_api_key', '');
         $this->baseUrl = rtrim(Setting::get('cosmotown_base_url', 'https://sandbox.cosmotown.com'), '/');
 
-        Log::debug('CosmotownService:init', [
+        Log::error('CosmotownService:init', [
             'baseUrl'    => $this->baseUrl,
             'apiKey_len' => strlen($this->apiKey),
             'apiKey_preview' => $this->apiKey ? substr($this->apiKey, 0, 6) . '...' : '(vacío)',
@@ -27,7 +27,7 @@ class CosmotownService
     {
         $url = "{$this->baseUrl}{$endpoint}";
 
-        Log::debug("Cosmotown:{$method}:{$endpoint}", [
+        Log::error("Cosmotown:{$method}:{$endpoint}", [
             'url'     => $url,
             'payload' => $payload,
             'header'  => 'X-API-TOKEN: ' . (substr($this->apiKey, 0, 6) ?: '(vacío)') . '...',
@@ -41,7 +41,7 @@ class CosmotownService
             default => throw new \InvalidArgumentException("Método HTTP no soportado: {$method}"),
         };
 
-        Log::debug("Cosmotown:response:{$endpoint}", [
+        Log::error("Cosmotown:response:{$endpoint}", [
             'status' => $response->status(),
             'body'   => $response->body(),
         ]);
