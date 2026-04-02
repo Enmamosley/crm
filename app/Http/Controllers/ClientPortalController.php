@@ -691,7 +691,27 @@ class ClientPortalController extends Controller
 
         if ($cosmotown->isConfigured()) {
             try {
-                $domainInfo = $cosmotown->domainInfo($client->domain);
+                $raw = $cosmotown->domainInfo($client->domain);
+
+                // Cosmotown puede devolver 'domain' como string o como array
+                $d = is_array($raw['domain'] ?? null) ? $raw['domain'] : $raw;
+
+                // Normalizar campos con múltiples variantes de nombre
+                $d['auto_billing']    = (bool) ($d['auto_billing']    ?? $d['autoRenew']      ?? $d['auto_renew']    ?? false);
+                $d['whois_privacy']   = (bool) ($d['whois_privacy']   ?? $d['whoisPrivacy']   ?? $d['privacy']       ?? false);
+                $d['locked']          = (bool) ($d['locked']          ?? $d['registrarLock']  ?? $d['domain_lock']   ?? false);
+                $d['created']         = $d['created']          ?? $d['createdDate']    ?? $d['created_at']    ?? null;
+                $d['expiration_date'] = $d['expiration_date']  ?? $d['expirationDate'] ?? $d['expires']       ?? $d['expire_date'] ?? null;
+
+                $domainInfo = [
+                    'domain'      => $d,
+                    'nameservers' => $raw['nameservers']
+                        ?? $d['nameservers']
+                        ?? array_values(array_filter([
+                            $d['ns1'] ?? null, $d['ns2'] ?? null,
+                            $d['ns3'] ?? null, $d['ns4'] ?? null,
+                        ])),
+                ];
             } catch (\Throwable $e) {
                 $error = 'No se pudo obtener la información del dominio.';
             }
