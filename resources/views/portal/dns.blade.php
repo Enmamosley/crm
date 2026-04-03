@@ -72,7 +72,7 @@
                                     $id    = $record['id'] ?? null;
                                 @endphp
                                 {{-- Fila normal --}}
-                                <tr class="hover:bg-gray-50" x-show="editId !== '{{ $id }}'">
+                                <tr class="hover:bg-gray-50" @if($id) x-show="editId !== '{{ $id }}'" @endif>
                                     <td class="px-4 py-3">
                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-mono font-bold bg-{{ $color }}-100 text-{{ $color }}-700">{{ $type }}</span>
                                     </td>
