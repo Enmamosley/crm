@@ -53,6 +53,8 @@ Route::prefix('buy')->name('buy.')->group(function () {
     Route::post('cart/pay/card', [CartController::class, 'payWithCard'])->name('cart.pay.card')->middleware('throttle:payments');
     Route::post('cart/pay/oxxo', [CartController::class, 'payWithOxxo'])->name('cart.pay.oxxo')->middleware('throttle:payments');
     Route::post('cart/pay/spei', [CartController::class, 'payWithSpei'])->name('cart.pay.spei')->middleware('throttle:payments');
+    Route::post('cart/pay/paypal/create',  [CartController::class, 'createPaypalOrder'])->name('cart.pay.paypal.create')->middleware('throttle:payments');
+    Route::post('cart/pay/paypal/capture', [CartController::class, 'capturePaypalOrder'])->name('cart.pay.paypal.capture')->middleware('throttle:payments');
     Route::get('cart/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
     Route::patch('cart/{cartItem}/quantity', [CartController::class, 'updateQuantity'])->name('cart.update-quantity');
     Route::get('cart/count', [CartController::class, 'count'])->name('cart.count');
@@ -60,6 +62,8 @@ Route::prefix('buy')->name('buy.')->group(function () {
     Route::post('{slug}/pay/card', [DirectCheckoutController::class, 'payWithCard'])->name('pay.card')->middleware('throttle:payments');
     Route::post('{slug}/pay/oxxo', [DirectCheckoutController::class, 'payWithOxxo'])->name('pay.oxxo')->middleware('throttle:payments');
     Route::post('{slug}/pay/spei', [DirectCheckoutController::class, 'payWithSpei'])->name('pay.spei')->middleware('throttle:payments');
+    Route::post('{slug}/pay/paypal/create',  [DirectCheckoutController::class, 'createPaypalOrder'])->name('pay.paypal.create')->middleware('throttle:payments');
+    Route::post('{slug}/pay/paypal/capture', [DirectCheckoutController::class, 'capturePaypalOrder'])->name('pay.paypal.capture')->middleware('throttle:payments');
     Route::post('{slug}/pay/transfer', [DirectCheckoutController::class, 'payWithTransfer'])->name('pay.transfer')->middleware('throttle:payments');
     Route::get('{slug}/success', [DirectCheckoutController::class, 'success'])->name('success');
 });
@@ -239,6 +243,8 @@ Route::prefix('portal')->name('portal.')->middleware('portal')->group(function (
     Route::post('{token}/orders/{order}/pay/card', [ClientPortalController::class, 'payWithCard'])->name('pay.card')->middleware('throttle:payments');
     Route::post('{token}/orders/{order}/pay/oxxo', [ClientPortalController::class, 'payWithOxxo'])->name('pay.oxxo')->middleware('throttle:payments');
     Route::post('{token}/orders/{order}/pay/spei', [ClientPortalController::class, 'payWithSpei'])->name('pay.spei')->middleware('throttle:payments');
+    Route::post('{token}/orders/{order}/pay/paypal/create',  [ClientPortalController::class, 'createPaypalOrder'])->name('pay.paypal.create')->middleware('throttle:payments');
+    Route::post('{token}/orders/{order}/pay/paypal/capture', [ClientPortalController::class, 'capturePaypalOrder'])->name('pay.paypal.capture')->middleware('throttle:payments');
     Route::post('{token}/orders/{order}/pay/transfer', [ClientPortalController::class, 'payWithTransfer'])->name('pay.transfer')->middleware('throttle:payments');
     Route::get('{token}/payments/{payment}', [ClientPortalController::class, 'paymentStatus'])->name('payment.status');
 

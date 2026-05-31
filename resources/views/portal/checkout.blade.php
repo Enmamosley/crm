@@ -8,6 +8,9 @@
     @vite('resources/css/app.css')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://sdk.mercadopago.com/js/v2"></script>
+    @if(!empty($paypalClientId))
+        <script src="https://www.paypal.com/sdk/js?client-id={{ $paypalClientId }}&currency=MXN&intent=capture"></script>
+    @endif
     <style>
         .mp-iframe { border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.625rem 0.75rem; height: 42px; width: 100%; }
         .mp-iframe:focus-within { border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,.2); }
@@ -106,6 +109,11 @@
                 </button>
                 <button class="tab-btn flex-1 py-3 px-4 text-sm font-medium border-b-2 border-transparent transition" data-tab="spei">
                     <i class="fas fa-building-columns mr-1"></i> SPEI (MP)
+                </button>
+                @endif
+                @if(!empty($paypalClientId))
+                <button class="tab-btn {{ !$mpPublicKey ? 'active' : '' }} flex-1 py-3 px-4 text-sm font-medium border-b-2 border-transparent transition" data-tab="paypal">
+                    <i class="fab fa-paypal mr-1"></i> PayPal
                 </button>
                 @endif
                 @if($hasBankData)
@@ -211,9 +219,27 @@
                 </form>
             </div>
 
+            @if(!empty($paypalClientId))
+            {{-- TAB: PayPal --}}
+            <div id="panel-paypal" class="tab-panel {{ !$mpPublicKey ? 'active' : '' }} p-5">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4 flex gap-3">
+                    <i class="fab fa-paypal text-blue-600 text-lg mt-0.5"></i>
+                    <div class="text-sm text-blue-900">
+                        <p class="font-medium mb-1">Paga con tu cuenta PayPal o tarjeta vía PayPal</p>
+                        <p class="text-blue-700 text-xs">Total: <strong>${{ number_format($invoice->total, 2) }} MXN</strong></p>
+                        @if($paypalMode === 'sandbox')
+                            <p class="text-yellow-700 text-xs mt-1"><i class="fas fa-flask mr-1"></i> Modo Sandbox.</p>
+                        @endif
+                    </div>
+                </div>
+                <div id="paypal-error" class="hidden mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3"></div>
+                <div id="paypal-button-container"></div>
+            </div>
+            @endif
+
             @if($hasBankData)
             {{-- TAB: Transferencia directa --}}
-            <div id="panel-transfer" class="tab-panel {{ !$mpPublicKey ? 'active' : '' }} p-5">
+            <div id="panel-transfer" class="tab-panel {{ !$mpPublicKey && empty($paypalClientId) ? 'active' : '' }} p-5">
                 <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-5">
                     <p class="text-sm font-semibold text-blue-800 mb-3">
                         <i class="fas fa-university mr-1"></i> Datos para transferencia
@@ -292,7 +318,7 @@
         Portal privado · {{ $client->legal_name }} · {{ now()->year }}
     </footer>
 
-    @if($mpPublicKey || $hasBankData)
+    @if($mpPublicKey || $hasBankData || !empty($paypalClientId))
     <script>
     // ── Tabs ───────────────────────────────────────────
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -486,6 +512,40 @@
             showError(msg);
         }
     });
+    @endif
+
+    @if(!empty($paypalClientId))
+    if (window.paypal) {
+        const ppErr = document.getElementById('paypal-error');
+        const showPpErr = (m) => { ppErr.textContent = m; ppErr.classList.remove('hidden'); };
+        const hidePpErr = () => { ppErr.classList.add('hidden'); ppErr.textContent = ''; };
+
+        paypal.Buttons({
+            style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
+            createOrder: async function () {
+                hidePpErr();
+                const res = await fetch('{{ route('portal.pay.paypal.create', [$client->portal_token, $invoice]) }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                    body: JSON.stringify({}),
+                });
+                const j = await res.json();
+                if (!res.ok) { showPpErr(j.error || 'Error PayPal'); throw new Error(j.error || 'create failed'); }
+                return j.paypalOrderId;
+            },
+            onApprove: async function (data) {
+                const res = await fetch('{{ route('portal.pay.paypal.capture', [$client->portal_token, $invoice]) }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                    body: JSON.stringify({ paypalOrderId: data.orderID }),
+                });
+                const j = await res.json();
+                if (j.success) { window.location.href = j.redirect; }
+                else { showPpErr(j.error || 'No se pudo capturar el pago.'); }
+            },
+            onError: (e) => { showPpErr('Error PayPal: ' + (e.message || 'desconocido')); console.error(e); },
+        }).render('#paypal-button-container');
+    }
     @endif
     </script>
     @endif

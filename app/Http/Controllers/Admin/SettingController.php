@@ -26,6 +26,10 @@ class SettingController extends Controller
             'mp_public_key'              => Setting::get('mp_public_key', ''),
             'mp_access_token'   => Setting::get('mp_access_token', ''),
             'mp_webhook_secret' => Setting::get('mp_webhook_secret', ''),
+            'paypal_mode'        => Setting::get('paypal_mode', 'sandbox'),
+            'paypal_client_id'   => Setting::get('paypal_client_id', ''),
+            'paypal_secret'      => Setting::get('paypal_secret', ''),
+            'paypal_webhook_id'  => Setting::get('paypal_webhook_id', ''),
             'bank_name'         => Setting::get('bank_name', ''),
             'bank_beneficiary'  => Setting::get('bank_beneficiary', ''),
             'bank_account'      => Setting::get('bank_account', ''),
@@ -54,6 +58,10 @@ class SettingController extends Controller
             'mp_public_key'              => 'nullable|string|max:200',
             'mp_access_token'   => 'nullable|string|max:200',
             'mp_webhook_secret' => 'nullable|string|max:200',
+            'paypal_mode'       => 'nullable|in:sandbox,live',
+            'paypal_client_id'  => 'nullable|string|max:200',
+            'paypal_secret'     => 'nullable|string|max:200',
+            'paypal_webhook_id' => 'nullable|string|max:100',
             'cosmotown_api_key'  => 'nullable|string|max:200',
             'cosmotown_base_url' => 'nullable|url|max:255',
             'bank_name'         => 'nullable|string|max:100',
@@ -85,6 +93,14 @@ class SettingController extends Controller
         foreach (['mp_public_key', 'mp_access_token', 'mp_webhook_secret'] as $mpKey) {
             if ($request->filled($mpKey)) {
                 Setting::set($mpKey, $request->input($mpKey));
+            }
+        }
+
+        // PayPal: mode siempre se guarda (radio), las demás solo si vienen rellenas
+        Setting::set('paypal_mode', $request->input('paypal_mode', 'sandbox'));
+        foreach (['paypal_client_id', 'paypal_secret', 'paypal_webhook_id'] as $ppKey) {
+            if ($request->filled($ppKey)) {
+                Setting::set($ppKey, $request->input($ppKey));
             }
         }
 

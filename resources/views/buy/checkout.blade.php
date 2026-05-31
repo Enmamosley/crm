@@ -5,6 +5,9 @@
     <title>Comprar {{ $service->name }} — {{ $companyName }}</title>
     @include('buy._head')
     <script src="https://sdk.mercadopago.com/js/v2"></script>
+    @if($paypalClientId)
+        <script src="https://www.paypal.com/sdk/js?client-id={{ $paypalClientId }}&currency=MXN&intent=capture"></script>
+    @endif
 </head>
 <body class="bg-gray-50 min-h-screen">
 
@@ -211,6 +214,11 @@
                     <button class="tab-btn flex-1 py-3.5 text-sm font-medium border-b-2 border-transparent text-gray-400 transition-all duration-200" data-tab="spei">
                         <i class="fas fa-building-columns mr-1.5"></i> SPEI
                     </button>
+                    @if($paypalClientId)
+                    <button class="tab-btn flex-1 py-3.5 text-sm font-medium border-b-2 border-transparent text-gray-400 transition-all duration-200" data-tab="paypal">
+                        <i class="fab fa-paypal mr-1.5"></i> PayPal
+                    </button>
+                    @endif
                     @if($hasBankData)
                     <button class="tab-btn flex-1 py-3.5 text-sm font-medium border-b-2 border-transparent text-gray-400 transition-all duration-200" data-tab="transfer">
                         <i class="fas fa-money-bill-transfer mr-1.5"></i> Transferencia
@@ -315,6 +323,24 @@
                         </button>
                     </form>
                 </div>
+
+                {{-- PayPal --}}
+                @if($paypalClientId)
+                <div id="panel-paypal" class="tab-panel p-6">
+                    <div class="bg-blue-50 rounded-xl p-4 mb-5 flex gap-3">
+                        <i class="fab fa-paypal text-blue-600 text-lg mt-0.5"></i>
+                        <div class="text-sm text-blue-900">
+                            <p class="font-medium mb-1">Paga con tu cuenta PayPal o tarjeta</p>
+                            <p class="text-blue-700 text-xs">Serás redirigido al popup seguro de PayPal. El monto en MXN se convierte automáticamente.</p>
+                            @if($paypalMode === 'sandbox')
+                                <p class="text-yellow-700 text-xs mt-1"><i class="fas fa-flask mr-1"></i> Modo Sandbox — solo pruebas.</p>
+                            @endif
+                        </div>
+                    </div>
+                    <div id="paypal-error" class="hidden mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3"></div>
+                    <div id="paypal-button-container"></div>
+                </div>
+                @endif
 
                 {{-- Transferencia manual --}}
                 @if($hasBankData)
@@ -641,6 +667,70 @@ document.querySelectorAll('.btn-submit-once').forEach(btn => {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Procesando...';
     });
 });
+
+@if($paypalClientId)
+// PayPal Smart Buttons
+if (window.paypal) {
+    const ppError = document.getElementById('paypal-error');
+    function showPpError(msg) { ppError.textContent = msg; ppError.classList.remove('hidden'); }
+    function hidePpError() { ppError.classList.add('hidden'); ppError.textContent = ''; }
+
+    paypal.Buttons({
+        style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
+        createOrder: async function () {
+            hidePpError();
+            const buyerData = collectBuyerData();
+            if (!buyerData.name || !buyerData.email) {
+                showPpError('Completa nombre y correo en el paso 1.');
+                throw new Error('Datos incompletos');
+            }
+            const res = await fetch('{{ route('buy.pay.paypal.create', $service->slug) }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                body: JSON.stringify(buyerData),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Error al crear orden PayPal');
+            window._lastLocalOrderId = data.localOrderId;
+            return data.paypalOrderId;
+        },
+        onApprove: async function (data) {
+            const res = await fetch('{{ route('buy.pay.paypal.capture', $service->slug) }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                body: JSON.stringify({ paypalOrderId: data.orderID, localOrderId: window._lastLocalOrderId }),
+            });
+            const body = await res.json();
+            if (body.success) {
+                window.location.href = body.redirect;
+            } else {
+                showPpError(body.error || 'No se pudo capturar el pago.');
+            }
+        },
+        onError: function (err) {
+            showPpError('Error de PayPal: ' + (err.message || 'desconocido'));
+            console.error(err);
+        },
+    }).render('#paypal-button-container');
+}
+
+function collectBuyerData() {
+    const billingPref = document.querySelector('[name="billing_preference"]:checked')?.value || 'none';
+    return {
+        name:               document.getElementById('buyer-name')?.value || '',
+        email:              document.getElementById('buyer-email')?.value || '',
+        phone:              document.getElementById('buyer-phone')?.value || '',
+        domain:             document.getElementById('buyer-domain')?.value || '',
+        domain_type:        document.getElementById('buyer-domain-type')?.value || '',
+        billing_preference: billingPref,
+        tax_id:             billingPref === 'fiscal' ? (document.getElementById('buyer-rfc')?.value || '') : '',
+        fiscal_name:        billingPref === 'fiscal' ? (document.getElementById('buyer-legal-name')?.value || '') : '',
+        address_zip:        billingPref === 'fiscal' ? (document.getElementById('buyer-zip')?.value || '') : '',
+        tax_system:         billingPref === 'fiscal' ? (document.getElementById('buyer-tax-system')?.value || '') : '',
+        cfdi_use:           billingPref === 'fiscal' ? (document.getElementById('buyer-cfdi-use')?.value || '') : '',
+    };
+}
+@endif
 </script>
 </body>
 </html>

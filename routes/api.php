@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\AgentController;
 use App\Http\Controllers\Api\SettingController;
 use App\Http\Controllers\Api\DmChampFunctionController;
 use App\Http\Controllers\MercadoPagoWebhookController;
+use App\Http\Controllers\PayPalWebhookController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -58,6 +59,11 @@ Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
 Route::post('webhooks/mercadopago', [MercadoPagoWebhookController::class, 'handle'])
     ->middleware('throttle:webhooks')
     ->name('mercadopago.webhook');
+
+// Webhook de PayPal (público, validado vía PayPal verify-webhook-signature API)
+Route::post('webhooks/paypal', [PayPalWebhookController::class, 'handle'])
+    ->middleware('throttle:webhooks')
+    ->name('paypal.webhook');
 
 // Webhook de DM Champ (público, validado por firma HMAC interna)
 Route::post('webhooks/dmchamp', [\App\Http\Controllers\DmChampWebhookController::class, 'handle'])

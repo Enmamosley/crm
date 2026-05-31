@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Payment extends Model
 {
     protected $fillable = [
-        'order_id', 'mp_payment_id',
+        'order_id', 'gateway', 'mp_payment_id', 'paypal_order_id',
         'amount', 'currency', 'status', 'status_detail',
         'payment_type', 'payment_method_id', 'mp_data',
         'proof_path', 'payment_notes', 'paid_at',
@@ -53,6 +53,7 @@ class Payment extends Model
             'debit_card'    => '28',
             'bank_transfer' => '03',
             'ticket'        => '01',
+            'paypal'        => '05', // SAT: Monedero electrónico
             default         => '99',
         };
     }

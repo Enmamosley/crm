@@ -133,6 +133,49 @@
             </div>
 
             <div class="border-t pt-4 mt-4">
+                <h3 class="text-lg font-semibold mb-4">
+                    <i class="fab fa-paypal text-blue-600 mr-1"></i>PayPal
+                    <span class="text-sm font-normal text-gray-400 ml-1">(Pagos internacionales)</span>
+                </h3>
+                <div class="grid grid-cols-1 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Modo</label>
+                        <div class="flex gap-4 text-sm">
+                            <label class="inline-flex items-center gap-2">
+                                <input type="radio" name="paypal_mode" value="sandbox" {{ ($settings['paypal_mode'] ?? 'sandbox') === 'sandbox' ? 'checked' : '' }}>
+                                <span>Sandbox <span class="text-gray-400">(pruebas)</span></span>
+                            </label>
+                            <label class="inline-flex items-center gap-2">
+                                <input type="radio" name="paypal_mode" value="live" {{ ($settings['paypal_mode'] ?? '') === 'live' ? 'checked' : '' }}>
+                                <span>Live <span class="text-gray-400">(producción)</span></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Client ID</label>
+                        <input type="text" name="paypal_client_id" value="{{ $settings['paypal_client_id'] ?? '' }}"
+                            placeholder="A21AAxxx..."
+                            class="w-full md:w-2/3 border rounded-lg px-3 py-2 font-mono text-sm">
+                        <p class="text-xs text-gray-400 mt-1">Public client ID — usado por el botón PayPal en el checkout.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Secret</label>
+                        <input type="password" name="paypal_secret" value="{{ $settings['paypal_secret'] ?? '' }}"
+                            placeholder="EBxxx..."
+                            class="w-full md:w-2/3 border rounded-lg px-3 py-2 font-mono text-sm">
+                        <p class="text-xs text-gray-400 mt-1">Secreto privado — para OAuth de servidor.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Webhook ID <span class="font-normal text-gray-400">(opcional)</span></label>
+                        <input type="text" name="paypal_webhook_id" value="{{ $settings['paypal_webhook_id'] ?? '' }}"
+                            placeholder="7XX..."
+                            class="w-full md:w-2/3 border rounded-lg px-3 py-2 font-mono text-sm">
+                        <p class="text-xs text-gray-400 mt-1">Crea un webhook en <a href="https://developer.paypal.com/dashboard/applications" target="_blank" class="text-blue-500 hover:underline">developer.paypal.com</a> apuntando a: <code class="bg-gray-100 px-1 rounded">{{ url('api/webhooks/paypal') }}</code></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t pt-4 mt-4">
                 <h3 class="text-lg font-semibold mb-1">
                     <i class="fas fa-globe text-teal-500 mr-1"></i>Cosmotown
                     <span class="text-sm font-normal text-gray-400 ml-1">(Gestión de dominios)</span>

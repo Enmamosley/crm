@@ -15,6 +15,7 @@ use App\Models\TicketReply;
 use App\Services\FacturapiService;
 use App\Services\CosmotownService;
 use App\Services\MercadoPagoService;
+use App\Services\PayPalService;
 use App\Services\TwentyIService;
 use App\Models\Setting;
 use Illuminate\Http\Request;
@@ -282,6 +283,9 @@ class ClientPortalController extends Controller
         }
 
         $mpPublicKey = Setting::get('mp_public_key', '');
+        $paypal = new PayPalService();
+        $paypalClientId = $paypal->isConfigured() ? $paypal->clientId() : '';
+        $paypalMode     = $paypal->mode();
 
         $bankData = [
             'name'        => Setting::get('bank_name', ''),
@@ -294,7 +298,7 @@ class ClientPortalController extends Controller
 
         $invoice = $order;
 
-        return view('portal.checkout', compact('client', 'invoice', 'mpPublicKey', 'bankData', 'hasBankData'));
+        return view('portal.checkout', compact('client', 'invoice', 'mpPublicKey', 'paypalClientId', 'paypalMode', 'bankData', 'hasBankData'));
     }
 
     public function payWithCard(Request $request, string $token, Order $order)
@@ -388,6 +392,60 @@ class ClientPortalController extends Controller
             return redirect()->route('portal.payment.status', [$token, $payment]);
         } catch (\Throwable $e) {
             return back()->with('error', 'Error al generar referencia SPEI: ' . $e->getMessage());
+        }
+    }
+
+    public function createPaypalOrder(Request $request, string $token, Order $order)
+    {
+        $client = $this->resolveClient($token);
+        abort_if($order->client_id !== $client->id, 403);
+        if ($order->paid_at) {
+            return response()->json(['error' => 'Esta factura ya fue pagada.'], 422);
+        }
+
+        $paypal = new PayPalService();
+        if (!$paypal->isConfigured()) {
+            return response()->json(['error' => 'PayPal no está configurado.'], 422);
+        }
+
+        try {
+            $pp = $paypal->createOrder(
+                (float) $order->total,
+                'Factura ' . ($order->folio() ?: "#{$order->id}"),
+                (string) $order->id,
+                route('portal.checkout', [$token, $order]),
+                route('portal.checkout', [$token, $order]),
+            );
+            return response()->json([
+                'paypalOrderId' => $pp['id'],
+                'localOrderId'  => $order->id,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 422);
+        }
+    }
+
+    public function capturePaypalOrder(Request $request, string $token, Order $order)
+    {
+        $client = $this->resolveClient($token);
+        abort_if($order->client_id !== $client->id, 403);
+
+        $validated = $request->validate([
+            'paypalOrderId' => 'required|string',
+        ]);
+
+        $paypal = new PayPalService();
+        try {
+            $capture = $paypal->captureOrder($validated['paypalOrderId']);
+            $payment = $paypal->processCapture($order, $capture);
+
+            return response()->json([
+                'success'  => $payment->isApproved(),
+                'status'   => $payment->status,
+                'redirect' => route('portal.payment.status', [$token, $payment]),
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 422);
         }
     }
 

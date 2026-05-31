@@ -10,6 +10,7 @@ use App\Models\DiscountCode;
 use App\Models\Service;
 use App\Models\Setting;
 use App\Services\MercadoPagoService;
+use App\Services\PayPalService;
 use App\Services\TwentyIService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -120,6 +121,9 @@ class CartController extends Controller
 
         $companyName    = Setting::get('company_name', 'CRM');
         $mpPublicKey    = Setting::get('mp_public_key', '');
+        $paypal         = new PayPalService();
+        $paypalClientId = $paypal->isConfigured() ? $paypal->clientId() : '';
+        $paypalMode     = $paypal->mode();
         $requiresDomain = $cartData['items']->contains(fn ($i) => $i->service->requires_domain);
 
         return view('buy.cart-checkout', [
@@ -131,6 +135,8 @@ class CartController extends Controller
             'total'          => $cartData['total'],
             'companyName'    => $companyName,
             'mpPublicKey'    => $mpPublicKey,
+            'paypalClientId' => $paypalClientId,
+            'paypalMode'     => $paypalMode,
             'requiresDomain' => $requiresDomain,
         ]);
     }
@@ -266,6 +272,91 @@ class CartController extends Controller
         } catch (\Throwable $e) {
             Log::error('Cart SPEI payment failed', ['error' => $e->getMessage()]);
             return back()->with('error', 'No se pudo procesar el pago. Intenta de nuevo.')->withInput();
+        }
+    }
+
+    public function createPaypalOrder(Request $request)
+    {
+        $cartData = $this->resolveCart();
+        if (!$cartData) {
+            return response()->json(['error' => 'Carrito vacío.'], 422);
+        }
+
+        $validated = $request->validate([
+            'name'   => 'required|string|max:255',
+            'email'  => 'required|email|max:255',
+            'phone'  => 'nullable|string|max:20',
+            'domain' => 'nullable|string|max:253',
+        ]);
+
+        $paypal = new PayPalService();
+        if (!$paypal->isConfigured()) {
+            return response()->json(['error' => 'PayPal no está configurado.'], 422);
+        }
+
+        $client = $this->resolveOrCreateClient($validated);
+
+        try {
+            return DB::transaction(function () use ($client, $cartData, $paypal) {
+                $order = $this->createInvoiceFromCart($client, $cartData, '05');
+                $description = $cartData['items']->map(fn ($i) => $i->service->name)->implode(', ');
+
+                $pp = $paypal->createOrder(
+                    (float) $cartData['total'],
+                    $description ?: 'Compra carrito',
+                    (string) $order->id,
+                    route('buy.cart'),
+                    route('buy.cart'),
+                );
+
+                return response()->json([
+                    'paypalOrderId' => $pp['id'],
+                    'localOrderId'  => $order->id,
+                ]);
+            });
+        } catch (\Throwable $e) {
+            Log::error('Cart PayPal createOrder failed', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'No se pudo iniciar el pago con PayPal.'], 422);
+        }
+    }
+
+    public function capturePaypalOrder(Request $request)
+    {
+        $validated = $request->validate([
+            'paypalOrderId' => 'required|string',
+            'localOrderId'  => 'required|integer|exists:orders,id',
+        ]);
+
+        $order  = Order::findOrFail($validated['localOrderId']);
+        $paypal = new PayPalService();
+
+        try {
+            $capture = $paypal->captureOrder($validated['paypalOrderId']);
+            $payment = $paypal->processCapture($order, $capture);
+
+            ActivityLog::log('cart_purchase', $order, "Compra carrito (PayPal) por {$order->client->email}");
+
+            if ($payment->isApproved()) {
+                // Limpia carrito de la sesión actual
+                CartItem::where('session_id', session()->getId())->delete();
+                session()->forget(['discount_code', 'discount_amount']);
+
+                foreach ($order->items as $item) {
+                    $svc = Service::where('name', $item->description)->first();
+                    if ($svc) {
+                        $this->provisionHosting($order->client, $svc, $request->input('domain'));
+                    }
+                }
+            }
+
+            return response()->json([
+                'success'  => $payment->isApproved(),
+                'status'   => $payment->status,
+                'redirect' => route('portal.dashboard', $order->client->portal_token),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Cart PayPal capture failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'error' => 'No se pudo capturar el pago.'], 422);
         }
     }
 

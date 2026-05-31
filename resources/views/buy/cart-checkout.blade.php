@@ -5,6 +5,9 @@
     <title>Pagar carrito — {{ $companyName }}</title>
     @include('buy._head')
     <script src="https://sdk.mercadopago.com/js/v2"></script>
+    @if(!empty($paypalClientId))
+        <script src="https://www.paypal.com/sdk/js?client-id={{ $paypalClientId }}&currency=MXN&intent=capture"></script>
+    @endif
 </head>
 <body class="bg-gray-50 min-h-screen">
 
@@ -133,6 +136,11 @@
                     <button class="tab-btn flex-1 py-3.5 text-sm font-medium border-b-2 border-transparent text-gray-400 transition-all duration-200" data-tab="spei">
                         <i class="fas fa-building-columns mr-1.5"></i> SPEI
                     </button>
+                    @if(!empty($paypalClientId))
+                    <button class="tab-btn flex-1 py-3.5 text-sm font-medium border-b-2 border-transparent text-gray-400 transition-all duration-200" data-tab="paypal">
+                        <i class="fab fa-paypal mr-1.5"></i> PayPal
+                    </button>
+                    @endif
                 </div>
 
                 {{-- Tarjeta --}}
@@ -198,6 +206,24 @@
                         </button>
                     </form>
                 </div>
+
+                {{-- PayPal --}}
+                @if(!empty($paypalClientId))
+                <div id="panel-paypal" class="tab-panel p-6">
+                    <div class="bg-blue-50 rounded-xl p-4 mb-5 flex gap-3">
+                        <i class="fab fa-paypal text-blue-600 text-lg mt-0.5"></i>
+                        <div class="text-sm text-blue-900">
+                            <p class="font-medium mb-1">Paga con tu cuenta PayPal o tarjeta</p>
+                            <p class="text-blue-700 text-xs">Serás redirigido al popup seguro de PayPal.</p>
+                            @if($paypalMode === 'sandbox')
+                                <p class="text-yellow-700 text-xs mt-1"><i class="fas fa-flask mr-1"></i> Modo Sandbox.</p>
+                            @endif
+                        </div>
+                    </div>
+                    <div id="paypal-error" class="hidden mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl p-3"></div>
+                    <div id="paypal-button-container"></div>
+                </div>
+                @endif
 
                 {{-- SPEI --}}
                 <div id="panel-spei" class="tab-panel p-6">
@@ -416,6 +442,52 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
+
+@if(!empty($paypalClientId))
+if (window.paypal) {
+    const ppErr = document.getElementById('paypal-error');
+    const showPpErr = (m) => { ppErr.textContent = m; ppErr.classList.remove('hidden'); };
+    const hidePpErr = () => { ppErr.classList.add('hidden'); ppErr.textContent = ''; };
+    const buyerPayload = () => ({
+        name:   document.querySelector('[name="name"]')?.value || document.querySelector('.sync-name')?.value || '',
+        email:  document.querySelector('[name="email"]')?.value || document.querySelector('.sync-email')?.value || '',
+        phone:  document.querySelector('[name="phone"]')?.value || document.querySelector('.sync-phone')?.value || '',
+        domain: document.querySelector('[name="domain"]')?.value || document.querySelector('.sync-domain')?.value || '',
+    });
+
+    paypal.Buttons({
+        style: { layout: 'vertical', color: 'gold', shape: 'rect', label: 'paypal' },
+        createOrder: async function () {
+            hidePpErr();
+            const data = buyerPayload();
+            if (!data.name || !data.email) {
+                showPpErr('Completa nombre y correo arriba.');
+                throw new Error('missing data');
+            }
+            const res = await fetch('{{ route('buy.cart.pay.paypal.create') }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                body: JSON.stringify(data),
+            });
+            const j = await res.json();
+            if (!res.ok) { showPpErr(j.error || 'Error PayPal'); throw new Error(j.error || 'create failed'); }
+            window._lastLocalOrderId = j.localOrderId;
+            return j.paypalOrderId;
+        },
+        onApprove: async function (data) {
+            const res = await fetch('{{ route('buy.cart.pay.paypal.capture') }}', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'Accept': 'application/json' },
+                body: JSON.stringify({ paypalOrderId: data.orderID, localOrderId: window._lastLocalOrderId }),
+            });
+            const j = await res.json();
+            if (j.success) { window.location.href = j.redirect; }
+            else { showPpErr(j.error || 'No se pudo capturar el pago.'); }
+        },
+        onError: (e) => { showPpErr('Error PayPal: ' + (e.message || 'desconocido')); console.error(e); },
+    }).render('#paypal-button-container');
+}
+@endif
 </script>
 </body>
 </html>

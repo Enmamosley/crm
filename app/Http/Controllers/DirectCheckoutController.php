@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\Setting;
 use App\Services\CosmotownService;
 use App\Services\MercadoPagoService;
+use App\Services\PayPalService;
 use App\Services\TwentyIService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -39,6 +40,10 @@ class DirectCheckoutController extends Controller
         $mpPublicKey = Setting::get('mp_public_key', '');
         $companyName = Setting::get('company_name', 'CRM');
 
+        $paypal = new PayPalService();
+        $paypalClientId = $paypal->isConfigured() ? $paypal->clientId() : '';
+        $paypalMode     = $paypal->mode();
+
         $bankData = [
             'bank_name'        => Setting::get('bank_name'),
             'bank_beneficiary' => Setting::get('bank_beneficiary'),
@@ -48,7 +53,7 @@ class DirectCheckoutController extends Controller
         ];
         $hasBankData = !empty($bankData['bank_clabe']) || !empty($bankData['bank_account']);
 
-        return view('buy.checkout', compact('service', 'mpPublicKey', 'companyName', 'bankData', 'hasBankData'));
+        return view('buy.checkout', compact('service', 'mpPublicKey', 'paypalClientId', 'paypalMode', 'companyName', 'bankData', 'hasBankData'));
     }
 
     /**
@@ -354,6 +359,115 @@ class DirectCheckoutController extends Controller
         } catch (\Throwable $e) {
             Log::error('DirectCheckout transfer payment failed', ['slug' => $slug, 'error' => $e->getMessage()]);
             return back()->with('error', 'No se pudo registrar el pago. Intenta de nuevo.')->withInput();
+        }
+    }
+
+    /**
+     * Crea una orden de PayPal antes de mostrar el botón aprobar.
+     * Devuelve { paypalOrderId, localOrderId } al frontend.
+     */
+    public function createPaypalOrder(Request $request, string $slug)
+    {
+        $service = Service::where('slug', $slug)->where('public', true)->where('active', true)->firstOrFail();
+
+        $validated = $request->validate([
+            'name'               => 'required|string|max:255',
+            'email'              => 'required|email|max:255',
+            'phone'              => 'nullable|string|max:20',
+            'domain'             => 'nullable|string|max:253',
+            'domain_type'        => 'nullable|in:cosmotown,own',
+            'billing_preference' => 'nullable|in:fiscal,publico_general,none',
+            'tax_id'             => 'nullable|string|max:13',
+            'fiscal_name'        => 'nullable|string|max:255',
+            'address_zip'        => 'nullable|string|max:5',
+            'tax_system'         => 'nullable|string|max:3',
+            'cfdi_use'           => 'nullable|string|max:4',
+        ]);
+
+        $paypal = new PayPalService();
+        if (!$paypal->isConfigured()) {
+            return response()->json(['error' => 'PayPal no está configurado.'], 422);
+        }
+
+        $client = $this->resolveOrCreateClient($validated);
+
+        $subtotal = (float) $service->price;
+        $ivaRate  = (float) Setting::get('iva_percentage', 16) / 100;
+        $iva      = round($subtotal * $ivaRate, 2);
+        $total    = round($subtotal + $iva, 2);
+
+        try {
+            return DB::transaction(function () use ($client, $service, $slug, $subtotal, $iva, $total, $paypal, $validated) {
+                $order = $this->findOrCreateInvoice($client, $service, [
+                    'client_id'          => $client->id,
+                    'series'             => 'V',
+                    'payment_form'       => '05', // SAT 05 — monedero electrónico (PayPal)
+                    'payment_method'     => 'PUE',
+                    'use_cfdi'           => $client->cfdi_use ?? 'S01',
+                    'billing_preference' => $validated['billing_preference'] ?? 'none',
+                    'status'             => 'draft',
+                    'subtotal'           => $subtotal,
+                    'iva_amount'         => $iva,
+                    'total'              => $total,
+                    'notes'              => 'Compra directa: ' . $service->name,
+                ]);
+
+                $pp = $paypal->createOrder(
+                    $total,
+                    $service->name,
+                    (string) $order->id,
+                    route('buy.show', $slug),
+                    route('buy.show', $slug),
+                );
+
+                return response()->json([
+                    'paypalOrderId' => $pp['id'],
+                    'localOrderId'  => $order->id,
+                ]);
+            });
+        } catch (\Throwable $e) {
+            Log::error('PayPal createOrder failed', ['slug' => $slug, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'No se pudo iniciar el pago con PayPal.'], 422);
+        }
+    }
+
+    /**
+     * Captura la orden tras aprobación del usuario en el popup de PayPal.
+     */
+    public function capturePaypalOrder(Request $request, string $slug)
+    {
+        $service = Service::where('slug', $slug)->where('public', true)->where('active', true)->firstOrFail();
+
+        $validated = $request->validate([
+            'paypalOrderId' => 'required|string',
+            'localOrderId'  => 'required|integer|exists:orders,id',
+        ]);
+
+        $order = Order::findOrFail($validated['localOrderId']);
+        $paypal = new PayPalService();
+
+        try {
+            $capture = $paypal->captureOrder($validated['paypalOrderId']);
+            $payment = $paypal->processCapture($order, $capture);
+
+            ActivityLog::log('direct_purchase', $order, "Compra directa PayPal de '{$service->name}' por {$order->client->email}");
+
+            if ($payment->isApproved()) {
+                $this->provisionHosting($order->client, $service, $request->input('domain'));
+            }
+
+            return response()->json([
+                'success'  => $payment->isApproved(),
+                'status'   => $payment->status,
+                'redirect' => route('buy.success', [
+                    'slug'    => $slug,
+                    'payment' => $payment->id,
+                    'token'   => $order->client->portal_token,
+                ]),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('PayPal capture failed', ['slug' => $slug, 'error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'error' => 'No se pudo capturar el pago.'], 422);
         }
     }
 
