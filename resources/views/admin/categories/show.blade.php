@@ -13,7 +13,7 @@
 </div>
 
 <h3 class="text-lg font-semibold mb-4">Servicios en esta categoría</h3>
-<div class="bg-white rounded-lg shadow overflow-hidden">
+<div class="bg-white rounded-lg shadow overflow-x-auto">
     <table class="w-full">
         <thead class="bg-gray-50">
             <tr>

@@ -2,14 +2,14 @@
 @section('title', 'Facturas Recurrentes')
 @section('header', 'Facturas Recurrentes')
 
-@section('content')
-<div class="mb-6 flex justify-end">
-    <a href="{{ route('admin.recurring-invoices.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-        <i class="fas fa-plus mr-1"></i> Nueva Programación
-    </a>
-</div>
+@section('actions')
+<a href="{{ route('admin.recurring-invoices.create') }}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+    <i class="fas fa-plus mr-1"></i> Nueva Programación
+</a>
+@endsection
 
-<div class="bg-white rounded-lg shadow overflow-hidden">
+@section('content')
+<div class="bg-white rounded-lg shadow overflow-x-auto">
     <table class="w-full text-sm">
         <thead class="bg-gray-50">
             <tr>

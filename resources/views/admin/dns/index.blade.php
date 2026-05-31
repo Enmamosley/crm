@@ -55,7 +55,7 @@
 
     {{-- Tabla de registros --}}
     <div class="lg:col-span-2">
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
             <div class="p-5 border-b">
                 <h3 class="font-semibold text-gray-800">Registros actuales</h3>
             </div>

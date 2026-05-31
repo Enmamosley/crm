@@ -129,9 +129,9 @@
                         @else
                             <form action="{{ route('buy.cart.discount') }}" method="POST" class="flex gap-2">
                                 @csrf
-                                <input type="text" name="code" placeholder="Código de descuento" required
-                                    class="input-field flex-1 text-sm uppercase">
-                                <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 text-sm">Aplicar</button>
+                                <input type="text" name="code" placeholder="Tu código" required
+                                    class="input-field flex-1 text-sm uppercase placeholder:normal-case placeholder:tracking-normal">
+                                <button type="submit" class="bg-brand-500 text-white px-4 py-2 rounded-lg hover:bg-brand-600 text-sm transition">Aplicar</button>
                             </form>
                         @endif
                     </div>

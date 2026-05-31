@@ -34,7 +34,7 @@
             </select>
         </div>
         <div class="flex items-end gap-2">
-            <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 text-sm">
+            <button type="submit" class="bg-brand-500 text-white px-4 py-2 rounded-lg hover:bg-brand-600 text-sm transition">
                 <i class="fas fa-search mr-1"></i> Filtrar
             </button>
             <a href="{{ route('admin.tickets.index') }}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 text-sm">Limpiar</a>
@@ -43,7 +43,7 @@
 </div>
 
 <!-- Tabla de tickets -->
-<div class="bg-white rounded-lg shadow overflow-hidden">
+<div class="bg-white rounded-lg shadow overflow-x-auto">
     <table class="w-full">
         <thead class="bg-gray-50">
             <tr>

@@ -31,9 +31,9 @@
 
             <!-- Items -->
             <div class="bg-white rounded-lg shadow p-6">
-                <div class="flex justify-between items-center mb-4">
+                <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-4">
                     <h3 class="text-lg font-semibold">Servicios</h3>
-                    <div class="flex gap-2">
+                    <div class="flex gap-2 flex-wrap">
                         <div class="relative" x-data="{ open: false }">
                             <button type="button" @click="open = !open"
                                     class="bg-indigo-600 text-white px-3 py-1 rounded-lg hover:bg-indigo-700 text-sm inline-flex items-center gap-1">
@@ -64,8 +64,8 @@
                 </div>
 
                 <div id="items-container">
-                    <div class="items-row grid grid-cols-12 gap-2 mb-3 items-end" data-index="0">
-                        <div class="col-span-5">
+                    <div class="items-row grid grid-cols-2 md:grid-cols-12 gap-2 mb-3 items-end pb-3 border-b md:border-0 md:pb-0" data-index="0">
+                        <div class="col-span-2 md:col-span-5">
                             <label class="block text-xs text-gray-500 mb-1">Servicio</label>
                             <select name="items[0][service_id]" required class="w-full border rounded-lg px-2 py-2 text-sm service-select" onchange="updatePrice(this)">
                                 <option value="">Seleccionar...</option>
@@ -76,19 +76,19 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-span-2">
+                        <div class="col-span-1 md:col-span-2">
                             <label class="block text-xs text-gray-500 mb-1">Cantidad</label>
                             <input type="number" name="items[0][quantity]" value="1" min="1" required class="w-full border rounded-lg px-2 py-2 text-sm qty-input" onchange="calculateRow(this)">
                         </div>
-                        <div class="col-span-2">
+                        <div class="col-span-1 md:col-span-2">
                             <label class="block text-xs text-gray-500 mb-1">Precio Unit.</label>
                             <input type="number" name="items[0][unit_price]" step="0.01" min="0" required class="w-full border rounded-lg px-2 py-2 text-sm price-input" onchange="calculateRow(this)">
                         </div>
-                        <div class="col-span-2">
+                        <div class="col-span-1 md:col-span-2">
                             <label class="block text-xs text-gray-500 mb-1">Total</label>
                             <input type="text" readonly class="w-full border rounded-lg px-2 py-2 text-sm bg-gray-50 row-total" value="$0.00">
                         </div>
-                        <div class="col-span-1">
+                        <div class="col-span-1 md:col-span-1 flex justify-end md:justify-start">
                             <button type="button" onclick="removeItem(this)" class="text-red-500 hover:text-red-700 p-2"><i class="fas fa-times"></i></button>
                         </div>
                     </div>
@@ -130,15 +130,18 @@
 <script>
     const ivaPercentage = {{ $ivaPercentage }};
     let itemIndex = 1;
-    const bundlesData = @json($bundles->map(fn($b) => [
-        'id' => $b->id,
-        'services' => $b->services->map(fn($s) => [
-            'id' => $s->id,
-            'name' => $s->name,
-            'price' => (float) $s->price,
-            'quantity' => $s->pivot->quantity,
-        ])
-    ])->keyBy('id'));
+    @php
+        $bundlesPayload = $bundles->map(fn($b) => [
+            'id' => $b->id,
+            'services' => $b->services->map(fn($s) => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'price' => (float) $s->price,
+                'quantity' => $s->pivot->quantity,
+            ])
+        ])->keyBy('id');
+    @endphp
+    const bundlesData = @json($bundlesPayload);
 
     function addBundle(bundleId) {
         const bundle = bundlesData[bundleId];

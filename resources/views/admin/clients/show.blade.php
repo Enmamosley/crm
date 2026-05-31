@@ -100,7 +100,7 @@
         </div>
 
         {{-- Facturas --}}
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
             <div class="p-6 border-b flex items-center justify-between">
                 <h3 class="text-lg font-semibold">Facturas</h3>
                 <a href="{{ route('admin.orders.create', ['client_id' => $client->id]) }}" class="text-sm text-blue-600 hover:underline">

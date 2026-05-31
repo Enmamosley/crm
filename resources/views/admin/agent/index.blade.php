@@ -70,7 +70,7 @@
 </div>
 
 <!-- Historial -->
-<div class="bg-white rounded-lg shadow overflow-hidden">
+<div class="bg-white rounded-lg shadow overflow-x-auto">
     <div class="p-6 border-b">
         <h3 class="text-lg font-semibold">Historial de Control</h3>
     </div>

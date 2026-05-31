@@ -126,7 +126,7 @@
 </div>
 
 <!-- Detalle de pagos -->
-<div class="bg-white rounded-lg shadow overflow-hidden">
+<div class="bg-white rounded-lg shadow overflow-x-auto">
     <div class="p-6 border-b">
         <h3 class="text-lg font-semibold">Pagos del Período</h3>
     </div>

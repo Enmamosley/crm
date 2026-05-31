@@ -190,7 +190,7 @@
 
         {{-- Items de la cotización o ítems manuales --}}
         @if($order->quote && $order->quote->items->count())
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
             <div class="p-6 border-b"><h3 class="text-lg font-semibold">Conceptos <span class="text-xs font-normal text-gray-400 ml-1">(de cotización)</span></h3></div>
             <table class="w-full">
                 <thead class="bg-gray-50">
@@ -222,7 +222,7 @@
             </table>
         </div>
         @elseif($order->items->count())
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-white rounded-lg shadow overflow-x-auto">
             <div class="p-6 border-b"><h3 class="text-lg font-semibold">Conceptos <span class="text-xs font-normal text-gray-400 ml-1">(ingresados manualmente)</span></h3></div>
             <table class="w-full">
                 <thead class="bg-gray-50">

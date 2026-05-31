@@ -247,6 +247,35 @@
 .dark input::placeholder,
 .dark textarea::placeholder { color: var(--color-gray-500); }
 
+/* File inputs — style the native picker button across themes */
+input[type="file"] {
+  color: var(--color-gray-600);
+  font-size: 14px;
+}
+input[type="file"]::file-selector-button {
+  margin-right: 12px;
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 6px;
+  background-color: var(--color-brand-50);
+  color: var(--color-brand-700);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background-color .15s;
+}
+input[type="file"]::file-selector-button:hover {
+  background-color: var(--color-brand-100);
+}
+.dark input[type="file"] { color: var(--color-gray-400); }
+.dark input[type="file"]::file-selector-button {
+  background-color: color-mix(in srgb, var(--color-brand-500) 18%, var(--color-gray-900));
+  color: var(--color-brand-300);
+}
+.dark input[type="file"]::file-selector-button:hover {
+  background-color: color-mix(in srgb, var(--color-brand-500) 28%, var(--color-gray-900));
+}
+
 /* Labels */
 .dark label { color: var(--color-gray-300); }
 

@@ -11,13 +11,13 @@
 @section('content')
 <!-- Filtros -->
 <div class="bg-white rounded-lg shadow p-6 mb-6">
-    <form action="{{ route('admin.leads.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-4">
-        <div>
+    <form action="{{ route('admin.leads.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+        <div class="md:col-span-3">
             <label class="block text-sm text-gray-600 mb-1">Buscar</label>
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Nombre, email, negocio..."
                 class="w-full border rounded-lg px-3 py-2 text-sm">
         </div>
-        <div>
+        <div class="md:col-span-2">
             <label class="block text-sm text-gray-600 mb-1">Estado</label>
             <select name="status" class="w-full border rounded-lg px-3 py-2 text-sm">
                 <option value="">Todos</option>
@@ -26,7 +26,7 @@
                 @endforeach
             </select>
         </div>
-        <div>
+        <div class="md:col-span-2">
             <label class="block text-sm text-gray-600 mb-1">Asignado a</label>
             <select name="assigned_to" class="w-full border rounded-lg px-3 py-2 text-sm">
                 <option value="">Todos</option>
@@ -35,16 +35,16 @@
                 @endforeach
             </select>
         </div>
-        <div>
+        <div class="md:col-span-2">
             <label class="block text-sm text-gray-600 mb-1">Desde</label>
             <input type="date" name="from" value="{{ request('from') }}" class="w-full border rounded-lg px-3 py-2 text-sm">
         </div>
-        <div>
+        <div class="md:col-span-2">
             <label class="block text-sm text-gray-600 mb-1">Hasta</label>
             <input type="date" name="to" value="{{ request('to') }}" class="w-full border rounded-lg px-3 py-2 text-sm">
         </div>
-        <div class="flex items-end gap-2">
-            <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 text-sm">
+        <div class="md:col-span-12 flex items-end justify-end gap-2">
+            <button type="submit" class="bg-brand-500 text-white px-4 py-2 rounded-lg hover:bg-brand-600 text-sm transition">
                 <i class="fas fa-search mr-1"></i> Filtrar
             </button>
             <a href="{{ route('admin.leads.index') }}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 text-sm">Limpiar</a>
@@ -53,7 +53,7 @@
 </div>
 
 <!-- Tabla -->
-<div class="bg-white rounded-lg shadow overflow-hidden">
+<div class="bg-white rounded-lg shadow overflow-x-auto">
     <table class="w-full">
         <thead class="bg-gray-50">
             <tr>

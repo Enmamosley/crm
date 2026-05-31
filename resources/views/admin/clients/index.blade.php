@@ -13,14 +13,14 @@
     <form action="{{ route('admin.clients.index') }}" method="GET" class="flex gap-4">
         <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar por nombre, RFC, email..."
             class="flex-1 border rounded-lg px-3 py-2 text-sm">
-        <button type="submit" class="bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-900 text-sm">
+        <button type="submit" class="bg-brand-500 text-white px-4 py-2 rounded-lg hover:bg-brand-600 text-sm transition">
             <i class="fas fa-search mr-1"></i> Filtrar
         </button>
         <a href="{{ route('admin.clients.index') }}" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 text-sm">Limpiar</a>
     </form>
 </div>
 
-<div class="bg-white rounded-lg shadow overflow-hidden">
+<div class="bg-white rounded-lg shadow overflow-x-auto">
     <table class="w-full">
         <thead class="bg-gray-50">
             <tr>
