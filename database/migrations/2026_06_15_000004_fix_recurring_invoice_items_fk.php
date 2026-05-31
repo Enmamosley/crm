@@ -16,10 +16,11 @@ return new class extends Migration
         // pero la tabla existe vacía. Aquí la recreamos limpia.
         // En el VPS existente: ya está correcta, esta migración no toca datos.
 
+        $driver = Schema::getConnection()->getDriverName();
         $hasTable = Schema::hasTable('recurring_invoice_items');
         $hasFk = false;
 
-        if ($hasTable) {
+        if ($hasTable && $driver === 'mysql') {
             $fks = DB::select("
                 SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS
                 WHERE TABLE_SCHEMA = DATABASE()
@@ -36,9 +37,17 @@ return new class extends Migration
         }
 
         // Instalación nueva: recrear la tabla con estructura correcta
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        if ($driver === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+        } elseif ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = OFF');
+        }
         Schema::dropIfExists('recurring_invoice_items');
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        if ($driver === 'mysql') {
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+        } elseif ($driver === 'sqlite') {
+            DB::statement('PRAGMA foreign_keys = ON');
+        }
 
         Schema::create('recurring_invoice_items', function (Blueprint $table) {
             $table->id();

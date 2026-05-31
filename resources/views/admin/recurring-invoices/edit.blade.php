@@ -3,20 +3,23 @@
 @section('header', 'Editar Programación Recurrente')
 
 @section('content')
+@php
+    $itemsPayload = old('items', $recurringInvoice->items->map(fn($it) => [
+        'description'     => $it->description,
+        'quantity'        => $it->quantity,
+        'unit_price'      => $it->unit_price,
+        'sat_product_key' => $it->sat_product_key,
+        'sat_unit_key'    => $it->sat_unit_key,
+        'sat_unit_name'   => $it->sat_unit_name,
+        'tax_object'      => $it->tax_object,
+        'iva_exempt'      => (bool) $it->iva_exempt,
+    ])->toArray());
+@endphp
 <script>
 document.addEventListener('alpine:init', () => {
     Alpine.data('recurringForm', () => ({
         services: @json($services),
-        items: @json(old('items', $recurringInvoice->items->map(fn($it) => [
-            'description'     => $it->description,
-            'quantity'        => $it->quantity,
-            'unit_price'      => $it->unit_price,
-            'sat_product_key' => $it->sat_product_key,
-            'sat_unit_key'    => $it->sat_unit_key,
-            'sat_unit_name'   => $it->sat_unit_name,
-            'tax_object'      => $it->tax_object,
-            'iva_exempt'      => (bool) $it->iva_exempt,
-        ])->toArray())),
+        items: @json($itemsPayload),
         ivaRate: {{ $ivaPercentage / 100 }},
         get subtotal() { return this.items.reduce((s,i) => s + (parseFloat(i.quantity)||0) * (parseFloat(i.unit_price)||0), 0); },
         get iva()      { return this.subtotal * this.ivaRate; },
