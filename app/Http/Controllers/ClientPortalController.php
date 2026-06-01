@@ -27,7 +27,7 @@ class ClientPortalController extends Controller
     {
         $client = Client::where('portal_token', $token)
             ->where('portal_active', true)
-            ->with(['lead', 'invoices.quote', 'documents'])
+            ->with(['lead.quotes', 'invoices.quote', 'invoices.fiscalDocument', 'documents'])
             ->firstOrFail();
 
         $mailboxes = [];
@@ -366,7 +366,8 @@ class ClientPortalController extends Controller
             $payment = (new MercadoPagoService())->createOxxoPayment($order, $validated['email']);
             return redirect()->route('portal.payment.status', [$token, $payment]);
         } catch (\Throwable $e) {
-            return back()->with('error', 'Error al generar referencia OXXO: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Portal OXXO falló', ['order' => $order->id, 'error' => $e->getMessage()]);
+            return back()->with('error', 'No se pudo generar la referencia OXXO. Intenta de nuevo.');
         }
     }
 
@@ -391,7 +392,8 @@ class ClientPortalController extends Controller
             $payment = (new MercadoPagoService())->createSpeiPayment($order, $validated['email']);
             return redirect()->route('portal.payment.status', [$token, $payment]);
         } catch (\Throwable $e) {
-            return back()->with('error', 'Error al generar referencia SPEI: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Portal SPEI falló', ['order' => $order->id, 'error' => $e->getMessage()]);
+            return back()->with('error', 'No se pudo generar la referencia SPEI. Intenta de nuevo.');
         }
     }
 
@@ -421,7 +423,8 @@ class ClientPortalController extends Controller
                 'localOrderId'  => $order->id,
             ]);
         } catch (\Throwable $e) {
-            return response()->json(['error' => $e->getMessage()], 422);
+            \Illuminate\Support\Facades\Log::error('Portal PayPal createOrder falló', ['order' => $order->id, 'error' => $e->getMessage()]);
+            return response()->json(['error' => 'No se pudo iniciar el pago con PayPal.'], 422);
         }
     }
 
@@ -445,7 +448,8 @@ class ClientPortalController extends Controller
                 'redirect' => route('portal.payment.status', [$token, $payment]),
             ]);
         } catch (\Throwable $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 422);
+            \Illuminate\Support\Facades\Log::error('Portal PayPal capture falló', ['order' => $order->id, 'error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'error' => 'No se pudo capturar el pago.'], 422);
         }
     }
 
@@ -466,7 +470,7 @@ class ClientPortalController extends Controller
 
         $proofPath = null;
         if ($request->hasFile('proof')) {
-            $proofPath = $request->file('proof')->store('payment-proofs', 'public');
+            $proofPath = $request->file('proof')->store('payment-proofs', 'local');
         }
 
         $payment = $order->payments()->create([
@@ -498,7 +502,7 @@ class ClientPortalController extends Controller
             } catch (\Throwable) {}
         }
 
-        $order = $payment->order;
+        $invoice = $payment->order;
 
         return view('portal.payment-status', compact('client', 'payment', 'invoice'));
     }

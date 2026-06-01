@@ -105,8 +105,13 @@ class SettingController extends Controller
         }
 
         foreach (['bank_name', 'bank_beneficiary', 'bank_account', 'bank_clabe', 'bank_reference',
-                  'cosmotown_api_key', 'cosmotown_base_url'] as $key) {
+                  'cosmotown_base_url'] as $key) {
             Setting::set($key, $request->input($key, ''));
+        }
+
+        // Secreto: sólo se actualiza si viene relleno (no se borra al guardar vacío)
+        if ($request->filled('cosmotown_api_key')) {
+            Setting::set('cosmotown_api_key', $request->input('cosmotown_api_key'));
         }
 
         if ($request->hasFile('company_logo')) {

@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ActivityLog;
+use App\Models\DiscountCode;
 use App\Models\Order;
 use App\Models\Payment;
-use App\Services\CosmotownService;
 use App\Services\PayPalService;
-use App\Services\TwentyIService;
+use App\Services\ProvisioningService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -33,12 +32,16 @@ class PayPalWebhookController extends Controller
 
         $service = new PayPalService();
 
-        // Verificación de firma — sólo si webhook_id está configurado
-        if (\App\Models\Setting::get('paypal_webhook_id')) {
-            if (!$service->verifyWebhookSignature($request->headers->all(), $body)) {
-                Log::warning('PayPal webhook: invalid signature', ['event_id' => $eventId]);
-                return response()->json(['status' => 'invalid_signature'], 403);
-            }
+        // Verificación de firma OBLIGATORIA. Sin webhook_id no se puede validar
+        // el origen del evento, así que rechazamos para evitar webhooks forjados
+        // que marquen órdenes como pagadas.
+        if (!\App\Models\Setting::get('paypal_webhook_id')) {
+            Log::warning('PayPal webhook recibido pero paypal_webhook_id no está configurado — rechazado', ['event_id' => $eventId]);
+            return response()->json(['status' => 'not_configured'], 403);
+        }
+        if (!$service->verifyWebhookSignature($request->headers->all(), $body)) {
+            Log::warning('PayPal webhook: invalid signature', ['event_id' => $eventId]);
+            return response()->json(['status' => 'invalid_signature'], 403);
         }
 
         // Sólo nos interesan capturas
@@ -71,6 +74,10 @@ class PayPalWebhookController extends Controller
                         'status' => 'COMPLETED',
                         'purchase_units' => [['payments' => ['captures' => [$resource]]]],
                     ]);
+                    if ($order->paid_at) {
+                        (new ProvisioningService())->provisionForOrder($order);
+                        DiscountCode::consumeForCode($order->discount_code);
+                    }
                 } catch (\Throwable $e) {
                     Log::error('PayPal webhook: process capture failed', ['error' => $e->getMessage()]);
                 }
@@ -84,8 +91,9 @@ class PayPalWebhookController extends Controller
                     'purchase_units' => [['payments' => ['captures' => [$resource]]]],
                 ]);
 
-                if ($wasPending && $payment->fresh()->status === 'approved') {
-                    $this->provisionAfterPayment($payment->fresh());
+                if ($wasPending && $payment->fresh()->status === 'approved' && $payment->order) {
+                    (new ProvisioningService())->provisionForOrder($payment->order);
+                    DiscountCode::consumeForCode($payment->order->discount_code);
                 }
             } catch (\Throwable $e) {
                 Log::error('PayPal webhook: update failed', ['error' => $e->getMessage()]);
@@ -97,42 +105,5 @@ class PayPalWebhookController extends Controller
         }
 
         return response()->json(['status' => 'ok'], 200);
-    }
-
-    private function provisionAfterPayment(Payment $payment): void
-    {
-        $order  = $payment->order;
-        $client = $order?->client;
-
-        if (!$client || !$client->domain) {
-            return;
-        }
-
-        if ($client->domain_type === 'cosmotown') {
-            try {
-                $cosmotown = new CosmotownService();
-                if ($cosmotown->isConfigured()) {
-                    $cosmotown->register($client->domain);
-                    ActivityLog::log('domain_registered', $client, "Dominio {$client->domain} registrado vía PayPal webhook");
-                }
-            } catch (\Throwable $e) {
-                Log::error('PayPal webhook domain registration failed', ['error' => $e->getMessage()]);
-            }
-        }
-
-        if (!$client->twentyi_package_id) {
-            try {
-                // Heurística simple: tomar el primer item de la orden si tiene paquete bundle
-                $item = $order->items->first();
-                $svc  = $item ? \App\Models\Service::where('name', $item->description)->first() : null;
-                if ($svc && $svc->twentyi_package_bundle_id) {
-                    $pkgId = (new TwentyIService())->createHostingPackage($client->domain, $svc->twentyi_package_bundle_id);
-                    $client->update(['twentyi_package_id' => $pkgId]);
-                    ActivityLog::log('hosting_provisioned', $client, "Hosting 20i vía PayPal webhook: paquete #{$pkgId}");
-                }
-            } catch (\Throwable $e) {
-                Log::error('PayPal webhook hosting provisioning failed', ['error' => $e->getMessage()]);
-            }
-        }
     }
 }

@@ -116,6 +116,7 @@ class PayPalService
         $status       = strtoupper($captureNode['status'] ?? $capture['status'] ?? 'PENDING');
         $amount       = (float) ($captureNode['amount']['value'] ?? 0);
         $currency     = $captureNode['amount']['currency_code'] ?? 'MXN';
+        $referenceId  = $purchaseUnit['reference_id'] ?? null;
         $paidAt       = isset($captureNode['create_time']) ? \Carbon\Carbon::parse($captureNode['create_time']) : null;
 
         $internalStatus = match ($status) {
@@ -125,6 +126,31 @@ class PayPalService
             'REFUNDED', 'PARTIALLY_REFUNDED'       => 'refunded',
             default                                => 'pending',
         };
+
+        // Verificación de seguridad: nunca marcar una orden pagada salvo que la
+        // captura corresponda a ESTA orden y por el monto/moneda esperados.
+        // (El localOrderId lo envía el cliente; sin esto se podría pagar
+        //  cualquier factura con una captura de otra orden más barata.)
+        if ($internalStatus === 'approved') {
+            if ($referenceId !== null && (string) $referenceId !== (string) $order->id) {
+                Log::warning('PayPal capture reference mismatch', [
+                    'order_id' => $order->id, 'reference_id' => $referenceId, 'capture_id' => $captureId,
+                ]);
+                throw new \RuntimeException('La captura de PayPal no corresponde a esta orden.');
+            }
+            if (strtoupper((string) $currency) !== 'MXN') {
+                Log::warning('PayPal capture currency mismatch', [
+                    'order_id' => $order->id, 'currency' => $currency, 'capture_id' => $captureId,
+                ]);
+                throw new \RuntimeException('Moneda de pago inesperada en la captura de PayPal.');
+            }
+            if (abs($amount - (float) $order->total) > 0.01) {
+                Log::warning('PayPal capture amount mismatch', [
+                    'order_id' => $order->id, 'expected' => $order->total, 'captured' => $amount, 'capture_id' => $captureId,
+                ]);
+                throw new \RuntimeException('El monto capturado no coincide con el total de la orden.');
+            }
+        }
 
         $payment = Payment::updateOrCreate(
             ['paypal_order_id' => $capture['id']],
@@ -187,6 +213,8 @@ class PayPalService
     private function http(): PendingRequest
     {
         return Http::withToken($this->getAccessToken())
+            ->timeout(15)
+            ->connectTimeout(5)
             ->acceptJson()
             ->asJson();
     }
@@ -197,6 +225,8 @@ class PayPalService
 
         return Cache::remember($cacheKey, now()->addMinutes(8), function () {
             $response = Http::asForm()
+                ->timeout(15)
+                ->connectTimeout(5)
                 ->withBasicAuth($this->clientId, $this->secret)
                 ->post("{$this->baseUrl}/v1/oauth2/token", ['grant_type' => 'client_credentials']);
 

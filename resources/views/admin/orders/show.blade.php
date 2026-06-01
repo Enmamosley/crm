@@ -302,7 +302,7 @@
                         <p class="text-xs text-gray-500 mt-0.5"><i class="fas fa-comment mr-1"></i>{{ $pay->payment_notes }}</p>
                     @endif
                     @if($pay->proof_path)
-                        <a href="{{ Storage::url($pay->proof_path) }}" target="_blank" class="text-xs text-blue-600 hover:underline mt-0.5 inline-block">
+                        <a href="{{ route('admin.payments.proof', $pay) }}" target="_blank" class="text-xs text-blue-600 hover:underline mt-0.5 inline-block">
                             <i class="fas fa-paperclip mr-1"></i>Ver comprobante
                         </a>
                     @endif

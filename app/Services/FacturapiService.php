@@ -274,7 +274,7 @@ class FacturapiService
         $id = $order->fiscalDocument?->facturapi_invoice_id;
         if (!$id) return null;
         $response = Http::withBasicAuth($this->apiKey, '')
-            ->get("{$this->baseUrl}/invoices/{$invoice->facturapi_invoice_id}/xml");
+            ->get("{$this->baseUrl}/invoices/{$id}/xml");
         return $response->successful() ? $response->body() : null;
     }
 
@@ -285,6 +285,8 @@ class FacturapiService
     private function http()
     {
         return Http::withBasicAuth($this->apiKey, '')
+            ->timeout(20)
+            ->connectTimeout(5)
             ->acceptJson()
             ->contentType('application/json');
     }

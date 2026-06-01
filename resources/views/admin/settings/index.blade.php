@@ -57,8 +57,8 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div class="col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
-                        <input type="password" name="facturapi_api_key" value="{{ $settings['facturapi_api_key'] ?? '' }}"
-                            placeholder="sk_live_... o sk_test_..."
+                        <input type="password" name="facturapi_api_key" value="" autocomplete="off"
+                            placeholder="{{ ($settings['facturapi_api_key'] ?? '') ? '•••••• guardado — déjalo vacío para conservar' : 'sk_live_... o sk_test_...' }}"
                             class="w-full border rounded-lg px-3 py-2 font-mono text-sm">
                         <p class="text-xs text-gray-400 mt-1">Obtén tu API Key en <a href="https://dashboard.facturapi.io" target="_blank" class="text-blue-500 hover:underline">dashboard.facturapi.io</a>. Usa <code>sk_test_</code> para pruebas.</p>
                     </div>
@@ -70,8 +70,8 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">API Key (Bearer Token)</label>
-                        <input type="password" name="twentyi_api_key" value="{{ $settings['twentyi_api_key'] ?? '' }}"
-                            placeholder="Bearer token de la API de 20i"
+                        <input type="password" name="twentyi_api_key" value="" autocomplete="off"
+                            placeholder="{{ ($settings['twentyi_api_key'] ?? '') ? '•••••• guardado — déjalo vacío para conservar' : 'Bearer token de la API de 20i' }}"
                             class="w-full border rounded-lg px-3 py-2 font-mono text-sm">
                         <p class="text-xs text-gray-400 mt-1">Encuéntrala en tu panel de 20i → API &amp; Integration.</p>
                     </div>
@@ -117,15 +117,15 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Access Token</label>
-                        <input type="password" name="mp_access_token" value="{{ $settings['mp_access_token'] ?? '' }}"
-                            placeholder="APP_USR-... o TEST-..."
+                        <input type="password" name="mp_access_token" value="" autocomplete="off"
+                            placeholder="{{ ($settings['mp_access_token'] ?? '') ? '•••••• guardado — déjalo vacío para conservar' : 'APP_USR-... o TEST-...' }}"
                             class="w-full md:w-2/3 border rounded-lg px-3 py-2 font-mono text-sm">
                         <p class="text-xs text-gray-400 mt-1">Token privado para procesar pagos desde el servidor.</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Webhook Secret <span class="font-normal text-gray-400">(opcional)</span></label>
-                        <input type="password" name="mp_webhook_secret" value="{{ $settings['mp_webhook_secret'] ?? '' }}"
-                            placeholder="Secreto para validar firmas HMAC"
+                        <input type="password" name="mp_webhook_secret" value="" autocomplete="off"
+                            placeholder="{{ ($settings['mp_webhook_secret'] ?? '') ? '•••••• guardado — déjalo vacío para conservar' : 'Secreto para validar firmas HMAC' }}"
                             class="w-full md:w-2/3 border rounded-lg px-3 py-2 font-mono text-sm">
                         <p class="text-xs text-gray-400 mt-1">Configura el webhook en <a href="https://www.mercadopago.com.mx/developers/panel/app" target="_blank" class="text-blue-500 hover:underline">Tus integraciones</a> apuntando a: <code class="bg-gray-100 px-1 rounded">{{ url('api/webhooks/mercadopago') }}</code></p>
                     </div>
@@ -160,8 +160,8 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Secret</label>
-                        <input type="password" name="paypal_secret" value="{{ $settings['paypal_secret'] ?? '' }}"
-                            placeholder="EBxxx..."
+                        <input type="password" name="paypal_secret" value="" autocomplete="off"
+                            placeholder="{{ ($settings['paypal_secret'] ?? '') ? '•••••• guardado — déjalo vacío para conservar' : 'EBxxx...' }}"
                             class="w-full md:w-2/3 border rounded-lg px-3 py-2 font-mono text-sm">
                         <p class="text-xs text-gray-400 mt-1">Secreto privado — para OAuth de servidor.</p>
                     </div>
@@ -184,8 +184,8 @@
                 <div class="grid grid-cols-1 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
-                        <input type="password" name="cosmotown_api_key" value="{{ $settings['cosmotown_api_key'] ?? '' }}"
-                            placeholder="API key de Cosmotown"
+                        <input type="password" name="cosmotown_api_key" value="" autocomplete="off"
+                            placeholder="{{ ($settings['cosmotown_api_key'] ?? '') ? '•••••• guardado — déjalo vacío para conservar' : 'API key de Cosmotown' }}"
                             class="w-full md:w-2/3 border rounded-lg px-3 py-2 font-mono text-sm">
                     </div>
                     <div>

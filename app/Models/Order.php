@@ -16,7 +16,7 @@ class Order extends Model
         'client_id', 'quote_id', 'series', 'folio_number',
         'payment_form', 'payment_method', 'use_cfdi',
         'billing_preference', 'subtotal', 'iva_amount', 'total',
-        'notes', 'status', 'paid_at',
+        'discount_code', 'notes', 'status', 'paid_at',
     ];
 
     protected function casts(): array

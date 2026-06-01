@@ -140,17 +140,20 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
     Route::post('clients/{client}/dns', [DnsController::class, 'store'])->name('clients.dns.store');
     Route::delete('clients/{client}/dns/{record}', [DnsController::class, 'destroy'])->name('clients.dns.destroy');
 
-    // Órdenes y Facturación (admin + accounting)
-    Route::resource('orders', OrderController::class)->only(['index', 'create', 'store', 'show']);
-    Route::patch('orders/{order}/stamp', [OrderController::class, 'stamp'])->name('orders.stamp');
-    Route::patch('orders/{order}/void', [OrderController::class, 'void'])->name('orders.void');
-    Route::delete('orders/{order}/fiscal-document', [OrderController::class, 'cancelFiscalDocument'])->name('orders.fiscal-document.cancel');
-    Route::get('orders/{order}/pdf', [OrderController::class, 'downloadPdf'])->name('orders.pdf');
-    Route::get('orders/{order}/xml', [OrderController::class, 'downloadXml'])->name('orders.xml');
-    Route::post('orders/{order}/send-link', [OrderController::class, 'sendPaymentLink'])->name('orders.send-link');
-    Route::post('orders/{order}/pay-manual', [OrderController::class, 'registerManualPayment'])->name('orders.pay-manual');
-    Route::patch('payments/{payment}/approve', [OrderController::class, 'approveTransfer'])->name('payments.approve');
-    Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
+    // Órdenes y Facturación (admin + accounting) — incluye acciones que mueven dinero
+    Route::middleware('role:admin,accounting')->group(function () {
+        Route::resource('orders', OrderController::class)->only(['index', 'create', 'store', 'show']);
+        Route::patch('orders/{order}/stamp', [OrderController::class, 'stamp'])->name('orders.stamp');
+        Route::patch('orders/{order}/void', [OrderController::class, 'void'])->name('orders.void');
+        Route::delete('orders/{order}/fiscal-document', [OrderController::class, 'cancelFiscalDocument'])->name('orders.fiscal-document.cancel');
+        Route::get('orders/{order}/pdf', [OrderController::class, 'downloadPdf'])->name('orders.pdf');
+        Route::get('orders/{order}/xml', [OrderController::class, 'downloadXml'])->name('orders.xml');
+        Route::post('orders/{order}/send-link', [OrderController::class, 'sendPaymentLink'])->name('orders.send-link');
+        Route::post('orders/{order}/pay-manual', [OrderController::class, 'registerManualPayment'])->name('orders.pay-manual');
+        Route::patch('payments/{payment}/approve', [OrderController::class, 'approveTransfer'])->name('payments.approve');
+        Route::get('payments/{payment}/proof', [OrderController::class, 'downloadProof'])->name('payments.proof');
+        Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
+    });
 
     // Usuarios (admin only)
     Route::middleware('role:admin')->resource('users', UserController::class);

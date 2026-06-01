@@ -27,6 +27,8 @@ class TwentyIService
 
         return Http::withToken(base64_encode($key))
             ->baseUrl($this->baseUrl)
+            ->timeout(20)
+            ->connectTimeout(5)
             ->acceptJson();
     }
 

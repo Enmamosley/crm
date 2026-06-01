@@ -42,8 +42,21 @@ class DiscountCode extends Model
             : min($this->value, $subtotal);
     }
 
-    public function incrementUses(): void
+    /**
+     * Consume un uso del cupón de forma atómica y sólo si no excede max_uses.
+     * Debe llamarse únicamente cuando el pago queda CONFIRMADO (no al iniciar
+     * un pago pendiente como OXXO/SPEI que podría no completarse nunca).
+     */
+    public static function consumeForCode(?string $code): void
     {
-        $this->increment('times_used');
+        if (!$code) {
+            return;
+        }
+
+        static::where('code', $code)
+            ->where(function ($q) {
+                $q->whereNull('max_uses')->orWhereColumn('times_used', '<', 'max_uses');
+            })
+            ->increment('times_used');
     }
 }

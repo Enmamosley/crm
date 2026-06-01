@@ -132,8 +132,8 @@ class MercadoPagoService
         ]);
 
         // Marcar factura como pagada
-        if ($newStatus === 'approved' && !$payment->invoice->paid_at) {
-            $order = $payment->invoice;
+        if ($newStatus === 'approved' && $payment->order && !$payment->order->paid_at) {
+            $order = $payment->order;
             $order->update(['status' => 'sent', 'paid_at' => $paidAt]);
 
             // Auto-timbrar si no está timbrada y el payment_form coincide
@@ -247,6 +247,8 @@ class MercadoPagoService
     private function http(): \Illuminate\Http\Client\PendingRequest
     {
         return Http::withToken($this->accessToken)
+            ->timeout(15)
+            ->connectTimeout(5)
             ->acceptJson()
             ->contentType('application/json');
     }

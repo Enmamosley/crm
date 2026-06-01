@@ -183,7 +183,7 @@ class OrderController extends Controller
 
         $proofPath = null;
         if ($request->hasFile('proof')) {
-            $proofPath = $request->file('proof')->store('payment-proofs', 'public');
+            $proofPath = $request->file('proof')->store('payment-proofs', 'local');
         }
 
         $order->payments()->create([
@@ -203,6 +203,9 @@ class OrderController extends Controller
         }
         $order->update($updates);
 
+        (new \App\Services\ProvisioningService())->provisionForOrder($order);
+        \App\Models\DiscountCode::consumeForCode($order->discount_code);
+
         ActivityLog::log('manual_payment_registered', $order,
             "Pago manual de \${$validated['amount']} MXN registrado");
 
@@ -221,6 +224,9 @@ class OrderController extends Controller
 
         $order = $payment->order;
         $order->update(['status' => 'paid', 'paid_at' => now()]);
+
+        (new \App\Services\ProvisioningService())->provisionForOrder($order);
+        \App\Models\DiscountCode::consumeForCode($order->discount_code);
 
         ActivityLog::log('transfer_approved', $order,
             "Transferencia de \${$payment->amount} MXN confirmada por " . auth()->user()->name);
@@ -372,6 +378,17 @@ class OrderController extends Controller
             'Content-Type'        => 'application/xml',
             'Content-Disposition' => "attachment; filename=\"factura-{$order->folio()}.xml\"",
         ]);
+    }
+
+    /**
+     * Sirve el comprobante de pago desde disco privado (sólo admin/accounting).
+     */
+    public function downloadProof(Payment $payment)
+    {
+        $path = $payment->proof_path;
+        abort_unless($path && \Illuminate\Support\Facades\Storage::disk('local')->exists($path), 404);
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->download($path);
     }
 
     private function paymentForms(): array

@@ -11,7 +11,7 @@ use App\Models\Service;
 use App\Models\Setting;
 use App\Services\MercadoPagoService;
 use App\Services\PayPalService;
-use App\Services\TwentyIService;
+use App\Services\ProvisioningService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -91,8 +91,12 @@ class CartController extends Controller
 
         $code = DiscountCode::where('code', strtoupper($validated['code']))->first();
 
-        if (!$code || !$code->isValid()) {
-            return back()->with('error', 'Código de descuento inválido o expirado.');
+        $subtotal = CartItem::where('session_id', session()->getId())
+            ->with('service')->get()
+            ->sum(fn ($item) => $item->service->price * $item->quantity);
+
+        if (!$code || !$code->isValid($subtotal)) {
+            return back()->with('error', 'Código de descuento inválido, expirado o no aplica al monto de tu carrito.');
         }
 
         session(['discount_code' => $code->code]);
@@ -189,9 +193,8 @@ class CartController extends Controller
                 ActivityLog::log('cart_purchase', $invoice, "Compra por carrito (tarjeta) por {$validated['email']}");
 
                 if ($payment->status === 'approved') {
-                    foreach ($cartData['items'] as $item) {
-                        $this->provisionHosting($client, $item->service, $validated['domain'] ?? null);
-                    }
+                    DiscountCode::consumeForCode($invoice->discount_code);
+                    (new ProvisioningService())->provisionForOrder($invoice);
                 }
 
                 return response()->json([
@@ -230,9 +233,7 @@ class CartController extends Controller
                 $payment = (new MercadoPagoService())->createOxxoPayment($invoice, $validated['email']);
                 $this->clearCart($cartData);
                 ActivityLog::log('cart_purchase', $invoice, "Compra por carrito (OXXO) por {$validated['email']}");
-                foreach ($cartData['items'] as $item) {
-                    $this->provisionHosting($client, $item->service, $validated['domain'] ?? null);
-                }
+                // El aprovisionamiento ocurre tras CONFIRMAR el pago (webhook MP), no antes.
                 return redirect()->route('portal.dashboard', $client->portal_token);
             });
         } catch (\Throwable $e) {
@@ -264,9 +265,7 @@ class CartController extends Controller
                 $payment = (new MercadoPagoService())->createSpeiPayment($invoice, $validated['email']);
                 $this->clearCart($cartData);
                 ActivityLog::log('cart_purchase', $invoice, "Compra por carrito (SPEI) por {$validated['email']}");
-                foreach ($cartData['items'] as $item) {
-                    $this->provisionHosting($client, $item->service, $validated['domain'] ?? null);
-                }
+                // El aprovisionamiento ocurre tras CONFIRMAR el pago (webhook MP), no antes.
                 return redirect()->route('portal.dashboard', $client->portal_token);
             });
         } catch (\Throwable $e) {
@@ -340,13 +339,9 @@ class CartController extends Controller
                 // Limpia carrito de la sesión actual
                 CartItem::where('session_id', session()->getId())->delete();
                 session()->forget(['discount_code', 'discount_amount']);
+                DiscountCode::consumeForCode($order->discount_code);
 
-                foreach ($order->items as $item) {
-                    $svc = Service::where('name', $item->description)->first();
-                    if ($svc) {
-                        $this->provisionHosting($order->client, $svc, $request->input('domain'));
-                    }
-                }
+                (new ProvisioningService())->provisionForOrder($order);
             }
 
             return response()->json([
@@ -411,24 +406,6 @@ class CartController extends Controller
         return $client;
     }
 
-    private function provisionHosting(Client $client, Service $service, ?string $domain = null): void
-    {
-        if (!$service->twentyi_package_bundle_id) {
-            return;
-        }
-        $domain = $domain ?: $client->domain;
-        if (!$domain) {
-            return;
-        }
-        try {
-            $packageId = (new TwentyIService())->createHostingPackage($domain, $service->twentyi_package_bundle_id);
-            $client->update(['twentyi_package_id' => $packageId]);
-            ActivityLog::log('hosting_provisioned', $client, "Hosting 20i creado: paquete #{$packageId} para {$domain}");
-        } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('provisionHosting failed: ' . $e->getMessage());
-        }
-    }
-
     private function createInvoiceFromCart(Client $client, array $cartData, string $paymentForm): Order
     {
         return Order::create([
@@ -441,6 +418,7 @@ class CartController extends Controller
             'subtotal'       => $cartData['adjustedSubtotal'],
             'iva_amount'     => $cartData['iva'],
             'total'          => $cartData['total'],
+            'discount_code'  => $cartData['discountCode'],
             'notes'          => 'Carrito: ' . $cartData['notes'],
         ]);
     }
@@ -448,11 +426,6 @@ class CartController extends Controller
     private function clearCart(array $cartData): void
     {
         $cartData['items']->each->delete();
-
-        if ($cartData['discountCode']) {
-            $code = DiscountCode::where('code', $cartData['discountCode'])->first();
-            $code?->incrementUses();
-        }
         session()->forget('discount_code');
     }
 }

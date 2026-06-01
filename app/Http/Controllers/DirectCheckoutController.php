@@ -11,7 +11,7 @@ use App\Models\Setting;
 use App\Services\CosmotownService;
 use App\Services\MercadoPagoService;
 use App\Services\PayPalService;
-use App\Services\TwentyIService;
+use App\Services\ProvisioningService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -149,7 +149,7 @@ class DirectCheckoutController extends Controller
                 ActivityLog::log('direct_purchase', $invoice, "Compra directa de '{$service->name}' por {$validated['email']}");
 
                 if ($payment->status === 'approved') {
-                    $this->provisionHosting($client, $service, $validated['domain'] ?? null);
+                    (new ProvisioningService())->provisionForOrder($invoice);
                 }
 
                 return response()->json([
@@ -214,7 +214,7 @@ class DirectCheckoutController extends Controller
 
                 $payment = (new MercadoPagoService())->createOxxoPayment($invoice, $validated['email']);
                 ActivityLog::log('direct_purchase', $invoice, "Compra directa OXXO de '{$service->name}' por {$validated['email']}");
-                $this->provisionHosting($client, $service, $validated['domain'] ?? null);
+                // El aprovisionamiento ocurre tras CONFIRMAR el pago (webhook MP), no antes.
 
                 return redirect()->route('buy.success', [
                     'slug' => $slug,
@@ -274,7 +274,7 @@ class DirectCheckoutController extends Controller
 
                 $payment = (new MercadoPagoService())->createSpeiPayment($invoice, $validated['email']);
                 ActivityLog::log('direct_purchase', $invoice, "Compra directa SPEI de '{$service->name}' por {$validated['email']}");
-                $this->provisionHosting($client, $service, $validated['domain'] ?? null);
+                // El aprovisionamiento ocurre tras CONFIRMAR el pago (webhook MP), no antes.
 
                 return redirect()->route('buy.success', [
                     'slug' => $slug,
@@ -334,7 +334,7 @@ class DirectCheckoutController extends Controller
 
                 $proofPath = null;
                 if ($request->hasFile('proof')) {
-                    $proofPath = $request->file('proof')->store('payment-proofs', 'public');
+                    $proofPath = $request->file('proof')->store('payment-proofs', 'local');
                 }
 
                 $payment = $invoice->payments()->create([
@@ -348,7 +348,7 @@ class DirectCheckoutController extends Controller
                 ]);
 
                 ActivityLog::log('direct_purchase', $invoice, "Compra directa transferencia de '{$service->name}' por {$validated['email']}");
-                $this->provisionHosting($client, $service, $validated['domain'] ?? null);
+                // El aprovisionamiento ocurre al CONFIRMAR la transferencia (panel), no antes.
 
                 return redirect()->route('buy.success', [
                     'slug'    => $slug,
@@ -453,7 +453,7 @@ class DirectCheckoutController extends Controller
             ActivityLog::log('direct_purchase', $order, "Compra directa PayPal de '{$service->name}' por {$order->client->email}");
 
             if ($payment->isApproved()) {
-                $this->provisionHosting($order->client, $service, $request->input('domain'));
+                (new ProvisioningService())->provisionForOrder($order);
             }
 
             return response()->json([
@@ -482,7 +482,7 @@ class DirectCheckoutController extends Controller
         $client  = Client::where('portal_token', $token)->firstOrFail();
         $companyName = Setting::get('company_name', 'CRM');
 
-        abort_if($payment->invoice->client_id !== $client->id, 403);
+        abort_if(!$payment->order || $payment->order->client_id !== $client->id, 403);
 
         return view('buy.success', compact('service', 'payment', 'client', 'companyName'));
     }
@@ -544,41 +544,5 @@ class DirectCheckoutController extends Controller
         }
 
         return Order::create($invoiceData);
-    }
-
-    private function provisionHosting(Client $client, Service $service, ?string $domain = null): void
-    {
-        $domain = $domain ?: $client->domain;
-        if (!$domain) {
-            return;
-        }
-
-        // 1. Registrar dominio vía Cosmotown si fue seleccionado así
-        if ($client->domain_type === 'cosmotown') {
-            try {
-                $cosmotown = new CosmotownService();
-                if ($cosmotown->isConfigured()) {
-                    $result = $cosmotown->register($domain);
-                    ActivityLog::log('domain_registered', $client, "Dominio {$domain} registrado en Cosmotown");
-                }
-            } catch (\Throwable $e) {
-                Log::error('Domain registration failed', ['domain' => $domain, 'error' => $e->getMessage()]);
-            }
-        }
-
-        // 2. Crear paquete de hosting en 20i
-        if (!$service->twentyi_package_bundle_id) {
-            return;
-        }
-        if ($client->twentyi_package_id) {
-            return;
-        }
-        try {
-            $packageId = (new TwentyIService())->createHostingPackage($domain, $service->twentyi_package_bundle_id);
-            $client->update(['twentyi_package_id' => $packageId]);
-            ActivityLog::log('hosting_provisioned', $client, "Hosting 20i creado: paquete #{$packageId} para {$domain}");
-        } catch (\Throwable $e) {
-            Log::error('provisionHosting failed: ' . $e->getMessage());
-        }
     }
 }
