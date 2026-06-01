@@ -176,7 +176,7 @@ class QuoteController extends Controller
 
         $existing = $quote->invoices()->first();
         if ($existing) {
-            return redirect()->route('admin.invoices.show', $existing)
+            return redirect()->route('admin.orders.show', $existing)
                 ->with('info', 'Esta cotización ya tiene una orden de servicio generada.');
         }
 
@@ -199,7 +199,7 @@ class QuoteController extends Controller
 
         ActivityLog::log('quote_converted', $order, "Cotización {$quote->quote_number} convertida a orden de servicio");
 
-        return redirect()->route('admin.invoices.show', $order)
+        return redirect()->route('admin.orders.show', $order)
             ->with('success', '¡Orden creada! Configura los datos fiscales y envía el link de cobro al cliente.');
     }
 

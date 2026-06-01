@@ -72,7 +72,7 @@ class ProcessDunning extends Command
                         Notification::notify($adminId, 'dunning_sent',
                             "Cobro #{$attempt->attempt_number}: {$order->folio()}",
                             "Se envió recordatorio de cobro a {$order->client->legal_name}",
-                            route('admin.invoices.show', $order));
+                            route('admin.orders.show', $order));
                     }
                 } catch (\Throwable $e) {
                     $attempt->update(['status' => 'failed', 'notes' => $e->getMessage()]);
