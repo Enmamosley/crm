@@ -8,7 +8,12 @@ use Illuminate\Support\Str;
 
 class Service extends Model
 {
-    protected $fillable = ['service_category_id', 'name', 'slug', 'description', 'info_url', 'price', 'active', 'public', 'requires_domain', 'twentyi_package_bundle_id'];
+    protected $fillable = [
+        'service_category_id', 'name', 'slug', 'description', 'info_url', 'price',
+        'active', 'public', 'requires_domain', 'twentyi_package_bundle_id',
+        // Campos fiscales SAT (faltaban → no se guardaban por asignación masiva)
+        'sat_product_key', 'sat_unit_key', 'sat_unit_name', 'tax_object', 'iva_exempt',
+    ];
 
     protected function casts(): array
     {
@@ -17,6 +22,7 @@ class Service extends Model
             'active'          => 'boolean',
             'public'          => 'boolean',
             'requires_domain' => 'boolean',
+            'iva_exempt'      => 'boolean',
         ];
     }
 
