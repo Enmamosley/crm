@@ -201,6 +201,12 @@
                                     <i class="fas fa-file-code"></i>
                                 </a>
                             @endif
+                            @if($invoice->isPaid())
+                                <a href="{{ route('portal.invoice.receipt', [$client->portal_token, $invoice]) }}"
+                                   class="text-xs text-green-600 hover:text-green-800 bg-green-50 rounded-lg px-2.5 py-1 font-medium transition" title="Descargar recibo de pago">
+                                    <i class="fas fa-receipt mr-1"></i>Recibo
+                                </a>
+                            @endif
                         </div>
                     </div>
                     @endforeach

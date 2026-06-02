@@ -214,6 +214,27 @@ class OrderController extends Controller
             ->with('success', 'Pago registrado. Ahora puedes timbrar la factura.');
     }
 
+    /** Reenvía el correo de confirmación (comprobante) del pago aprobado de la orden. */
+    public function resendConfirmation(Order $order)
+    {
+        $payment = $order->payments()->where('status', 'approved')->latest('paid_at')->first();
+        if (!$payment) {
+            return back()->with('error', 'La orden no tiene un pago aprobado.');
+        }
+        if (!$order->client?->email) {
+            return back()->with('error', 'El cliente no tiene correo registrado.');
+        }
+
+        try {
+            Mail::to($order->client->email)->send(new \App\Mail\PaymentConfirmed($payment));
+            ActivityLog::log('confirmation_resent', $order, "Comprobante reenviado a {$order->client->email}");
+            return back()->with('success', "Comprobante reenviado a {$order->client->email}.");
+        } catch (\Throwable $e) {
+            Log::error('Resend confirmation failed', ['order' => $order->id, 'error' => $e->getMessage()]);
+            return back()->with('error', 'No se pudo enviar el correo. Revisa la configuración SMTP en Ajustes.');
+        }
+    }
+
     /**
      * Confirmar transferencia bancaria pendiente.
      */

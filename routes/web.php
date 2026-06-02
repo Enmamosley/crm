@@ -150,6 +150,7 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
         Route::get('orders/{order}/xml', [OrderController::class, 'downloadXml'])->name('orders.xml');
         Route::post('orders/{order}/send-link', [OrderController::class, 'sendPaymentLink'])->name('orders.send-link');
         Route::post('orders/{order}/pay-manual', [OrderController::class, 'registerManualPayment'])->name('orders.pay-manual');
+        Route::post('orders/{order}/resend-confirmation', [OrderController::class, 'resendConfirmation'])->name('orders.resend-confirmation');
         Route::patch('payments/{payment}/approve', [OrderController::class, 'approveTransfer'])->name('payments.approve');
         Route::get('payments/{payment}/proof', [OrderController::class, 'downloadProof'])->name('payments.proof');
         Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.update-status');
@@ -231,6 +232,7 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
 Route::prefix('portal')->name('portal.')->middleware('portal')->group(function () {
     Route::get('{token}', [ClientPortalController::class, 'show'])->name('dashboard');
     Route::get('{token}/orders/{order}/pdf', [ClientPortalController::class, 'downloadInvoicePdf'])->name('invoice.pdf');
+    Route::get('{token}/orders/{order}/receipt', [ClientPortalController::class, 'downloadReceipt'])->name('invoice.receipt');
     Route::get('{token}/orders/{order}/xml', [ClientPortalController::class, 'downloadInvoiceXml'])->name('invoice.xml');
     Route::get('{token}/documents/{document}', [ClientPortalController::class, 'downloadDocument'])->name('document.download');
 

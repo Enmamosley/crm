@@ -90,6 +90,33 @@ class ClientPortalController extends Controller
         ]);
     }
 
+    /** Recibo de pago (no fiscal) descargable — para cualquier orden pagada, tenga o no CFDI. */
+    public function downloadReceipt(string $token, Order $order)
+    {
+        $client = Client::where('portal_token', $token)
+            ->where('portal_active', true)
+            ->firstOrFail();
+
+        abort_if($order->client_id !== $client->id, 403);
+        abort_unless($order->isPaid(), 404, 'Recibo disponible sólo para pagos confirmados.');
+
+        $settings = [
+            'company_name'    => Setting::get('company_name', ''),
+            'company_logo'    => Setting::get('company_logo', ''),
+            'company_rfc'     => Setting::get('company_rfc', ''),
+            'company_address' => Setting::get('company_address', ''),
+            'company_phone'   => Setting::get('company_phone', ''),
+            'company_email'   => Setting::get('company_email', ''),
+        ];
+
+        $payment = $order->payments()->where('status', 'approved')->latest('paid_at')->first();
+        $ref = $order->folio_number ? $order->folio() : ('ORD-' . $order->id);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.receipt', compact('order', 'client', 'settings', 'payment', 'ref'));
+
+        return $pdf->download('recibo-' . $ref . '.pdf');
+    }
+
     public function downloadInvoiceXml(string $token, Order $order)
     {
         $client = Client::where('portal_token', $token)

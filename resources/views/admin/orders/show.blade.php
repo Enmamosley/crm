@@ -46,6 +46,15 @@
     </a>
 @endif
 
+@if($order->isPaid() && $order->client && $order->client->email)
+    <form action="{{ route('admin.orders.resend-confirmation', $order) }}" method="POST" class="inline">
+        @csrf
+        <button type="submit" class="bg-gray-100 text-gray-700 border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-200 text-sm">
+            <i class="fas fa-envelope mr-1"></i> Reenviar comprobante
+        </button>
+    </form>
+@endif
+
 @if($order->isCancellable())
     <button onclick="document.getElementById('cancelModal').classList.remove('hidden')"
         class="bg-gray-200 text-red-600 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 text-sm">
