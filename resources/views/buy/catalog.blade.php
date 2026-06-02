@@ -98,9 +98,16 @@
                                 <h3 class="text-base font-bold text-gray-900 mb-1">{{ $service->name }}</h3>
                                 @if($service->description)
                                     <p class="text-sm text-gray-500 leading-relaxed mb-3">{{ $service->description }}</p>
-                                @else
-                                    <div class="mb-3"></div>
                                 @endif
+                                @if($service->info_url)
+                                    <a href="{{ $service->info_url }}" target="_blank" rel="noopener"
+                                       class="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 hover:underline mb-3">
+                                        <i class="fas fa-circle-info"></i> Más información
+                                    </a>
+                                @endif
+                                @unless($service->description || $service->info_url)
+                                    <div class="mb-3"></div>
+                                @endunless
                             </div>
                             <div>
                                 <div class="border-t pt-3 mb-3">

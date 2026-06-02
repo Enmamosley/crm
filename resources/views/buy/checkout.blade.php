@@ -56,6 +56,12 @@
                         @if($service->description)
                             <p class="text-xs text-gray-400">{{ Str::limit($service->description, 60) }}</p>
                         @endif
+                        @if($service->info_url)
+                            <a href="{{ $service->info_url }}" target="_blank" rel="noopener"
+                               class="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 hover:underline mt-0.5">
+                                <i class="fas fa-circle-info"></i> Más información
+                            </a>
+                        @endif
                     </div>
                 </div>
                 <div class="text-right">
