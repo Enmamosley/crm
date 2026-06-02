@@ -174,6 +174,7 @@ class PayPalService
                     'status'  => 'sent',
                     'paid_at' => $payment->paid_at,
                 ]);
+                (new OrderFinalizationService())->finalize($payment);
             }
         }
 

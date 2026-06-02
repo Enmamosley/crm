@@ -131,32 +131,10 @@ class MercadoPagoService
             'paid_at'       => $paidAt,
         ]);
 
-        // Marcar factura como pagada
+        // Marcar pagada y disparar timbrado + correo (común a todos los flujos).
         if ($newStatus === 'approved' && $payment->order && !$payment->order->paid_at) {
-            $order = $payment->order;
-            $order->update(['status' => 'sent', 'paid_at' => $paidAt]);
-
-            // Auto-timbrar si no está timbrada y el payment_form coincide
-            if (!$order->isStamped() && Setting::get('facturapi_api_key')) {
-                try {
-                    $order->update(['payment_form' => $payment->satPaymentForm()]);
-                    (new FacturapiService())->stampInvoice($order);
-                    ActivityLog::log('auto_stamped', $order, "Factura {$order->folio()} timbrada automáticamente tras pago MP");
-                } catch (\Throwable $e) {
-                    Log::error('Auto-stamp failed after payment', ['invoice_id' => $order->id, 'error' => $e->getMessage()]);
-                }
-            }
-
-            // Enviar email de confirmación
-            if ($order->client->email) {
-                try {
-                    Mail::to($order->client->email)->send(new PaymentConfirmed($payment));
-                } catch (\Throwable $e) {
-                    Log::error('Payment confirmation email failed', ['payment_id' => $payment->id, 'error' => $e->getMessage()]);
-                }
-            }
-
-            ActivityLog::log('payment_approved', $payment, "Pago #{$payment->id} aprobado por \${$payment->amount} para factura {$order->folio()}");
+            $payment->order->update(['status' => 'sent', 'paid_at' => $paidAt]);
+            (new OrderFinalizationService())->finalize($payment);
         }
 
         return $payment;
@@ -239,6 +217,7 @@ class MercadoPagoService
 
         if ($isApproved) {
             $order->update(['status' => 'sent', 'paid_at' => now()]);
+            (new OrderFinalizationService())->finalize($payment);
         }
 
         return $payment;
