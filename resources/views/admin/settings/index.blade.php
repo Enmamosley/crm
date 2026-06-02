@@ -247,6 +247,34 @@
                 </div>
             </div>
 
+            <div class="border-t pt-4 mt-4">
+                <h3 class="text-lg font-semibold mb-1">Meta (Facebook) Pixel + Conversions API <span class="text-sm font-normal text-gray-400 ml-1">(remarketing y conversiones)</span></h3>
+                <p class="text-xs text-gray-400 mb-4">Rastrea PageView, ViewContent y Purchase en las páginas de compra. El Pixel ID es público; el token de Conversions API es secreto. Ambos salen de <a href="https://business.facebook.com/events_manager2" target="_blank" class="text-blue-500 hover:underline">Events Manager</a>.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pixel ID / Dataset ID</label>
+                        <input type="text" name="meta_pixel_id" value="{{ $settings['meta_pixel_id'] ?? '' }}"
+                            placeholder="Ej: 1234567890123456"
+                            class="w-full border rounded-lg px-3 py-2 font-mono text-sm">
+                        <p class="text-xs text-gray-400 mt-1">Si lo dejas vacío, no se carga ningún pixel.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Test Event Code <span class="font-normal text-gray-400">(opcional)</span></label>
+                        <input type="text" name="meta_test_event_code" value="{{ $settings['meta_test_event_code'] ?? '' }}"
+                            placeholder="TEST12345 — sólo para pruebas"
+                            class="w-full border rounded-lg px-3 py-2 font-mono text-sm">
+                        <p class="text-xs text-gray-400 mt-1">Para ver eventos en "Test Events"; déjalo vacío en producción.</p>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Access Token (Conversions API)</label>
+                        <input type="password" name="meta_capi_token" value="" autocomplete="off"
+                            placeholder="{{ ($settings['meta_capi_token'] ?? '') ? '•••••• guardado — déjalo vacío para conservar' : 'Token de System User con permiso del Pixel' }}"
+                            class="w-full border rounded-lg px-3 py-2 font-mono text-sm">
+                        <p class="text-xs text-gray-400 mt-1">Events Manager → Configuración → Conversions API → Generar token. Habilita el Purchase server-side (cubre OXXO/SPEI y mejora la atribución).</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="mt-6">
                 <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
                     <i class="fas fa-save mr-1"></i> Guardar Configuración

@@ -8,6 +8,19 @@
     @if($paypalClientId)
         <script src="https://www.paypal.com/sdk/js?client-id={{ $paypalClientId }}&currency=MXN&intent=capture"></script>
     @endif
+    @if(\App\Models\Setting::get('meta_pixel_id'))
+        <script>
+            if (typeof fbq === 'function') {
+                fbq('track', 'ViewContent', {
+                    content_ids: [{{ (int) $service->id }}],
+                    content_name: @js($service->name),
+                    content_type: 'product',
+                    value: {{ round($service->priceWithIva(), 2) }},
+                    currency: 'MXN'
+                });
+            }
+        </script>
+    @endif
 </head>
 <body class="bg-gray-50 min-h-screen">
 

@@ -57,6 +57,7 @@ class MercadoPagoWebhookController extends Controller
             if ($wasPending && $payment->fresh()->status === 'approved' && $payment->order) {
                 (new ProvisioningService())->provisionForOrder($payment->order);
                 DiscountCode::consumeForCode($payment->order->discount_code);
+                (new \App\Services\MetaConversionsService())->sendPurchase($payment->order);
             }
         } catch (\Throwable $e) {
             Log::error('MP webhook: sync error', ['error' => $e->getMessage()]);

@@ -195,6 +195,7 @@ class CartController extends Controller
                 if ($payment->status === 'approved') {
                     DiscountCode::consumeForCode($invoice->discount_code);
                     (new ProvisioningService())->provisionForOrder($invoice);
+                    (new \App\Services\MetaConversionsService())->sendPurchase($invoice, request());
                 }
 
                 return response()->json([
@@ -342,6 +343,7 @@ class CartController extends Controller
                 DiscountCode::consumeForCode($order->discount_code);
 
                 (new ProvisioningService())->provisionForOrder($order);
+                (new \App\Services\MetaConversionsService())->sendPurchase($order, $request);
             }
 
             return response()->json([

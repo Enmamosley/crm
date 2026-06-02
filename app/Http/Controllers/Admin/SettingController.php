@@ -37,6 +37,9 @@ class SettingController extends Controller
             'bank_reference'    => Setting::get('bank_reference', ''),
             'cosmotown_api_key'  => Setting::get('cosmotown_api_key', ''),
             'cosmotown_base_url' => Setting::get('cosmotown_base_url', ''),
+            'meta_pixel_id'        => Setting::get('meta_pixel_id', ''),
+            'meta_capi_token'      => Setting::get('meta_capi_token', ''),
+            'meta_test_event_code' => Setting::get('meta_test_event_code', ''),
         ];
 
         return view('admin.settings.index', compact('settings'));
@@ -64,6 +67,9 @@ class SettingController extends Controller
             'paypal_webhook_id' => 'nullable|string|max:100',
             'cosmotown_api_key'  => 'nullable|string|max:200',
             'cosmotown_base_url' => 'nullable|url|max:255',
+            'meta_pixel_id'        => 'nullable|string|max:50',
+            'meta_capi_token'      => 'nullable|string|max:600',
+            'meta_test_event_code' => 'nullable|string|max:50',
             'bank_name'         => 'nullable|string|max:100',
             'bank_beneficiary'  => 'nullable|string|max:200',
             'bank_account'      => 'nullable|string|max:30',
@@ -112,6 +118,13 @@ class SettingController extends Controller
         // Secreto: sólo se actualiza si viene relleno (no se borra al guardar vacío)
         if ($request->filled('cosmotown_api_key')) {
             Setting::set('cosmotown_api_key', $request->input('cosmotown_api_key'));
+        }
+
+        // Meta / Facebook: Pixel ID y test code son públicos/borrables; el token CAPI es secreto.
+        Setting::set('meta_pixel_id', $request->input('meta_pixel_id', ''));
+        Setting::set('meta_test_event_code', $request->input('meta_test_event_code', ''));
+        if ($request->filled('meta_capi_token')) {
+            Setting::set('meta_capi_token', $request->input('meta_capi_token'));
         }
 
         if ($request->hasFile('company_logo')) {

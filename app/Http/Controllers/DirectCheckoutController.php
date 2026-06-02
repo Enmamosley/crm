@@ -150,6 +150,8 @@ class DirectCheckoutController extends Controller
 
                 if ($payment->status === 'approved') {
                     (new ProvisioningService())->provisionForOrder($invoice);
+                    (new \App\Services\MetaConversionsService())->sendPurchase($invoice, request());
+                    $this->flashMetaPurchase($invoice, $service);
                 }
 
                 return response()->json([
@@ -454,6 +456,8 @@ class DirectCheckoutController extends Controller
 
             if ($payment->isApproved()) {
                 (new ProvisioningService())->provisionForOrder($order);
+                (new \App\Services\MetaConversionsService())->sendPurchase($order, $request);
+                $this->flashMetaPurchase($order, $service);
             }
 
             return response()->json([
@@ -544,5 +548,19 @@ class DirectCheckoutController extends Controller
         }
 
         return Order::create($invoiceData);
+    }
+
+    /** Deja el evento Purchase listo para el Pixel del navegador en la página de éxito. */
+    private function flashMetaPurchase(Order $order, Service $service): void
+    {
+        session()->flash('meta_purchase', [
+            'value'        => round((float) $order->total, 2),
+            'currency'     => 'MXN',
+            'content_type' => 'product',
+            'content_ids'  => [$service->id],
+            'content_name' => $service->name,
+            'num_items'    => 1,
+            'event_id'     => \App\Services\MetaConversionsService::purchaseEventId($order),
+        ]);
     }
 }

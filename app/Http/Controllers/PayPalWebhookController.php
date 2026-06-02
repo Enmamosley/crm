@@ -78,6 +78,7 @@ class PayPalWebhookController extends Controller
                     if ($order->paid_at) {
                         (new ProvisioningService())->provisionForOrder($order);
                         DiscountCode::consumeForCode($order->discount_code);
+                        (new \App\Services\MetaConversionsService())->sendPurchase($order);
                     }
                 } catch (\Throwable $e) {
                     Log::error('PayPal webhook: process capture failed', ['error' => $e->getMessage()]);
@@ -95,6 +96,7 @@ class PayPalWebhookController extends Controller
                 if ($wasPending && $payment->fresh()->status === 'approved' && $payment->order) {
                     (new ProvisioningService())->provisionForOrder($payment->order);
                     DiscountCode::consumeForCode($payment->order->discount_code);
+                    (new \App\Services\MetaConversionsService())->sendPurchase($payment->order);
                 }
             } catch (\Throwable $e) {
                 Log::error('PayPal webhook: update failed', ['error' => $e->getMessage()]);

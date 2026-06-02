@@ -205,6 +205,7 @@ class OrderController extends Controller
 
         (new \App\Services\ProvisioningService())->provisionForOrder($order);
         \App\Models\DiscountCode::consumeForCode($order->discount_code);
+        (new \App\Services\MetaConversionsService())->sendPurchase($order);
 
         ActivityLog::log('manual_payment_registered', $order,
             "Pago manual de \${$validated['amount']} MXN registrado");
@@ -227,6 +228,7 @@ class OrderController extends Controller
 
         (new \App\Services\ProvisioningService())->provisionForOrder($order);
         \App\Models\DiscountCode::consumeForCode($order->discount_code);
+        (new \App\Services\MetaConversionsService())->sendPurchase($order);
 
         ActivityLog::log('transfer_approved', $order,
             "Transferencia de \${$payment->amount} MXN confirmada por " . auth()->user()->name);
