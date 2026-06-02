@@ -44,9 +44,10 @@ class PayPalWebhookController extends Controller
             return response()->json(['status' => 'invalid_signature'], 403);
         }
 
-        // Sólo nos interesan capturas
+        // Sólo eventos de CAPTURA real. NO CHECKOUT.ORDER.APPROVED: ese evento es
+        // sólo "aprobado por el comprador" (sin cobro) y su resource es la ORDEN
+        // (status APPROVED, sin monto plano), lo que generaba pagos basura pending/$0.
         $relevant = in_array($eventType, [
-            'CHECKOUT.ORDER.APPROVED',
             'PAYMENT.CAPTURE.COMPLETED',
             'PAYMENT.CAPTURE.DENIED',
             'PAYMENT.CAPTURE.REFUNDED',

@@ -29,60 +29,71 @@ class DmChampFunctionController extends Controller
     // ─────────────────────────────────────────────────────────────
     public function estadoCuenta(Request $request): JsonResponse
     {
-        Log::info('DmChamp:estadoCuenta', ['body' => $request->all()]);
+        Log::info('DmChamp:estadoCuenta');
 
-        $phone = $this->extractPhone($request);
+        try {
+            // El estado de cuenta SIEMPRE se liga al teléfono del remitente real
+            // (system.contact_phone que inyecta DM Champ), nunca a un phone del body,
+            // para que nadie consulte la cuenta de otro mandando un número arbitrario.
+            $phone = (string) data_get($request->input('system', []), 'contact_phone', '');
 
-        if (!$phone) {
-            return $this->error('No pude identificar tu número de teléfono. ¿Podrías proporcionarlo?');
-        }
+            if (!$phone) {
+                return $this->error('No pude identificar tu número de teléfono. ¿Podrías proporcionarlo?');
+            }
 
-        $normalized = $this->normalizePhone($phone);
+            $normalized = $this->normalizePhone($phone);
 
-        $client = Client::where('phone', $normalized)
-            ->orWhere('phone', $phone)
-            ->first();
+            $client = Client::where('phone', $normalized)
+                ->orWhere('phone', $phone)
+                ->first();
 
-        if (!$client) {
+            if (!$client) {
+                return response()->json([
+                    'encontrado' => false,
+                    'mensaje'    => 'No encontré una cuenta registrada con ese número. Si eres cliente nuevo, con gusto te atiendo.',
+                ]);
+            }
+
+            $pendientes = Order::where('client_id', $client->id)
+                ->whereNull('paid_at')
+                ->whereNotIn('status', ['cancelled', 'draft'])
+                ->get(['id', 'series', 'folio_number', 'total', 'status', 'created_at']);
+
+            $pagadas = Order::where('client_id', $client->id)
+                ->whereNotNull('paid_at')
+                ->latest('paid_at')
+                ->limit(3)
+                ->get(['id', 'series', 'folio_number', 'total', 'paid_at']);
+
+            $totalPendiente = $pendientes->sum('total');
+
+            return response()->json([
+                'encontrado'          => true,
+                'nombre'              => $client->name ?: $client->legal_name,
+                'email'               => $client->email,
+                'facturas_pendientes' => $pendientes->count(),
+                'total_pendiente'     => '$' . number_format($totalPendiente, 2),
+                'detalle_pendientes'  => $pendientes->map(fn($o) => [
+                    'folio' => $o->series . ($o->folio_number ?? ''),
+                    'total' => '$' . number_format($o->total, 2),
+                    'fecha' => $o->created_at->format('d/m/Y'),
+                ])->values(),
+                'ultimos_pagos' => $pagadas->map(fn($o) => [
+                    'folio'     => $o->series . ($o->folio_number ?? ''),
+                    'total'     => '$' . number_format($o->total, 2),
+                    'pagado_el' => $o->paid_at->format('d/m/Y'),
+                ])->values(),
+                'mensaje' => $pendientes->count() > 0
+                    ? "Tienes {$pendientes->count()} factura(s) pendiente(s) por \$" . number_format($totalPendiente, 2) . "."
+                    : 'Estás al corriente, no tienes facturas pendientes. 🎉',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('DmChamp:estadoCuenta:error', ['message' => $e->getMessage()]);
             return response()->json([
                 'encontrado' => false,
-                'mensaje'    => 'No encontré una cuenta registrada con ese número. Si eres cliente nuevo, con gusto te atiendo.',
-            ]);
+                'mensaje'    => 'No fue posible consultar tu estado de cuenta en este momento. Intenta de nuevo en unos minutos.',
+            ], 200);
         }
-
-        $pendientes = Order::where('client_id', $client->id)
-            ->whereNull('paid_at')
-            ->whereNotIn('status', ['cancelled', 'draft'])
-            ->get(['id', 'series', 'folio_number', 'total', 'status', 'created_at']);
-
-        $pagadas = Order::where('client_id', $client->id)
-            ->whereNotNull('paid_at')
-            ->latest('paid_at')
-            ->limit(3)
-            ->get(['id', 'series', 'folio_number', 'total', 'paid_at']);
-
-        $totalPendiente = $pendientes->sum('total');
-
-        return response()->json([
-            'encontrado'          => true,
-            'nombre'              => $client->name ?: $client->legal_name,
-            'email'               => $client->email,
-            'facturas_pendientes' => $pendientes->count(),
-            'total_pendiente'     => '$' . number_format($totalPendiente, 2),
-            'detalle_pendientes'  => $pendientes->map(fn($o) => [
-                'folio' => $o->series . ($o->folio_number ?? ''),
-                'total' => '$' . number_format($o->total, 2),
-                'fecha' => $o->created_at->format('d/m/Y'),
-            ])->values(),
-            'ultimos_pagos' => $pagadas->map(fn($o) => [
-                'folio'     => $o->series . ($o->folio_number ?? ''),
-                'total'     => '$' . number_format($o->total, 2),
-                'pagado_el' => $o->paid_at->format('d/m/Y'),
-            ])->values(),
-            'mensaje' => $pendientes->count() > 0
-                ? "Tienes {$pendientes->count()} factura(s) pendiente(s) por \$" . number_format($totalPendiente, 2) . "."
-                : 'Estás al corriente, no tienes facturas pendientes. 🎉',
-        ]);
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -93,7 +104,7 @@ class DmChampFunctionController extends Controller
     // ─────────────────────────────────────────────────────────────
     public function crearLead(Request $request): JsonResponse
     {
-        Log::info('DmChamp:crearLead', ['body' => $request->all()]);
+        Log::info('DmChamp:crearLead');
 
         $system = $request->input('system', []);
 
@@ -178,7 +189,7 @@ class DmChampFunctionController extends Controller
     // ─────────────────────────────────────────────────────────────
     public function servicios(Request $request): JsonResponse
     {
-        Log::info('DmChamp:servicios', ['body' => $request->all()]);
+        Log::info('DmChamp:servicios');
 
         try {
             return $this->consultarServicios($request);

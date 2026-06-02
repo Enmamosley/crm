@@ -12,7 +12,7 @@ class DmChampTokenMiddleware
     public function handle(Request $request, Closure $next): Response
     {
         Log::info('DmChamp:middleware', [
-            'url'    => $request->fullUrl(),
+            'path'   => $request->path(),
             'method' => $request->method(),
         ]);
 
@@ -24,10 +24,10 @@ class DmChampTokenMiddleware
             return response()->json(['error' => 'Not configured.'], 403);
         }
 
-        $provided = $request->header('X-DmChamp-Token')
-            ?? $request->query('token');
+        // Solo por header: en query string terminaría en logs, proxies e historial.
+        $provided = $request->header('X-DmChamp-Token');
 
-        if (! $provided || ! hash_equals($expected, $provided)) {
+        if (! $provided || ! hash_equals($expected, (string) $provided)) {
             Log::warning('DmChamp:middleware — unauthorized', ['provided' => $provided ? 'yes' : 'no']);
             return response()->json(['error' => 'Unauthorized.'], 401);
         }
