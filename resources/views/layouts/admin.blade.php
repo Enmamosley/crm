@@ -233,7 +233,7 @@
 
                     <!-- Right Side Actions -->
                     <div :class="isApplicationMenuOpen ? 'flex' : 'hidden'"
-                        class="items-center justify-between w-full gap-4 px-5 py-4 xl:flex shadow-theme-md xl:justify-end xl:px-0 xl:shadow-none">
+                        class="flex-wrap items-center justify-between w-full gap-3 px-4 py-4 xl:flex xl:flex-nowrap xl:gap-4 shadow-theme-md xl:justify-end xl:px-0 xl:shadow-none">
 
                         @yield('actions')
 

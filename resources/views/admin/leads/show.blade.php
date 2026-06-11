@@ -18,14 +18,14 @@
         <!-- Datos del lead -->
         <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold mb-4">Información del Lead</h3>
-            <div class="grid grid-cols-2 gap-4 text-sm">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                     <span class="text-gray-500">Nombre:</span>
                     <p class="font-medium">{{ $lead->name }}</p>
                 </div>
                 <div>
                     <span class="text-gray-500">Email:</span>
-                    <p class="font-medium">{{ $lead->email ?? '-' }}</p>
+                    <p class="font-medium break-all">{{ $lead->email ?? '-' }}</p>
                 </div>
                 <div>
                     <span class="text-gray-500">Teléfono:</span>

@@ -102,9 +102,9 @@
 
     {{-- Servicios / Ítems --}}
     @if($recurringInvoice->items->isNotEmpty())
-    <div class="bg-white rounded-lg shadow p-6 mb-6">
+    <div class="bg-white rounded-lg shadow p-6 mb-6 overflow-x-auto">
         <h3 class="text-lg font-semibold text-gray-800 mb-4">Servicios a facturar</h3>
-        <table class="w-full text-sm">
+        <table class="w-full text-sm min-w-[480px]">
             <thead>
                 <tr class="border-b text-gray-500 text-left">
                     <th class="pb-2 font-medium">Descripción</th>

@@ -110,7 +110,7 @@
     <!-- Pipeline -->
     <div class="lg:col-span-2 bg-white rounded-lg shadow p-6">
         <h3 class="text-lg font-semibold mb-4">Pipeline de Leads</h3>
-        <div class="grid grid-cols-5 gap-2">
+        <div class="grid grid-cols-3 sm:grid-cols-5 gap-2">
             @php
                 $pipelineColors = [
                     'leads_nuevos' => 'blue',

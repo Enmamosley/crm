@@ -38,12 +38,12 @@
         {{-- Información del cliente --}}
         <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-lg font-semibold mb-4">Información del Cliente</h3>
-            <div class="grid grid-cols-2 gap-4 text-sm">
-                <div class="col-span-2"><span class="text-gray-500">Nombre:</span><p class="font-medium text-base">{{ $client->name ?? $client->legal_name }}</p></div>
-                <div><span class="text-gray-500">Email:</span><p class="font-medium">{{ $client->email ?? '-' }}</p></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div class="sm:col-span-2"><span class="text-gray-500">Nombre:</span><p class="font-medium text-base">{{ $client->name ?? $client->legal_name }}</p></div>
+                <div><span class="text-gray-500">Email:</span><p class="font-medium break-all">{{ $client->email ?? '-' }}</p></div>
                 <div><span class="text-gray-500">Teléfono:</span><p class="font-medium">{{ $client->phone ?? '-' }}</p></div>
                 @if($client->notes)
-                <div class="col-span-2"><span class="text-gray-500">Notas:</span><p class="font-medium text-gray-700">{{ $client->notes }}</p></div>
+                <div class="sm:col-span-2"><span class="text-gray-500">Notas:</span><p class="font-medium text-gray-700">{{ $client->notes }}</p></div>
                 @endif
             </div>
         </div>
@@ -92,7 +92,7 @@
                 @endif
                 <span class="text-sm text-gray-400 ml-auto">
                     Portal:
-                    <a href="{{ $client->portalUrl() }}" target="_blank" class="text-blue-600 hover:underline text-xs truncate max-w-xs inline-block align-bottom">
+                    <a href="{{ $client->portalUrl() }}" target="_blank" class="text-blue-600 hover:underline text-xs truncate max-w-[180px] sm:max-w-xs inline-block align-bottom">
                         {{ $client->portalUrl() }}
                     </a>
                 </span>
