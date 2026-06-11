@@ -173,8 +173,8 @@ class ClientPortalController extends Controller
         // CFDI externo: servir el archivo guardado
         $doc = $order->fiscalDocument;
         if ($doc?->isExternal()) {
-            abort_unless($doc->pdf_path && Storage::disk('local')->exists($doc->pdf_path), 404, 'Esta factura no tiene PDF disponible.');
-            return Storage::disk('local')->download($doc->pdf_path, 'factura-' . $order->folio() . '.pdf');
+            abort_unless($doc->pdf_path, 404, 'Esta factura no tiene PDF disponible.');
+            return \App\Support\FileResponse::download('local', $doc->pdf_path, 'factura-' . $order->folio() . '.pdf', 'application/pdf');
         }
 
         $pdf = (new FacturapiService())->downloadPdf($order);
@@ -231,8 +231,7 @@ class ClientPortalController extends Controller
         // CFDI externo: servir el archivo guardado
         $doc = $order->fiscalDocument;
         if ($doc?->isExternal()) {
-            abort_unless($doc->xml_path && Storage::disk('local')->exists($doc->xml_path), 404);
-            return Storage::disk('local')->download($doc->xml_path, 'factura-' . $order->folio() . '.xml');
+            return \App\Support\FileResponse::download('local', $doc->xml_path, 'factura-' . $order->folio() . '.xml', 'application/xml');
         }
 
         $xml = (new FacturapiService())->downloadXml($order);
@@ -255,11 +254,7 @@ class ClientPortalController extends Controller
 
         abort_if($document->client_id !== $client->id, 403);
 
-        if (! Storage::disk('local')->exists($document->file_path)) {
-            abort(404, 'El archivo no está disponible.');
-        }
-
-        return Storage::disk('local')->download($document->file_path, $document->name);
+        return \App\Support\FileResponse::download('local', $document->file_path, $document->name, $document->file_type);
     }
 
     // ── Gestión de correos ───────────────────────────────

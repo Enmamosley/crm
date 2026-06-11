@@ -37,11 +37,7 @@ class DocumentController extends Controller
     {
         abort_if($document->client_id !== $client->id, 403);
 
-        if (! \Storage::disk('local')->exists($document->file_path)) {
-            abort(404, 'El archivo no está disponible.');
-        }
-
-        return \Storage::disk('local')->download($document->file_path, $document->name);
+        return \App\Support\FileResponse::download('local', $document->file_path, $document->name, $document->file_type);
     }
 
     public function destroy(Client $client, ClientDocument $document)

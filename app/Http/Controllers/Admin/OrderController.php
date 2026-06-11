@@ -434,10 +434,10 @@ class OrderController extends Controller
 
         // CFDI externo: servir el archivo guardado
         if ($doc?->isExternal()) {
-            if (!$doc->pdf_path || !\Illuminate\Support\Facades\Storage::disk('local')->exists($doc->pdf_path)) {
+            if (!$doc->pdf_path) {
                 return back()->with('error', 'Este CFDI externo no tiene PDF adjunto (sólo XML).');
             }
-            return \Illuminate\Support\Facades\Storage::disk('local')->download($doc->pdf_path, "factura-{$order->folio()}.pdf");
+            return \App\Support\FileResponse::download('local', $doc->pdf_path, "factura-{$order->folio()}.pdf", 'application/pdf');
         }
 
         $pdf = (new FacturapiService())->downloadPdf($order);
@@ -461,8 +461,7 @@ class OrderController extends Controller
 
         // CFDI externo: servir el archivo guardado
         if ($doc?->isExternal()) {
-            abort_unless($doc->xml_path && \Illuminate\Support\Facades\Storage::disk('local')->exists($doc->xml_path), 404);
-            return \Illuminate\Support\Facades\Storage::disk('local')->download($doc->xml_path, "factura-{$order->folio()}.xml");
+            return \App\Support\FileResponse::download('local', $doc->xml_path, "factura-{$order->folio()}.xml", 'application/xml');
         }
 
         $xml = (new FacturapiService())->downloadXml($order);
@@ -482,10 +481,7 @@ class OrderController extends Controller
      */
     public function downloadProof(Payment $payment)
     {
-        $path = $payment->proof_path;
-        abort_unless($path && \Illuminate\Support\Facades\Storage::disk('local')->exists($path), 404);
-
-        return \Illuminate\Support\Facades\Storage::disk('local')->download($path);
+        return \App\Support\FileResponse::download('local', $payment->proof_path, 'comprobante-pago-' . $payment->id);
     }
 
     private function paymentForms(): array
