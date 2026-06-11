@@ -27,9 +27,15 @@ class CosmotownService
     {
         $url = "{$this->baseUrl}{$endpoint}";
 
+        // Redactar datos personales (contactos WHOIS) antes de loguear
+        $logPayload = $payload;
+        if (isset($logPayload['contacts'])) {
+            $logPayload['contacts'] = '[REDACTED ' . count((array) $payload['contacts']) . ' roles]';
+        }
+
         Log::debug("Cosmotown:{$method}:{$endpoint}", [
             'url'     => $url,
-            'payload' => $payload,
+            'payload' => $logPayload,
             'header'  => 'X-API-TOKEN: ' . (substr($this->apiKey, 0, 6) ?: '(vacío)') . '...',
         ]);
 
@@ -101,6 +107,65 @@ class CosmotownService
         $results = $response->json() ?? [];
 
         return $results[0] ?? [];
+    }
+
+    /**
+     * Guarda los datos de contacto (WHOIS) de un dominio ya registrado.
+     * Uses POST /v1/reseller/savedomaincontactinformation — el registro y los
+     * contactos son operaciones SEPARADAS en la API de Cosmotown; esto se llama
+     * después de register(). El mismo contacto se aplica a los 4 roles.
+     *
+     * Es "mejor esfuerzo": el llamador debe envolverlo en try/catch — un fallo
+     * aquí no debe romper el registro ni la provisión del hosting.
+     */
+    public function saveDomainContacts(string $domain, array $contact): array
+    {
+        $domain = strtolower(trim($domain));
+
+        $response = $this->request('POST', '/v1/reseller/savedomaincontactinformation', [
+            'domain'   => $domain,
+            'contacts' => [
+                'registrant'     => $contact,
+                'administrative' => $contact,
+                'technical'      => $contact,
+                'billing'        => $contact,
+            ],
+        ]);
+
+        if ($response->failed()) {
+            throw new \RuntimeException("Cosmotown contacts error {$response->status()}: {$response->body()}");
+        }
+
+        return $response->json() ?? [];
+    }
+
+    /**
+     * Construye el contacto de registro (WHOIS) para un cliente: usa los datos
+     * del cliente y completa lo que falte con los datos de la empresa (Ajustes).
+     * Campos según la API de Cosmotown: firstName, lastName, company, email,
+     * phone, address1, city, state, zip, country.
+     */
+    public static function contactFromClient(\App\Models\Client $client): array
+    {
+        $fullName = trim($client->name ?: $client->legal_name ?: Setting::get('company_name', ''));
+        $parts     = preg_split('/\s+/', $fullName, 2) ?: [''];
+        $firstName = $parts[0] ?? '';
+        $lastName  = $parts[1] ?? $firstName;
+
+        $street = trim(implode(' ', array_filter([$client->address_street, $client->address_exterior])));
+
+        return array_filter([
+            'firstName' => $firstName,
+            'lastName'  => $lastName,
+            'company'   => $client->legal_name ?: Setting::get('company_name', ''),
+            'email'     => $client->email ?: Setting::get('company_email', ''),
+            'phone'     => $client->phone ?: Setting::get('company_phone', ''),
+            'address1'  => $street ?: Setting::get('company_address', ''),
+            'city'      => $client->address_city,
+            'state'     => $client->address_state,
+            'zip'       => $client->address_zip,
+            'country'   => strtoupper($client->address_country ?: 'MX'),
+        ], fn ($v) => $v !== null && $v !== '');
     }
 
     /**

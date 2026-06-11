@@ -194,6 +194,11 @@
                         <input type="hidden" name="phone" class="sync-phone">
                         <input type="hidden" name="domain" class="sync-domain">
                         <input type="hidden" name="domain_type" class="sync-domain-type">
+                        <input type="hidden" name="reg_street" class="sync-reg-street">
+                        <input type="hidden" name="reg_city" class="sync-reg-city">
+                        <input type="hidden" name="reg_state" class="sync-reg-state">
+                        <input type="hidden" name="reg_zip" class="sync-reg-zip">
+                        <input type="hidden" name="reg_country" class="sync-reg-country">
                         <div class="bg-yellow-50 rounded-xl p-4 mb-5 flex gap-3">
                             <i class="fas fa-store text-yellow-500 mt-0.5"></i>
                             <div class="text-sm text-yellow-800">
@@ -234,6 +239,11 @@
                         <input type="hidden" name="phone" class="sync-phone">
                         <input type="hidden" name="domain" class="sync-domain">
                         <input type="hidden" name="domain_type" class="sync-domain-type">
+                        <input type="hidden" name="reg_street" class="sync-reg-street">
+                        <input type="hidden" name="reg_city" class="sync-reg-city">
+                        <input type="hidden" name="reg_state" class="sync-reg-state">
+                        <input type="hidden" name="reg_zip" class="sync-reg-zip">
+                        <input type="hidden" name="reg_country" class="sync-reg-country">
                         <div class="bg-blue-50 rounded-xl p-4 mb-5 flex gap-3">
                             <i class="fas fa-building-columns text-blue-500 mt-0.5"></i>
                             <div class="text-sm text-blue-800">
@@ -261,6 +271,10 @@
     </main>
 
 <script>
+function regEnabled() {
+    return document.getElementById('reg-enabled')?.value === '1';
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     const step1 = document.getElementById('step-1');
     const step2 = document.getElementById('step-2');
@@ -284,13 +298,19 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.sync-phone').forEach(el => el.value = document.getElementById('buyer-phone').value);
         document.querySelectorAll('.sync-domain').forEach(el => el.value = document.getElementById('domain-hidden')?.value || '');
         document.querySelectorAll('.sync-domain-type').forEach(el => el.value = document.getElementById('domain-type-hidden')?.value || 'own');
+        ['street', 'city', 'state', 'zip', 'country'].forEach(f => {
+            document.querySelectorAll('.sync-reg-' + f).forEach(el => el.value = regEnabled() ? (document.getElementById('reg-' + f)?.value || '') : '');
+        });
 
         @if($requiresDomain ?? false)
         const domainVal  = document.getElementById('domain-hidden')?.value?.trim() || '';
         const domainType = document.getElementById('domain-type-hidden')?.value || 'own';
         const domainAvail = document.getElementById('domain-available-hidden')?.value;
         const domainErr  = document.getElementById('domain-err');
-        if (!domainVal) {
+        if (domainType === 'later') {
+            // El cliente decidirá el dominio después del pago — no se exige aquí.
+            if (domainErr) domainErr.classList.add('hidden');
+        } else if (!domainVal) {
             if (domainErr) { domainErr.textContent = 'Ingresa el dominio que deseas usar.'; domainErr.classList.remove('hidden'); }
             return;
         } else if (domainType === 'cosmotown' && domainAvail !== 'true') {
@@ -424,6 +444,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     issuer_id: document.getElementById('issuer-select').value || null,
                     domain: document.getElementById('domain-hidden')?.value?.trim() || '',
                     domain_type: document.getElementById('domain-type-hidden')?.value || 'own',
+                    reg_street: regEnabled() ? (document.getElementById('reg-street')?.value || '') : '',
+                    reg_city: regEnabled() ? (document.getElementById('reg-city')?.value || '') : '',
+                    reg_state: regEnabled() ? (document.getElementById('reg-state')?.value || '') : '',
+                    reg_zip: regEnabled() ? (document.getElementById('reg-zip')?.value || '') : '',
+                    reg_country: regEnabled() ? (document.getElementById('reg-country')?.value || '') : '',
                 }),
             });
             const data = await response.json();
@@ -452,7 +477,13 @@ if (window.paypal) {
         name:   document.querySelector('[name="name"]')?.value || document.querySelector('.sync-name')?.value || '',
         email:  document.querySelector('[name="email"]')?.value || document.querySelector('.sync-email')?.value || '',
         phone:  document.querySelector('[name="phone"]')?.value || document.querySelector('.sync-phone')?.value || '',
-        domain: document.querySelector('[name="domain"]')?.value || document.querySelector('.sync-domain')?.value || '',
+        domain: document.getElementById('domain-hidden')?.value?.trim() || document.querySelector('.sync-domain')?.value || '',
+        domain_type: document.getElementById('domain-type-hidden')?.value || document.querySelector('.sync-domain-type')?.value || '',
+        reg_street: regEnabled() ? (document.getElementById('reg-street')?.value || '') : '',
+        reg_city: regEnabled() ? (document.getElementById('reg-city')?.value || '') : '',
+        reg_state: regEnabled() ? (document.getElementById('reg-state')?.value || '') : '',
+        reg_zip: regEnabled() ? (document.getElementById('reg-zip')?.value || '') : '',
+        reg_country: regEnabled() ? (document.getElementById('reg-country')?.value || '') : '',
     });
 
     paypal.Buttons({

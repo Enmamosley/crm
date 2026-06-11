@@ -259,6 +259,15 @@ class ClientController extends Controller
             return response()->json(['error' => $e->getMessage()], 500);
         }
 
+        // Contactos WHOIS (datos del cliente + respaldo de la empresa) — mejor esfuerzo
+        try {
+            $cosmotown->saveDomainContacts($client->domain, \App\Services\CosmotownService::contactFromClient($client));
+        } catch (\Throwable $e) {
+            \Log::warning('No se pudieron guardar los contactos WHOIS del dominio', [
+                'domain' => $client->domain, 'error' => $e->getMessage(),
+            ]);
+        }
+
         ActivityLog::log('domain_registered', $client, "Dominio {$client->domain} registrado manualmente en Cosmotown");
 
         $client->update(['cosmotown_registered' => true]);

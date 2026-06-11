@@ -39,6 +39,16 @@
                     </div>
                 </div>
 
+                @if($service->requires_domain && !$client->domain)
+                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-5 text-left text-sm">
+                    <p class="font-medium text-indigo-800"><i class="fas fa-globe mr-1.5"></i>Tu paquete quedó reservado</p>
+                    <p class="text-xs text-indigo-600 mt-1 leading-relaxed">
+                        Se activará en cuanto elijas tu dominio. Podrás elegirlo desde tu portal de cliente
+                        o escribiéndonos cuando lo tengas decidido — sin prisa.
+                    </p>
+                </div>
+                @endif
+
                 <div class="bg-brand-50 rounded-xl p-5 mb-5 text-left animate-fade-in" style="animation-delay:.5s">
                     <div class="flex gap-3">
                         <div class="w-10 h-10 bg-brand-100 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -112,6 +122,16 @@
                         <span class="text-yellow-600 font-medium"><i class="fas fa-circle text-[8px] animate-pulse mr-1"></i> Pendiente</span>
                     </div>
                 </div>
+
+                @if($service->requires_domain && !$client->domain)
+                <div class="bg-indigo-50 border border-indigo-100 rounded-xl p-4 mb-5 text-left text-sm">
+                    <p class="font-medium text-indigo-800"><i class="fas fa-globe mr-1.5"></i>Tu paquete quedará reservado</p>
+                    <p class="text-xs text-indigo-600 mt-1 leading-relaxed">
+                        Al confirmarse tu pago, se activará en cuanto elijas tu dominio — desde tu portal
+                        de cliente o escribiéndonos cuando lo tengas decidido.
+                    </p>
+                </div>
+                @endif
 
                 <div class="bg-brand-50 rounded-xl p-5 mb-5 text-left">
                     <div class="flex gap-3">

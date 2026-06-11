@@ -296,6 +296,11 @@
                         <input type="hidden" name="phone" class="sync-phone">
                         <input type="hidden" name="domain" class="sync-domain">
                         <input type="hidden" name="domain_type" class="sync-domain-type">
+                        <input type="hidden" name="reg_street" class="sync-reg-street">
+                        <input type="hidden" name="reg_city" class="sync-reg-city">
+                        <input type="hidden" name="reg_state" class="sync-reg-state">
+                        <input type="hidden" name="reg_zip" class="sync-reg-zip">
+                        <input type="hidden" name="reg_country" class="sync-reg-country">
                         <input type="hidden" name="billing_preference" class="sync-billing-pref">
                         <input type="hidden" name="tax_id" class="sync-rfc">
                         <input type="hidden" name="fiscal_name" class="sync-legal-name">
@@ -324,6 +329,11 @@
                         <input type="hidden" name="phone" class="sync-phone">
                         <input type="hidden" name="domain" class="sync-domain">
                         <input type="hidden" name="domain_type" class="sync-domain-type">
+                        <input type="hidden" name="reg_street" class="sync-reg-street">
+                        <input type="hidden" name="reg_city" class="sync-reg-city">
+                        <input type="hidden" name="reg_state" class="sync-reg-state">
+                        <input type="hidden" name="reg_zip" class="sync-reg-zip">
+                        <input type="hidden" name="reg_country" class="sync-reg-country">
                         <input type="hidden" name="billing_preference" class="sync-billing-pref">
                         <input type="hidden" name="tax_id" class="sync-rfc">
                         <input type="hidden" name="fiscal_name" class="sync-legal-name">
@@ -371,6 +381,11 @@
                         <input type="hidden" name="phone" class="sync-phone">
                         <input type="hidden" name="domain" class="sync-domain">
                         <input type="hidden" name="domain_type" class="sync-domain-type">
+                        <input type="hidden" name="reg_street" class="sync-reg-street">
+                        <input type="hidden" name="reg_city" class="sync-reg-city">
+                        <input type="hidden" name="reg_state" class="sync-reg-state">
+                        <input type="hidden" name="reg_zip" class="sync-reg-zip">
+                        <input type="hidden" name="reg_country" class="sync-reg-country">
                         <input type="hidden" name="billing_preference" class="sync-billing-pref">
                         <input type="hidden" name="tax_id" class="sync-rfc">
                         <input type="hidden" name="fiscal_name" class="sync-legal-name">
@@ -417,6 +432,10 @@
     </main>
 
 <script>
+function regEnabled() {
+    return document.getElementById('reg-enabled')?.value === '1';
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     // ── Billing preference ──
     let billingPref = 'none';
@@ -507,7 +526,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const domainType = document.getElementById('domain-type-hidden')?.value || 'own';
         const domainAvail = document.getElementById('domain-available-hidden')?.value;
         const domainErr = document.getElementById('domain-err');
-        if (!domainVal) {
+        if (domainType === 'later') {
+            // El cliente decidirá el dominio después del pago — no se exige aquí.
+            if (domainErr) domainErr.classList.add('hidden');
+        } else if (!domainVal) {
             if (domainErr) { domainErr.textContent = 'Ingresa el dominio que deseas usar.'; domainErr.classList.remove('hidden'); }
             valid = false;
         } else if (domainType === 'cosmotown' && domainAvail !== 'true') {
@@ -527,6 +549,10 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.sync-phone').forEach(el => el.value = document.getElementById('buyer-phone').value);
         document.querySelectorAll('.sync-domain').forEach(el => el.value = document.getElementById('domain-hidden')?.value || '');
         document.querySelectorAll('.sync-domain-type').forEach(el => el.value = document.getElementById('domain-type-hidden')?.value || 'own');
+        const regOn = document.getElementById('reg-enabled')?.value === '1';
+        ['street', 'city', 'state', 'zip', 'country'].forEach(f => {
+            document.querySelectorAll('.sync-reg-' + f).forEach(el => el.value = regOn ? (document.getElementById('reg-' + f)?.value || '') : '');
+        });
         syncBillingData();
 
         step1.classList.add('hidden');
@@ -652,6 +678,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     issuer_id: document.getElementById('issuer-select').value || null,
                     domain: document.getElementById('domain-hidden')?.value?.trim() || '',
                     domain_type: document.getElementById('domain-type-hidden')?.value || 'own',
+                    reg_street: regEnabled() ? (document.getElementById('reg-street')?.value || '') : '',
+                    reg_city: regEnabled() ? (document.getElementById('reg-city')?.value || '') : '',
+                    reg_state: regEnabled() ? (document.getElementById('reg-state')?.value || '') : '',
+                    reg_zip: regEnabled() ? (document.getElementById('reg-zip')?.value || '') : '',
+                    reg_country: regEnabled() ? (document.getElementById('reg-country')?.value || '') : '',
                     billing_preference: billingPref,
                     tax_id: billingPref === 'fiscal' ? (document.getElementById('buyer-rfc').value || '').trim().toUpperCase() : '',
                     fiscal_name: billingPref === 'fiscal' ? (document.getElementById('buyer-legal-name').value || '').trim() : '',
@@ -739,8 +770,13 @@ function collectBuyerData() {
         name:               document.getElementById('buyer-name')?.value || '',
         email:              document.getElementById('buyer-email')?.value || '',
         phone:              document.getElementById('buyer-phone')?.value || '',
-        domain:             document.getElementById('buyer-domain')?.value || '',
-        domain_type:        document.getElementById('buyer-domain-type')?.value || '',
+        domain:             document.getElementById('domain-hidden')?.value?.trim() || '',
+        domain_type:        document.getElementById('domain-type-hidden')?.value || '',
+        reg_street:         regEnabled() ? (document.getElementById('reg-street')?.value || '') : '',
+        reg_city:           regEnabled() ? (document.getElementById('reg-city')?.value || '') : '',
+        reg_state:          regEnabled() ? (document.getElementById('reg-state')?.value || '') : '',
+        reg_zip:            regEnabled() ? (document.getElementById('reg-zip')?.value || '') : '',
+        reg_country:        regEnabled() ? (document.getElementById('reg-country')?.value || '') : '',
         billing_preference: billingPref,
         tax_id:             billingPref === 'fiscal' ? (document.getElementById('buyer-rfc')?.value || '') : '',
         fiscal_name:        billingPref === 'fiscal' ? (document.getElementById('buyer-legal-name')?.value || '') : '',

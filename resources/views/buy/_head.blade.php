@@ -5,6 +5,7 @@
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
+    [x-cloak] { display: none !important; }
     body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
     .mp-iframe { border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.625rem 0.75rem; height: 42px; width: 100%; transition: all .2s; }
     .mp-iframe:focus-within { border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99,102,241,.15); }

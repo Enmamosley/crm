@@ -275,6 +275,7 @@ Route::prefix('portal')->name('portal.')->middleware('portal')->group(function (
     Route::post('{token}/tickets/{ticket}/reply', [ClientPortalController::class, 'replyToTicket'])->name('tickets.reply');
 
     // Dominio (Cosmotown)
+    Route::post('{token}/domain/choose', [ClientPortalController::class, 'chooseDomain'])->name('domain.choose')->middleware('throttle:10,1');
     Route::get('{token}/domain', [ClientPortalController::class, 'domain'])->name('domain');
     Route::get('{token}/domain/dns', [ClientPortalController::class, 'domainDns'])->name('domain.dns');
     Route::post('{token}/domain/dns', [ClientPortalController::class, 'saveDomainDns'])->name('domain.dns.save');

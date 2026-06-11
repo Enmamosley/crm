@@ -42,7 +42,99 @@ class ClientPortalController extends Controller
             } catch (\Throwable) {}
         }
 
-        return view('portal.dashboard', compact('client', 'mailboxes', 'emailDomain', 'hasEmailService'));
+        $awaitingDomain = $this->clientAwaitsDomain($client);
+
+        return view('portal.dashboard', compact('client', 'mailboxes', 'emailDomain', 'hasEmailService', 'awaitingDomain'));
+    }
+
+    /**
+     * ¿El cliente pagó un servicio que requiere dominio pero eligió "decidir después"?
+     * (sin dominio, sin hosting creado, y con un servicio/orden pagada que lo requiere)
+     */
+    private function clientAwaitsDomain(Client $client): bool
+    {
+        if ($client->domain || $client->twentyi_package_id) {
+            return false;
+        }
+
+        // Servicios asignados manualmente que requieren dominio
+        if ($client->clientServices->contains(fn ($cs) => $cs->status === 'active' && $cs->service?->requires_domain)) {
+            return true;
+        }
+
+        // Órdenes pagadas de compra directa/carrito cuyo servicio requiere dominio.
+        // Match EXACTO contra el formato de las notas (no substring: "Hosting" no
+        // debe coincidir con "Hosting Mantenimiento").
+        $names = Service::where('requires_domain', true)->pluck('name');
+        if ($names->isEmpty()) {
+            return false;
+        }
+
+        foreach ($client->invoices as $order) {
+            if (!$order->paid_at || $order->status === 'cancelled' || empty($order->notes)) {
+                continue;
+            }
+
+            $notes = $order->notes;
+
+            if (str_starts_with($notes, 'Compra directa: ')) {
+                if ($names->contains(str_replace('Compra directa: ', '', $notes))) {
+                    return true;
+                }
+            } elseif (str_starts_with($notes, 'Carrito: ')) {
+                $items = collect(explode(',', str_replace('Carrito: ', '', $notes)))
+                    ->map(fn ($n) => trim(preg_replace('/^\d+x\s*/', '', trim($n))));
+                if ($items->intersect($names)->isNotEmpty()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * El cliente eligió su dominio después de pagar ("decidir después").
+     * Se guarda en el perfil y se notifica al equipo para activar el paquete —
+     * el registro/provisión NO es automático: lo confirma un admin.
+     */
+    public function chooseDomain(Request $request, string $token)
+    {
+        $client = Client::where('portal_token', $token)
+            ->where('portal_active', true)
+            ->with(['clientServices.service', 'invoices'])
+            ->firstOrFail();
+
+        // Sólo aplica a clientes con un paquete pagado esperando dominio.
+        if (!$this->clientAwaitsDomain($client)) {
+            return back()->with('error', 'No tienes un paquete pendiente de dominio. Si necesitas cambiar tu dominio actual, contáctanos.');
+        }
+
+        $validated = $request->validate([
+            'domain'      => ['required', 'string', 'max:253', 'regex:/^(?!.*\.\.)[a-zA-Z0-9][a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}$/'],
+            'domain_type' => 'required|in:cosmotown,own',
+        ], [
+            'domain.regex' => 'Escribe un dominio válido, por ejemplo: miempresa.com',
+        ]);
+
+        $client->update([
+            'domain'      => strtolower(trim($validated['domain'])),
+            'domain_type' => $validated['domain_type'],
+        ]);
+
+        ActivityLog::log('domain_chosen', $client,
+            "El cliente eligió su dominio desde el portal: {$client->domain} (" . ($validated['domain_type'] === 'cosmotown' ? 'registrar nuevo' : 'dominio propio') . ")");
+
+        $admins = \App\Models\User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            \App\Models\Notification::notify($admin->id, 'domain_chosen',
+                "Dominio elegido: {$client->domain}",
+                "{$client->legal_name} eligió su dominio desde el portal. Revisa y activa su paquete.",
+                route('admin.clients.show', $client));
+        }
+
+        return redirect()->route('portal.dashboard', $token)
+            ->with('success', '¡Listo! Recibimos tu dominio. Nuestro equipo activará tu paquete en breve y te avisaremos por correo.');
     }
 
     public function webmail(string $token, string $mailbox)

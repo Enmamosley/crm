@@ -30,6 +30,15 @@ class ProvisioningService
                     $cosmotown->register($client->domain);
                     $client->update(['cosmotown_registered' => true]);
                     ActivityLog::log('domain_registered', $client, "Dominio {$client->domain} registrado en Cosmotown");
+
+                    // Contactos WHOIS (datos del cliente + respaldo de la empresa) — mejor esfuerzo
+                    try {
+                        $cosmotown->saveDomainContacts($client->domain, CosmotownService::contactFromClient($client));
+                    } catch (\Throwable $e) {
+                        Log::warning('Provisioning: no se pudieron guardar los contactos WHOIS', [
+                            'domain' => $client->domain, 'error' => $e->getMessage(),
+                        ]);
+                    }
                 }
             } catch (\Throwable $e) {
                 Log::error('Provisioning: registro de dominio falló', [

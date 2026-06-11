@@ -43,6 +43,69 @@
 
     <main class="max-w-4xl mx-auto px-6 py-8 space-y-8">
 
+        {{-- Mensajes flash --}}
+        @if(session('success'))
+            <div class="bg-green-50 border border-green-200 rounded-2xl px-5 py-4 text-sm text-green-700 flex items-start gap-3">
+                <i class="fas fa-check-circle mt-0.5"></i>
+                <span>{{ session('success') }}</span>
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 text-sm text-red-700 flex items-start gap-3">
+                <i class="fas fa-exclamation-circle mt-0.5"></i>
+                <span>{{ session('error') }}</span>
+            </div>
+        @endif
+        @if($errors->any())
+            <div class="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 text-sm text-red-700">
+                @foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach
+            </div>
+        @endif
+
+        {{-- Hosting esperando dominio ("decidir después") --}}
+        @if($awaitingDomain ?? false)
+        <section class="animate-slide-up">
+            <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-5"
+                 x-data="{ choosing: false, dtype: 'cosmotown' }">
+                <div class="flex items-start gap-3">
+                    <span class="w-9 h-9 bg-indigo-100 rounded-xl flex items-center justify-center shrink-0"><i class="fas fa-globe text-indigo-500"></i></span>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-bold text-indigo-900 text-sm">Tu paquete está pagado y reservado 🎉</p>
+                        <p class="text-xs text-indigo-700 mt-0.5 leading-relaxed">
+                            Solo falta tu dominio para activarlo. Elígelo aquí cuando estés listo, o escríbenos por WhatsApp.
+                        </p>
+                        <button x-show="!choosing" @click="choosing = true"
+                            class="mt-3 btn-primary text-xs px-4 py-2 rounded-xl">
+                            <i class="fas fa-globe mr-1"></i> Elegir mi dominio
+                        </button>
+
+                        <form x-show="choosing" x-cloak method="POST"
+                              action="{{ route('portal.domain.choose', $client->portal_token) }}" class="mt-3 space-y-3">
+                            @csrf
+                            <input type="text" name="domain" required placeholder="miempresa.com"
+                                class="w-full input-field font-mono text-sm" autocomplete="off" autocorrect="off" spellcheck="false">
+                            <div class="flex flex-col sm:flex-row gap-2 text-xs text-indigo-800">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="domain_type" value="cosmotown" x-model="dtype" checked> Quiero registrarlo (nuevo)
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="domain_type" value="own" x-model="dtype"> Ya es mío
+                                </label>
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="submit" class="btn-primary text-xs px-4 py-2 rounded-xl">
+                                    <i class="fas fa-paper-plane mr-1"></i> Enviar
+                                </button>
+                                <button type="button" @click="choosing = false" class="text-xs px-4 py-2 rounded-xl bg-white border border-indigo-200 text-indigo-600">Cancelar</button>
+                            </div>
+                            <p class="text-[11px] text-indigo-500">Nuestro equipo confirmará el dominio y activará tu paquete — te avisamos por correo.</p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+        @endif
+
         {{-- Quick Stats --}}
         @php
             $allQuotes = $client->lead?->quotes ?? collect();

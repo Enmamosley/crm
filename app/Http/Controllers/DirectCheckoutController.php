@@ -104,7 +104,12 @@ class DirectCheckoutController extends Controller
             'installments'       => 'nullable|integer|min:1|max:24',
             'issuer_id'          => 'nullable|string',
             'domain'             => 'nullable|string|max:253',
-            'domain_type'        => 'nullable|in:cosmotown,own',
+            'domain_type'        => 'nullable|in:cosmotown,own,later',
+            'reg_street'         => 'nullable|string|max:255',
+            'reg_city'           => 'nullable|string|max:100',
+            'reg_state'          => 'nullable|string|max:100',
+            'reg_zip'            => 'nullable|string|max:10',
+            'reg_country'        => 'nullable|string|max:3',
             'billing_preference' => 'nullable|in:fiscal,publico_general,none',
             'tax_id'             => 'nullable|string|max:13',
             'fiscal_name'        => 'nullable|string|max:255',
@@ -182,7 +187,12 @@ class DirectCheckoutController extends Controller
             'email'              => 'required|email|max:255',
             'phone'              => 'nullable|string|max:20',
             'domain'             => 'nullable|string|max:253',
-            'domain_type'        => 'nullable|in:cosmotown,own',
+            'domain_type'        => 'nullable|in:cosmotown,own,later',
+            'reg_street'         => 'nullable|string|max:255',
+            'reg_city'           => 'nullable|string|max:100',
+            'reg_state'          => 'nullable|string|max:100',
+            'reg_zip'            => 'nullable|string|max:10',
+            'reg_country'        => 'nullable|string|max:3',
             'billing_preference' => 'nullable|in:fiscal,publico_general,none',
             'tax_id'             => 'nullable|string|max:13',
             'fiscal_name'        => 'nullable|string|max:255',
@@ -242,7 +252,12 @@ class DirectCheckoutController extends Controller
             'email'              => 'required|email|max:255',
             'phone'              => 'nullable|string|max:20',
             'domain'             => 'nullable|string|max:253',
-            'domain_type'        => 'nullable|in:cosmotown,own',
+            'domain_type'        => 'nullable|in:cosmotown,own,later',
+            'reg_street'         => 'nullable|string|max:255',
+            'reg_city'           => 'nullable|string|max:100',
+            'reg_state'          => 'nullable|string|max:100',
+            'reg_zip'            => 'nullable|string|max:10',
+            'reg_country'        => 'nullable|string|max:3',
             'billing_preference' => 'nullable|in:fiscal,publico_general,none',
             'tax_id'             => 'nullable|string|max:13',
             'fiscal_name'        => 'nullable|string|max:255',
@@ -302,7 +317,12 @@ class DirectCheckoutController extends Controller
             'email'              => 'required|email|max:255',
             'phone'              => 'nullable|string|max:20',
             'domain'             => 'nullable|string|max:253',
-            'domain_type'        => 'nullable|in:cosmotown,own',
+            'domain_type'        => 'nullable|in:cosmotown,own,later',
+            'reg_street'         => 'nullable|string|max:255',
+            'reg_city'           => 'nullable|string|max:100',
+            'reg_state'          => 'nullable|string|max:100',
+            'reg_zip'            => 'nullable|string|max:10',
+            'reg_country'        => 'nullable|string|max:3',
             'proof'              => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'billing_preference' => 'nullable|in:fiscal,publico_general,none',
             'tax_id'             => 'nullable|string|max:13',
@@ -377,7 +397,12 @@ class DirectCheckoutController extends Controller
             'email'              => 'required|email|max:255',
             'phone'              => 'nullable|string|max:20',
             'domain'             => 'nullable|string|max:253',
-            'domain_type'        => 'nullable|in:cosmotown,own',
+            'domain_type'        => 'nullable|in:cosmotown,own,later',
+            'reg_street'         => 'nullable|string|max:255',
+            'reg_city'           => 'nullable|string|max:100',
+            'reg_state'          => 'nullable|string|max:100',
+            'reg_zip'            => 'nullable|string|max:10',
+            'reg_country'        => 'nullable|string|max:3',
             'billing_preference' => 'nullable|in:fiscal,publico_general,none',
             'tax_id'             => 'nullable|string|max:13',
             'fiscal_name'        => 'nullable|string|max:255',
@@ -521,13 +546,48 @@ class DirectCheckoutController extends Controller
             $client->update($fiscalData);
         }
 
-        if (!empty($data['domain'])) {
+        // 'later' = el cliente decidirá el dominio después del pago — no se guarda nada aún.
+        if (!empty($data['domain']) && ($data['domain_type'] ?? '') !== 'later') {
             $client->update([
                 'domain'      => $data['domain'],
                 'domain_type' => $data['domain_type'] ?? 'own',
             ]);
         }
+
+        $this->saveRegistrantData($client, $data);
+
         return $client;
+    }
+
+    /**
+     * Guarda en el perfil del cliente los datos de contacto para el registro
+     * del dominio (WHOIS) cuando el comprador eligió personalizarlos.
+     */
+    private function saveRegistrantData(Client $client, array $data): void
+    {
+        $map = [
+            'reg_street'  => 'address_street',
+            'reg_city'    => 'address_city',
+            'reg_state'   => 'address_state',
+            'reg_zip'     => 'address_zip',
+            'reg_country' => 'address_country',
+        ];
+
+        $updates = [];
+        foreach ($map as $input => $column) {
+            if (!empty($data[$input])) {
+                $updates[$column] = $input === 'reg_country' ? strtoupper($data[$input]) : $data[$input];
+            }
+        }
+
+        // El CP fiscal (usado para timbrar CFDI) manda: el CP del WHOIS nunca lo pisa.
+        if (isset($updates['address_zip']) && (!empty($data['address_zip']) || !empty($client->address_zip))) {
+            unset($updates['address_zip']);
+        }
+
+        if ($updates) {
+            $client->update($updates);
+        }
     }
 
     /**
