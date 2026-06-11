@@ -33,6 +33,7 @@ class ServiceController extends Controller
             'active'          => 'boolean',
             'public'          => 'boolean',
             'requires_domain' => 'boolean',
+            'email_service'   => 'boolean',
             'twentyi_package_bundle_id' => 'nullable|string|max:50',
             // Campos fiscales SAT
             'sat_product_key' => 'nullable|string|max:10',
@@ -45,6 +46,7 @@ class ServiceController extends Controller
         $validated['active']          = $request->boolean('active', true);
         $validated['public']          = $request->boolean('public', false);
         $validated['requires_domain'] = $request->boolean('requires_domain', false);
+        $validated['email_service']   = $request->boolean('email_service', false);
         $validated['iva_exempt']      = $request->boolean('iva_exempt', false);
 
         Service::create($validated);
@@ -71,6 +73,7 @@ class ServiceController extends Controller
             'active'          => 'boolean',
             'public'          => 'boolean',
             'requires_domain' => 'boolean',
+            'email_service'   => 'boolean',
             'twentyi_package_bundle_id' => 'nullable|string|max:50',
             // Campos fiscales SAT
             'sat_product_key' => 'nullable|string|max:10',
@@ -83,6 +86,7 @@ class ServiceController extends Controller
         $validated['active']          = $request->boolean('active', true);
         $validated['public']          = $request->boolean('public', false);
         $validated['requires_domain'] = $request->boolean('requires_domain', false);
+        $validated['email_service']   = $request->boolean('email_service', false);
         $validated['iva_exempt']      = $request->boolean('iva_exempt', false);
 
         $service->update($validated);

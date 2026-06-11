@@ -10,7 +10,7 @@ class Service extends Model
 {
     protected $fillable = [
         'service_category_id', 'name', 'slug', 'description', 'info_url', 'price',
-        'active', 'public', 'requires_domain', 'twentyi_package_bundle_id',
+        'active', 'public', 'requires_domain', 'email_service', 'twentyi_package_bundle_id',
         // Campos fiscales SAT (faltaban → no se guardaban por asignación masiva)
         'sat_product_key', 'sat_unit_key', 'sat_unit_name', 'tax_object', 'iva_exempt',
     ];
@@ -22,6 +22,7 @@ class Service extends Model
             'active'          => 'boolean',
             'public'          => 'boolean',
             'requires_domain' => 'boolean',
+            'email_service'   => 'boolean',
             'iva_exempt'      => 'boolean',
         ];
     }

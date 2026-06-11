@@ -60,6 +60,12 @@
                 </label>
             </div>
             <div class="mb-6">
+                <label class="flex items-center">
+                    <input type="checkbox" name="email_service" value="1" {{ old('email_service') ? 'checked' : '' }} class="mr-2">
+                    <span class="text-sm text-gray-700">Incluye correo profesional <span class="text-gray-400 font-normal">(activa la gestión de buzones y webmail en el portal del cliente)</span></span>
+                </label>
+            </div>
+            <div class="mb-6">
                 <label class="block text-sm font-medium text-gray-700 mb-1">
                     Package Bundle ID de 20i
                     <span class="text-gray-400 font-normal">(opcional &mdash; activa hosting autom&aacute;ticamente al comprar)</span>

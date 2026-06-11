@@ -271,41 +271,57 @@ class ClientPortalController extends Controller
             ->firstOrFail();
     }
 
+    /**
+     * ¿El cliente tiene contratado un servicio que habilita la gestión de
+     * correos en el portal? Se determina por el flag `email_service` del
+     * servicio (configurable por paquete en el panel), no por nombre.
+     */
     private function clientHasEmailService(Client $client): bool
     {
-        $emailServiceIds = Service::where('name', 'like', 'Correo Profesional%')
-            ->pluck('id');
+        $emailServices = Service::where('email_service', true)->get(['id', 'name']);
+        if ($emailServices->isEmpty()) {
+            return false;
+        }
+
+        $emailServiceIds   = $emailServices->pluck('id');
+        $emailServiceNames = $emailServices->pluck('name');
 
         // Camino 0: servicio asignado directamente al cliente (p.ej. venta por WhatsApp)
-        if ($emailServiceIds->isNotEmpty()
-            && $client->clientServices()
-                ->where('status', 'active')
-                ->whereIn('service_id', $emailServiceIds)
-                ->exists()) {
+        if ($client->clientServices()
+            ->where('status', 'active')
+            ->whereIn('service_id', $emailServiceIds)
+            ->exists()) {
             return true;
         }
 
-        // Camino 1: Factura pagada con cotización que tiene ítems de correo
-        $viaQuote = $emailServiceIds->isNotEmpty()
-            && Order::where('client_id', $client->id)
-                ->whereNotNull('paid_at')
-                ->whereHas('quote.items', fn ($q) => $q->whereIn('service_id', $emailServiceIds))
-                ->exists();
+        // Camino 1: orden pagada con cotización que incluye ítems de correo
+        $viaQuote = Order::where('client_id', $client->id)
+            ->whereNotNull('paid_at')
+            ->whereHas('quote.items', fn ($q) => $q->whereIn('service_id', $emailServiceIds))
+            ->exists();
 
         if ($viaQuote) {
             return true;
         }
 
-        // Camino 2: Compra directa — notes contiene "Compra directa: Correo Profesional…"
-        $emailServiceNames = Service::where('name', 'like', 'Correo Profesional%')
-            ->pluck('name');
+        // Camino 2: compra directa o carrito — match exacto contra las notas
+        $paidNotes = Order::where('client_id', $client->id)
+            ->whereNotNull('paid_at')
+            ->where('status', '!=', 'cancelled')
+            ->whereNotNull('notes')
+            ->pluck('notes');
 
-        foreach ($emailServiceNames as $name) {
-            if (Order::where('client_id', $client->id)
-                ->whereNotNull('paid_at')
-                ->where('notes', 'Compra directa: ' . $name)
-                ->exists()) {
-                return true;
+        foreach ($paidNotes as $notes) {
+            if (str_starts_with($notes, 'Compra directa: ')) {
+                if ($emailServiceNames->contains(str_replace('Compra directa: ', '', $notes))) {
+                    return true;
+                }
+            } elseif (str_starts_with($notes, 'Carrito: ')) {
+                $items = collect(explode(',', str_replace('Carrito: ', '', $notes)))
+                    ->map(fn ($n) => trim(preg_replace('/^\d+x\s*/', '', trim($n))));
+                if ($items->intersect($emailServiceNames)->isNotEmpty()) {
+                    return true;
+                }
             }
         }
 
