@@ -140,6 +140,32 @@
             @endif
         </section>
 
+        {{-- Mis servicios (contratados con o sin factura) --}}
+        @if($client->clientServices->where('status', 'active')->isNotEmpty())
+        <section class="animate-slide-up" style="animation-delay:.08s">
+            <h2 class="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                <span class="w-7 h-7 bg-indigo-50 rounded-lg flex items-center justify-center"><i class="fas fa-cube text-indigo-500 text-xs"></i></span>
+                Mis servicios
+            </h2>
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50">
+                @foreach($client->clientServices->where('status', 'active') as $cs)
+                    <div class="p-4 flex flex-wrap items-center justify-between gap-2">
+                        <div class="min-w-0">
+                            <p class="font-medium text-sm text-gray-900">{{ $cs->service->name }}</p>
+                            <p class="text-xs text-gray-400">
+                                @if($cs->started_at) Desde {{ $cs->started_at->format('d/m/Y') }} @endif
+                                @if($cs->expires_at) · vence {{ $cs->expires_at->format('d/m/Y') }} @endif
+                            </p>
+                        </div>
+                        <span class="text-xs px-2.5 py-1 rounded-full bg-green-50 text-green-600 font-medium">
+                            <i class="fas fa-check-circle mr-1"></i>Activo
+                        </span>
+                    </div>
+                @endforeach
+            </div>
+        </section>
+        @endif
+
         {{-- Facturas --}}
         <section class="animate-slide-up" style="animation-delay:.1s">
             <h2 class="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">

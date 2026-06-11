@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\QuoteController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\AgentControlController;
 use App\Http\Controllers\Admin\ClientController;
+use App\Http\Controllers\Admin\ClientServiceController;
 use App\Http\Controllers\Admin\OrderController;
 use App\Http\Controllers\Admin\DocumentController;
 use App\Http\Controllers\Admin\MailboxController;
@@ -106,6 +107,9 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
 
     // Clientes
     Route::resource('clients', ClientController::class);
+    Route::post('clients/{client}/services', [ClientServiceController::class, 'store'])->name('clients.services.store');
+    Route::patch('client-services/{clientService}', [ClientServiceController::class, 'update'])->name('client-services.update');
+    Route::delete('client-services/{clientService}', [ClientServiceController::class, 'destroy'])->name('client-services.destroy');
     Route::post('clients/{client}/documents', [DocumentController::class, 'store'])->name('clients.documents.store');
     Route::get('clients/{client}/documents/{document}/download', [DocumentController::class, 'download'])->name('clients.documents.download');
     Route::delete('clients/{client}/documents/{document}', [DocumentController::class, 'destroy'])->name('clients.documents.destroy');
@@ -151,6 +155,7 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
         Route::post('orders/{order}/send-link', [OrderController::class, 'sendPaymentLink'])->name('orders.send-link');
         Route::post('orders/{order}/pay-manual', [OrderController::class, 'registerManualPayment'])->name('orders.pay-manual');
         Route::post('orders/{order}/resend-confirmation', [OrderController::class, 'resendConfirmation'])->name('orders.resend-confirmation');
+        Route::post('orders/{order}/external-cfdi', [OrderController::class, 'attachExternalCfdi'])->name('orders.external-cfdi');
         Route::patch('payments/{payment}/approve', [OrderController::class, 'approveTransfer'])->name('payments.approve');
         Route::get('payments/{payment}/proof', [OrderController::class, 'downloadProof'])->name('payments.proof');
         Route::patch('orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.update-status');

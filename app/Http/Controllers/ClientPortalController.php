@@ -27,7 +27,7 @@ class ClientPortalController extends Controller
     {
         $client = Client::where('portal_token', $token)
             ->where('portal_active', true)
-            ->with(['lead.quotes', 'invoices.quote', 'invoices.fiscalDocument', 'documents'])
+            ->with(['lead.quotes', 'invoices.quote', 'invoices.fiscalDocument', 'documents', 'clientServices.service'])
             ->firstOrFail();
 
         $mailboxes = [];
@@ -76,6 +76,13 @@ class ClientPortalController extends Controller
 
         if (!$order->isStamped()) {
             abort(404, 'Factura no disponible.');
+        }
+
+        // CFDI externo: servir el archivo guardado
+        $doc = $order->fiscalDocument;
+        if ($doc?->isExternal()) {
+            abort_unless($doc->pdf_path && Storage::disk('local')->exists($doc->pdf_path), 404, 'Esta factura no tiene PDF disponible.');
+            return Storage::disk('local')->download($doc->pdf_path, 'factura-' . $order->folio() . '.pdf');
         }
 
         $pdf = (new FacturapiService())->downloadPdf($order);
@@ -129,6 +136,13 @@ class ClientPortalController extends Controller
             abort(404, 'Factura no disponible.');
         }
 
+        // CFDI externo: servir el archivo guardado
+        $doc = $order->fiscalDocument;
+        if ($doc?->isExternal()) {
+            abort_unless($doc->xml_path && Storage::disk('local')->exists($doc->xml_path), 404);
+            return Storage::disk('local')->download($doc->xml_path, 'factura-' . $order->folio() . '.xml');
+        }
+
         $xml = (new FacturapiService())->downloadXml($order);
 
         if (!$xml) {
@@ -169,6 +183,15 @@ class ClientPortalController extends Controller
     {
         $emailServiceIds = Service::where('name', 'like', 'Correo Profesional%')
             ->pluck('id');
+
+        // Camino 0: servicio asignado directamente al cliente (p.ej. venta por WhatsApp)
+        if ($emailServiceIds->isNotEmpty()
+            && $client->clientServices()
+                ->where('status', 'active')
+                ->whereIn('service_id', $emailServiceIds)
+                ->exists()) {
+            return true;
+        }
 
         // Camino 1: Factura pagada con cotización que tiene ítems de correo
         $viaQuote = $emailServiceIds->isNotEmpty()

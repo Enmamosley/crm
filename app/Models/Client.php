@@ -46,6 +46,12 @@ class Client extends Model
         return $this->hasMany(Order::class);
     }
 
+    /** Servicios contratados (con o sin factura — p.ej. ventas por WhatsApp). */
+    public function clientServices(): HasMany
+    {
+        return $this->hasMany(ClientService::class);
+    }
+
     public function documents(): HasMany
     {
         return $this->hasMany(ClientDocument::class);

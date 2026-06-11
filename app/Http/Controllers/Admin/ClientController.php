@@ -103,8 +103,9 @@ class ClientController extends Controller
 
     public function show(Client $client)
     {
-        $client->load(['lead', 'invoices.quote', 'documents', 'tasks.assignee']);
-        return view('admin.clients.show', compact('client'));
+        $client->load(['lead', 'invoices.quote', 'documents', 'tasks.assignee', 'clientServices.service']);
+        $services = \App\Models\Service::where('active', true)->orderBy('name')->get(['id', 'name', 'price']);
+        return view('admin.clients.show', compact('client', 'services'));
     }
 
     public function edit(Client $client)

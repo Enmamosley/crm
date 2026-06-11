@@ -12,6 +12,7 @@ class FiscalDocument extends Model
 
     protected $fillable = [
         'order_id', 'facturapi_invoice_id', 'facturapi_data',
+        'source', 'uuid', 'pdf_path', 'xml_path',
         'status', 'cancellation_motive', 'stamped_at', 'cancelled_at',
     ];
 
@@ -32,6 +33,12 @@ class FiscalDocument extends Model
     public function isValid(): bool
     {
         return $this->status === 'valid';
+    }
+
+    /** CFDI timbrado fuera del CRM (archivos XML/PDF cargados manualmente). */
+    public function isExternal(): bool
+    {
+        return $this->source === 'external';
     }
 
     public function isCancellable(): bool

@@ -37,6 +37,19 @@
     </form>
 @endif
 
+@if(!$order->isStamped())
+    <button onclick="document.getElementById('externalCfdiModal').classList.remove('hidden')"
+        class="bg-white text-indigo-600 border border-indigo-200 px-4 py-2 rounded-lg hover:bg-indigo-50 text-sm">
+        <i class="fas fa-file-import mr-1"></i> CFDI externo
+    </button>
+@endif
+
+@if($order->isStamped() && $order->fiscalDocument?->isExternal())
+    <span class="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200" title="Timbrado fuera del CRM{{ $order->fiscalDocument->uuid ? ' — UUID '.$order->fiscalDocument->uuid : '' }}">
+        <i class="fas fa-file-import"></i> CFDI externo
+    </span>
+@endif
+
 @if($order->isStamped())
     <a href="{{ route('admin.orders.pdf', $order) }}" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 text-sm">
         <i class="fas fa-file-pdf mr-1"></i> PDF
@@ -58,7 +71,7 @@
 @if($order->isCancellable())
     <button onclick="document.getElementById('cancelModal').classList.remove('hidden')"
         class="bg-gray-200 text-red-600 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 text-sm">
-        <i class="fas fa-ban mr-1"></i> Cancelar ante SAT
+        <i class="fas fa-ban mr-1"></i> {{ $order->fiscalDocument?->isExternal() ? 'Quitar CFDI externo' : 'Cancelar ante SAT' }}
     </button>
 @endif
 
@@ -442,13 +455,41 @@
 </div>
 
 {{-- Modal cancelar (SAT) --}}
+{{-- Modal: adjuntar CFDI timbrado fuera del CRM --}}
+<div id="externalCfdiModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+        <h3 class="text-lg font-semibold mb-2">Adjuntar CFDI externo</h3>
+        <p class="text-sm text-gray-600 mb-4">Registra una factura que timbraste en otro sistema. El XML es obligatorio; el PDF es opcional. La orden quedará marcada como facturada y el cliente podrá descargar los archivos desde su portal.</p>
+        <form action="{{ route('admin.orders.external-cfdi', $order) }}" method="POST" enctype="multipart/form-data">
+            @csrf
+            <label class="block text-sm font-medium text-gray-700 mb-1">XML del CFDI *</label>
+            <input type="file" name="xml" accept=".xml,text/xml" required class="w-full border rounded-lg px-3 py-2 text-sm mb-3">
+            <label class="block text-sm font-medium text-gray-700 mb-1">PDF <span class="font-normal text-gray-400">(opcional)</span></label>
+            <input type="file" name="pdf" accept="application/pdf" class="w-full border rounded-lg px-3 py-2 text-sm mb-4">
+            <div class="flex gap-3">
+                <button type="submit" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 text-sm">
+                    <i class="fas fa-file-import mr-1"></i> Registrar CFDI
+                </button>
+                <button type="button" onclick="document.getElementById('externalCfdiModal').classList.add('hidden')"
+                    class="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 text-sm">
+                    Cerrar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div id="cancelModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-        <h3 class="text-lg font-semibold mb-4">Cancelar Factura ante el SAT</h3>
-        <p class="text-sm text-gray-600 mb-4">Selecciona el motivo de cancelación (requerido por el SAT):</p>
+        <h3 class="text-lg font-semibold mb-4">{{ $order->fiscalDocument?->isExternal() ? 'Quitar CFDI externo' : 'Cancelar Factura ante el SAT' }}</h3>
+        @if($order->fiscalDocument?->isExternal())
+            <p class="text-sm text-gray-600 mb-4">Se retirará el CFDI externo de esta orden (XML/PDF dejarán de mostrarse). La cancelación fiscal ante el SAT debes hacerla en el sistema donde lo timbraste.</p>
+        @else
+            <p class="text-sm text-gray-600 mb-4">Selecciona el motivo de cancelación (requerido por el SAT):</p>
+        @endif
         <form action="{{ route('admin.orders.fiscal-document.cancel', $order) }}" method="POST">
             @csrf @method('DELETE')
-            <select name="motive" required class="w-full border rounded-lg px-3 py-2 text-sm mb-4">
+            <select name="motive" {{ $order->fiscalDocument?->isExternal() ? '' : 'required' }} class="w-full border rounded-lg px-3 py-2 text-sm mb-4 {{ $order->fiscalDocument?->isExternal() ? 'hidden' : '' }}">
                 <option value="02">02 - Comprobante emitido con errores con relación</option>
                 <option value="03">03 - No se llevó a cabo la operación</option>
                 <option value="04">04 - Operación nominativa relacionada en factura global</option>

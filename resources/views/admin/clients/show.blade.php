@@ -99,6 +99,120 @@
             </div>
         </div>
 
+        {{-- Servicios contratados (con o sin factura) --}}
+        <div class="bg-white rounded-lg shadow" x-data="{ addingService: false }">
+            <div class="p-6 border-b flex flex-wrap items-center justify-between gap-2">
+                <h3 class="text-lg font-semibold">Servicios contratados</h3>
+                <button @click="addingService = !addingService" class="text-sm text-blue-600 hover:underline">
+                    <i class="fas fa-plus mr-1"></i> Asignar servicio
+                </button>
+            </div>
+
+            {{-- Form: asignar servicio (sin factura) --}}
+            <div x-show="addingService" x-cloak class="p-6 border-b bg-gray-50 dark:bg-gray-800/40">
+                <form action="{{ route('admin.clients.services.store', $client) }}" method="POST" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    @csrf
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Servicio *</label>
+                        <select name="service_id" required class="w-full border rounded-lg px-3 py-2 text-sm">
+                            <option value="">Seleccionar...</option>
+                            @foreach($services as $svc)
+                                <option value="{{ $svc->id }}">{{ $svc->name }} — ${{ number_format($svc->price, 2) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Precio pactado <span class="font-normal text-gray-400">(vacío = catálogo)</span></label>
+                        <input type="number" name="price" step="0.01" min="0" placeholder="0.00" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Origen</label>
+                        <select name="source" class="w-full border rounded-lg px-3 py-2 text-sm">
+                            <option value="whatsapp">WhatsApp</option>
+                            <option value="manual">Manual</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Inicio</label>
+                        <input type="date" name="started_at" value="{{ now()->toDateString() }}" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Vence <span class="font-normal text-gray-400">(opcional)</span></label>
+                        <input type="date" name="expires_at" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Notas</label>
+                        <input type="text" name="notes" maxlength="1000" placeholder="Ej: acordado por WhatsApp el 11/06" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div class="sm:col-span-2 flex gap-2">
+                        <button type="submit" class="bg-brand-500 text-white px-4 py-2 rounded-lg hover:bg-brand-600 text-sm">
+                            <i class="fas fa-check mr-1"></i> Asignar
+                        </button>
+                        <button type="button" @click="addingService = false" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 text-sm">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="p-6">
+                @if($client->clientServices->isEmpty())
+                    <p class="text-sm text-gray-400">Sin servicios asignados. Usa "Asignar servicio" para registrar ventas hechas por WhatsApp u otros canales sin generar factura.</p>
+                @else
+                    <div class="space-y-3">
+                        @foreach($client->clientServices as $cs)
+                            @php
+                                $csColors = ['active' => 'green', 'suspended' => 'yellow', 'cancelled' => 'red'];
+                                $csc = $csColors[$cs->status] ?? 'gray';
+                            @endphp
+                            <div class="flex flex-wrap items-center justify-between gap-2 border border-gray-100 dark:border-gray-800 rounded-lg p-3">
+                                <div class="min-w-0">
+                                    <p class="font-medium text-sm">{{ $cs->service->name }}</p>
+                                    <p class="text-xs text-gray-500">
+                                        ${{ number_format($cs->effectivePrice(), 2) }}
+                                        @if($cs->price !== null) <span class="text-gray-400">(pactado)</span> @endif
+                                        · {{ \App\Models\ClientService::SOURCES[$cs->source] ?? $cs->source }}
+                                        @if($cs->started_at) · desde {{ $cs->started_at->format('d/m/Y') }} @endif
+                                        @if($cs->expires_at) · vence {{ $cs->expires_at->format('d/m/Y') }} @endif
+                                    </p>
+                                    @if($cs->notes)
+                                        <p class="text-xs text-gray-400 mt-0.5"><i class="fas fa-comment mr-1"></i>{{ $cs->notes }}</p>
+                                    @endif
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs px-2 py-1 rounded-full bg-{{ $csc }}-100 text-{{ $csc }}-700">
+                                        {{ \App\Models\ClientService::STATUS_LABELS[$cs->status] ?? $cs->status }}
+                                    </span>
+                                    @if($cs->status === 'active')
+                                        <form action="{{ route('admin.client-services.update', $cs) }}" method="POST" class="inline">
+                                            @csrf @method('PATCH')
+                                            <input type="hidden" name="status" value="suspended">
+                                            <button type="submit" class="text-xs text-yellow-600 hover:text-yellow-800" title="Suspender" aria-label="Suspender servicio">
+                                                <i class="fas fa-pause"></i>
+                                            </button>
+                                        </form>
+                                    @else
+                                        <form action="{{ route('admin.client-services.update', $cs) }}" method="POST" class="inline">
+                                            @csrf @method('PATCH')
+                                            <input type="hidden" name="status" value="active">
+                                            <button type="submit" class="text-xs text-green-600 hover:text-green-800" title="Reactivar" aria-label="Reactivar servicio">
+                                                <i class="fas fa-play"></i>
+                                            </button>
+                                        </form>
+                                    @endif
+                                    <form action="{{ route('admin.client-services.destroy', $cs) }}" method="POST" class="inline"
+                                          onsubmit="return confirm('¿Retirar este servicio del cliente?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="text-xs text-red-500 hover:text-red-700" title="Retirar" aria-label="Retirar servicio">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </div>
+
         {{-- Facturas --}}
         <div class="bg-white rounded-lg shadow overflow-x-auto">
             <div class="p-6 border-b flex items-center justify-between">

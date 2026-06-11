@@ -347,10 +347,22 @@ class OrderController extends Controller
      */
     public function cancelFiscalDocument(Request $request, Order $order)
     {
-        $request->validate(['motive' => 'required|string|in:01,02,03,04']);
+        // El motivo SAT sólo aplica a CFDIs timbrados vía Facturapi; los externos sólo se retiran.
+        $request->validate([
+            'motive' => ($order->fiscalDocument?->isExternal() ? 'nullable' : 'required') . '|string|in:01,02,03,04',
+        ]);
 
         if (!$order->isCancellable()) {
             return back()->with('error', 'Esta orden no tiene un CFDI activo que cancelar.');
+        }
+
+        // CFDI externo: no se cancela ante el SAT desde aquí (se timbró fuera).
+        // Sólo se retira el registro; la cancelación fiscal se hace en el sistema de origen.
+        if ($order->fiscalDocument?->isExternal()) {
+            $order->fiscalDocument->delete();
+            ActivityLog::log('external_cfdi_removed', $order, "CFDI externo retirado de la orden {$order->folio()}");
+            return redirect()->route('admin.orders.show', $order)
+                ->with('success', 'CFDI externo retirado. Recuerda cancelarlo ante el SAT en el sistema donde lo timbraste.');
         }
 
         try {
@@ -370,10 +382,64 @@ class OrderController extends Controller
     }
 
     /**
+     * Adjuntar un CFDI timbrado fuera del CRM (XML obligatorio, PDF opcional).
+     */
+    public function attachExternalCfdi(Request $request, Order $order)
+    {
+        if ($order->isStamped()) {
+            return back()->with('error', 'Esta orden ya tiene un CFDI activo.');
+        }
+
+        $request->validate([
+            'xml' => 'required|file|max:2048',
+            'pdf' => 'nullable|file|mimes:pdf|max:8192',
+        ]);
+
+        $xmlContent = file_get_contents($request->file('xml')->getRealPath());
+        if (stripos($xmlContent, '<cfdi:Comprobante') === false && stripos($xmlContent, 'Comprobante') === false) {
+            return back()->with('error', 'El archivo XML no parece ser un CFDI válido.');
+        }
+
+        // UUID del Timbre Fiscal Digital (mejor esfuerzo)
+        $uuid = null;
+        if (preg_match('/UUID="([0-9A-Fa-f\-]{36})"/', $xmlContent, $m)) {
+            $uuid = strtoupper($m[1]);
+        }
+
+        $xmlPath = $request->file('xml')->store('cfdi-external', 'local');
+        $pdfPath = $request->hasFile('pdf') ? $request->file('pdf')->store('cfdi-external', 'local') : null;
+
+        $order->fiscalDocument()->create([
+            'source'     => 'external',
+            'uuid'       => $uuid,
+            'xml_path'   => $xmlPath,
+            'pdf_path'   => $pdfPath,
+            'status'     => 'valid',
+            'stamped_at' => now(),
+        ]);
+
+        ActivityLog::log('external_cfdi_attached', $order,
+            "CFDI externo adjuntado a la orden {$order->folio()}" . ($uuid ? " (UUID {$uuid})" : ''));
+
+        return redirect()->route('admin.orders.show', $order)
+            ->with('success', 'CFDI externo registrado.' . ($uuid ? " UUID: {$uuid}" : ' No se pudo leer el UUID del XML.'));
+    }
+
+    /**
      * Descargar PDF del CFDI.
      */
     public function downloadPdf(Order $order)
     {
+        $doc = $order->fiscalDocument;
+
+        // CFDI externo: servir el archivo guardado
+        if ($doc?->isExternal()) {
+            if (!$doc->pdf_path || !\Illuminate\Support\Facades\Storage::disk('local')->exists($doc->pdf_path)) {
+                return back()->with('error', 'Este CFDI externo no tiene PDF adjunto (sólo XML).');
+            }
+            return \Illuminate\Support\Facades\Storage::disk('local')->download($doc->pdf_path, "factura-{$order->folio()}.pdf");
+        }
+
         $pdf = (new FacturapiService())->downloadPdf($order);
 
         if (!$pdf) {
@@ -391,6 +457,14 @@ class OrderController extends Controller
      */
     public function downloadXml(Order $order)
     {
+        $doc = $order->fiscalDocument;
+
+        // CFDI externo: servir el archivo guardado
+        if ($doc?->isExternal()) {
+            abort_unless($doc->xml_path && \Illuminate\Support\Facades\Storage::disk('local')->exists($doc->xml_path), 404);
+            return \Illuminate\Support\Facades\Storage::disk('local')->download($doc->xml_path, "factura-{$order->folio()}.xml");
+        }
+
         $xml = (new FacturapiService())->downloadXml($order);
 
         if (!$xml) {
