@@ -126,7 +126,7 @@
             <span x-text="domainError"></span>
         </div>
 
-        <p class="text-xs text-gray-400 mt-2">El dominio se registrará en tu nombre y quedará activo en 24–48 h.</p>
+        <p class="text-xs text-gray-400 mt-2">El dominio se registrará en tu nombre y quedará activo en unos minutos.</p>
 
         {{-- Datos de registro del dominio (WHOIS) --}}
         <div class="mt-4 border-t border-gray-100 pt-4">
