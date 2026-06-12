@@ -28,11 +28,16 @@ class OrderFinalizationService
             return;
         }
 
-        // Auto-timbrar el CFDI si no está timbrado y Facturapi está configurado.
-        if (!$order->isStamped() && Setting::get('facturapi_api_key')) {
+        // Auto-timbrar el CFDI si no está timbrado y hay proveedor configurado.
+        // "Sin factura" (none) NO se timbra automáticamente: esas ventas van al
+        // recibo de pago y, en su caso, a la factura global mensual del contador.
+        $invoicing = new InvoicingManager();
+        if (($order->billing_preference ?? 'none') !== 'none'
+            && !$order->isStamped()
+            && $invoicing->isConfigured()) {
             try {
                 $order->update(['payment_form' => $payment->satPaymentForm()]);
-                (new FacturapiService())->stampInvoice($order);
+                $invoicing->stampInvoice($order);
                 ActivityLog::log('auto_stamped', $order, "Factura {$order->folio()} timbrada automáticamente tras el pago");
             } catch (\Throwable $e) {
                 Log::error('Auto-stamp failed after payment', ['order_id' => $order->id, 'error' => $e->getMessage()]);

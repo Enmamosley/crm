@@ -4,8 +4,63 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "d3ba5206fc1aa7f6cfbb393efc02a955",
+    "content-hash": "48a479bd1e8de41c4c7595d16c6f9984",
     "packages": [
+        {
+            "name": "bacon/bacon-qr-code",
+            "version": "v3.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/Bacon/BaconQrCode.git",
+                "reference": "4da2233e72eeecd9be3b62e0dc2cc9ed8e2e31c2"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/Bacon/BaconQrCode/zipball/4da2233e72eeecd9be3b62e0dc2cc9ed8e2e31c2",
+                "reference": "4da2233e72eeecd9be3b62e0dc2cc9ed8e2e31c2",
+                "shasum": ""
+            },
+            "require": {
+                "dasprid/enum": "^1.0.3",
+                "ext-iconv": "*",
+                "php": "^8.1"
+            },
+            "require-dev": {
+                "phly/keep-a-changelog": "^2.12",
+                "phpunit/phpunit": "^10.5.11 || ^11.0.4",
+                "spatie/phpunit-snapshot-assertions": "^5.1.5",
+                "spatie/pixelmatch-php": "^1.2.0",
+                "squizlabs/php_codesniffer": "^3.9"
+            },
+            "suggest": {
+                "ext-imagick": "to generate QR code images"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "BaconQrCode\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-2-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Ben Scholzen 'DASPRiD'",
+                    "email": "mail@dasprids.de",
+                    "homepage": "https://dasprids.de/",
+                    "role": "Developer"
+                }
+            ],
+            "description": "BaconQrCode is a QR code generator for PHP.",
+            "homepage": "https://github.com/Bacon/BaconQrCode",
+            "support": {
+                "issues": "https://github.com/Bacon/BaconQrCode/issues",
+                "source": "https://github.com/Bacon/BaconQrCode/tree/v3.1.1"
+            },
+            "time": "2026-04-05T21:06:35+00:00"
+        },
         {
             "name": "barryvdh/laravel-dompdf",
             "version": "v3.1.1",
@@ -211,6 +266,56 @@
                 }
             ],
             "time": "2024-02-09T16:56:22+00:00"
+        },
+        {
+            "name": "dasprid/enum",
+            "version": "1.0.7",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/DASPRiD/Enum.git",
+                "reference": "b5874fa9ed0043116c72162ec7f4fb50e02e7cce"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/DASPRiD/Enum/zipball/b5874fa9ed0043116c72162ec7f4fb50e02e7cce",
+                "reference": "b5874fa9ed0043116c72162ec7f4fb50e02e7cce",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.1 <9.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^7 || ^8 || ^9 || ^10 || ^11",
+                "squizlabs/php_codesniffer": "*"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "DASPRiD\\Enum\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-2-Clause"
+            ],
+            "authors": [
+                {
+                    "name": "Ben Scholzen 'DASPRiD'",
+                    "email": "mail@dasprids.de",
+                    "homepage": "https://dasprids.de/",
+                    "role": "Developer"
+                }
+            ],
+            "description": "PHP 7.1 enum implementation",
+            "keywords": [
+                "enum",
+                "map"
+            ],
+            "support": {
+                "issues": "https://github.com/DASPRiD/Enum/issues",
+                "source": "https://github.com/DASPRiD/Enum/tree/1.0.7"
+            },
+            "time": "2025-09-16T12:23:56+00:00"
         },
         {
             "name": "dflydev/dot-access-data",
@@ -674,6 +779,283 @@
             "time": "2025-10-31T18:51:33+00:00"
         },
         {
+            "name": "eclipxe/cfdiutils",
+            "version": "v3.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/eclipxe13/CfdiUtils.git",
+                "reference": "967b7df1b6569158b0f55e7e15bbdeddee414224"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/eclipxe13/CfdiUtils/zipball/967b7df1b6569158b0f55e7e15bbdeddee414224",
+                "reference": "967b7df1b6569158b0f55e7e15bbdeddee414224",
+                "shasum": ""
+            },
+            "require": {
+                "eclipxe/xmlresourceretriever": "^2.0.3",
+                "eclipxe/xmlschemavalidator": "^3.0.5",
+                "ext-dom": "*",
+                "ext-iconv": "*",
+                "ext-json": "*",
+                "ext-libxml": "*",
+                "ext-mbstring": "*",
+                "ext-openssl": "*",
+                "ext-simplexml": "*",
+                "ext-xsl": "*",
+                "php": ">=8.0",
+                "symfony/process": "^5.4.47|^6.4.15|^7.1.8"
+            },
+            "require-dev": {
+                "ext-bcmath": "*",
+                "ext-curl": "*",
+                "ext-soap": "*",
+                "genkgo/xsl": "^1.0.8",
+                "phpunit/phpunit": "^9.5"
+            },
+            "suggest": {
+                "ext-bcmath": "Allows calculate totals and taxes on Pagos 2.0",
+                "ext-soap": "Allows consume the CFDI Status SAT Web Service",
+                "genkgo/xsl": "Allows usage of Genkgo/Xsl transformations"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "CfdiUtils\\": "src/CfdiUtils/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Carlos C Soto",
+                    "email": "eclipxe13@gmail.com",
+                    "homepage": "https://eclipxe.com.mx/"
+                }
+            ],
+            "description": "PHP Common utilities for Mexican CFDI 3.2, 3.3 & 4.0",
+            "homepage": "https://github.com/eclipxe13/CfdiUtils",
+            "keywords": [
+                "cfdi",
+                "cfdi33",
+                "cfdi40",
+                "electronic invoice",
+                "mexico"
+            ],
+            "support": {
+                "chat": "https://discord.gg/aFGYXvX",
+                "docs": "https://cfdiutils.readthedocs.io/",
+                "issues": "https://github.com/eclipxe13/CfdiUtils/issues",
+                "source": "https://github.com/eclipxe13/CfdiUtils"
+            },
+            "time": "2026-03-17T16:12:36+00:00"
+        },
+        {
+            "name": "eclipxe/enum",
+            "version": "v0.2.8",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/eclipxe13/enum.git",
+                "reference": "30b260d85e358b70b58794a0134c760789296a55"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/eclipxe13/enum/zipball/30b260d85e358b70b58794a0134c760789296a55",
+                "reference": "30b260d85e358b70b58794a0134c760789296a55",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.2"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^8.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Eclipxe\\Enum\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Carlos C Soto",
+                    "email": "eclipxe13@gmail.com",
+                    "homepage": "https://eclipxe.com.mx/"
+                }
+            ],
+            "description": "Enum based on the Brent Roose enum idea https://stitcher.io/blog/php-enums",
+            "homepage": "https://github.com/eclipxe13/enum",
+            "keywords": [
+                "enum",
+                "reflection"
+            ],
+            "support": {
+                "issues": "https://github.com/eclipxe13/enum/issues",
+                "source": "https://github.com/eclipxe13/enum"
+            },
+            "time": "2026-03-16T20:17:29+00:00"
+        },
+        {
+            "name": "eclipxe/micro-catalog",
+            "version": "v0.1.5",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/eclipxe13/micro-catalog.git",
+                "reference": "9d5d298cdd40c4f52dcb1973668af0ee942403ad"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/eclipxe13/micro-catalog/zipball/9d5d298cdd40c4f52dcb1973668af0ee942403ad",
+                "reference": "9d5d298cdd40c4f52dcb1973668af0ee942403ad",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=7.2"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^8.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Eclipxe\\MicroCatalog\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Carlos C Soto",
+                    "email": "eclipxe13@gmail.com",
+                    "homepage": "https://eclipxe.com.mx/"
+                }
+            ],
+            "description": "Micro catalog template class, useful to create value objects based on a known small catalog",
+            "homepage": "https://github.com/eclipxe13/micro-catalog",
+            "keywords": [
+                "catalog",
+                "generic"
+            ],
+            "support": {
+                "issues": "https://github.com/eclipxe13/micro-catalog/issues",
+                "source": "https://github.com/eclipxe13/micro-catalog"
+            },
+            "time": "2026-03-17T18:27:09+00:00"
+        },
+        {
+            "name": "eclipxe/xmlresourceretriever",
+            "version": "v2.0.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/eclipxe13/XmlResourceRetriever.git",
+                "reference": "e523fb3da49094f775c9230ba572a9b0dc2fa4f4"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/eclipxe13/XmlResourceRetriever/zipball/e523fb3da49094f775c9230ba572a9b0dc2fa4f4",
+                "reference": "e523fb3da49094f775c9230ba572a9b0dc2fa4f4",
+                "shasum": ""
+            },
+            "require": {
+                "ext-dom": "*",
+                "ext-fileinfo": "*",
+                "ext-filter": "*",
+                "php": ">=7.3"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Eclipxe\\XmlResourceRetriever\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Carlos C Soto",
+                    "email": "eclipxe13@gmail.com",
+                    "homepage": "https://eclipxe.com.mx"
+                }
+            ],
+            "description": "XSD and XLST resource downloader for local storage",
+            "homepage": "https://github.com/eclipxe13/XmlResourceRetriever",
+            "keywords": [
+                "xsd",
+                "xslt"
+            ],
+            "support": {
+                "issues": "https://github.com/eclipxe13/XmlResourceRetriever/issues",
+                "source": "https://github.com/eclipxe13/XmlResourceRetriever"
+            },
+            "time": "2026-03-19T15:39:37+00:00"
+        },
+        {
+            "name": "eclipxe/xmlschemavalidator",
+            "version": "v3.0.6",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/eclipxe13/XmlSchemaValidator.git",
+                "reference": "1eed16a45ebd8309cf5dcc595a1e0b8f7776d460"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/eclipxe13/XmlSchemaValidator/zipball/1eed16a45ebd8309cf5dcc595a1e0b8f7776d460",
+                "reference": "1eed16a45ebd8309cf5dcc595a1e0b8f7776d460",
+                "shasum": ""
+            },
+            "require": {
+                "ext-dom": "*",
+                "ext-libxml": "*",
+                "php": ">=7.3"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.5.5"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Eclipxe\\XmlSchemaValidator\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Carlos C Soto",
+                    "email": "eclipxe13@gmail.com",
+                    "homepage": "https://eclipxe.com.mx/"
+                }
+            ],
+            "description": "PHP Library for XML Schema Validations",
+            "homepage": "https://github.com/eclipxe13/XmlSchemaValidator",
+            "keywords": [
+                "validation",
+                "xml",
+                "xmlschema",
+                "xsd"
+            ],
+            "support": {
+                "issues": "https://github.com/eclipxe13/XmlSchemaValidator/issues",
+                "source": "https://github.com/eclipxe13/XmlSchemaValidator"
+            },
+            "time": "2026-03-18T15:42:31+00:00"
+        },
+        {
             "name": "egulias/email-validator",
             "version": "4.0.4",
             "source": {
@@ -739,6 +1121,78 @@
                 }
             ],
             "time": "2025-03-06T22:45:56+00:00"
+        },
+        {
+            "name": "endroid/qr-code",
+            "version": "6.1.3",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/endroid/qr-code.git",
+                "reference": "5fa534856ed95649d67c0eab0cabc03ab1d8e0e2"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/endroid/qr-code/zipball/5fa534856ed95649d67c0eab0cabc03ab1d8e0e2",
+                "reference": "5fa534856ed95649d67c0eab0cabc03ab1d8e0e2",
+                "shasum": ""
+            },
+            "require": {
+                "bacon/bacon-qr-code": "^3.0",
+                "php": "^8.4"
+            },
+            "require-dev": {
+                "endroid/quality": "dev-main",
+                "ext-gd": "*",
+                "khanamiryan/qrcode-detector-decoder": "^2.0.3",
+                "setasign/fpdf": "^1.8.2"
+            },
+            "suggest": {
+                "ext-gd": "Enables you to write PNG images",
+                "khanamiryan/qrcode-detector-decoder": "Enables you to use the image validator",
+                "roave/security-advisories": "Makes sure package versions with known security issues are not installed",
+                "setasign/fpdf": "Enables you to use the PDF writer"
+            },
+            "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-main": "6.x-dev"
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "Endroid\\QrCode\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jeroen van den Enden",
+                    "email": "info@endroid.nl"
+                }
+            ],
+            "description": "Endroid QR Code",
+            "homepage": "https://github.com/endroid/qr-code",
+            "keywords": [
+                "code",
+                "endroid",
+                "php",
+                "qr",
+                "qrcode"
+            ],
+            "support": {
+                "issues": "https://github.com/endroid/qr-code/issues",
+                "source": "https://github.com/endroid/qr-code/tree/6.1.3"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/endroid",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-02-05T07:01:58+00:00"
         },
         {
             "name": "fruitcake/php-cors",
@@ -2893,6 +3347,243 @@
             "time": "2026-02-16T23:10:27+00:00"
         },
         {
+            "name": "phpcfdi/cfdi-expresiones",
+            "version": "v3.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/phpcfdi/cfdi-expresiones.git",
+                "reference": "db116bcff94ba16c03a805e1a5c5ca3d3c867534"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/phpcfdi/cfdi-expresiones/zipball/db116bcff94ba16c03a805e1a5c5ca3d3c867534",
+                "reference": "db116bcff94ba16c03a805e1a5c5ca3d3c867534",
+                "shasum": ""
+            },
+            "require": {
+                "ext-dom": "*",
+                "ext-mbstring": "*",
+                "php": ">=8.1"
+            },
+            "require-dev": {
+                "ext-json": "*",
+                "phpunit/phpunit": "^10.5.45"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "PhpCfdi\\CfdiExpresiones\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Carlos C Soto",
+                    "email": "eclipxe13@gmail.com",
+                    "homepage": "https://eclipxe.com.mx/"
+                }
+            ],
+            "description": "Genera expresiones de CFDI 4.0, CFDI 3.3, CFDI 3.2, RET 1.0 y RET 2.0",
+            "homepage": "https://github.com/phpcfdi/cfdi-expresiones",
+            "keywords": [
+                "cfdi",
+                "phpcfdi",
+                "sat"
+            ],
+            "support": {
+                "issues": "https://github.com/phpcfdi/cfdi-expresiones/issues",
+                "source": "https://github.com/phpcfdi/cfdi-expresiones"
+            },
+            "time": "2025-04-14T05:00:52+00:00"
+        },
+        {
+            "name": "phpcfdi/credentials",
+            "version": "v1.3.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/phpcfdi/credentials.git",
+                "reference": "2307eb2ae8a968b0e8b78d9710aa7544a5642aea"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/phpcfdi/credentials/zipball/2307eb2ae8a968b0e8b78d9710aa7544a5642aea",
+                "reference": "2307eb2ae8a968b0e8b78d9710aa7544a5642aea",
+                "shasum": ""
+            },
+            "require": {
+                "eclipxe/enum": "^0.2.7",
+                "ext-mbstring": "*",
+                "ext-openssl": "*",
+                "php": ">=8.1"
+            },
+            "require-dev": {
+                "ext-json": "*",
+                "phpunit/phpunit": "^10.5.45"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "PhpCfdi\\Credentials\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Carlos C Soto",
+                    "email": "eclipxe13@gmail.com"
+                }
+            ],
+            "description": "Library to use eFirma (fiel) and CSD (sellos) from SAT",
+            "homepage": "https://github.com/phpcfdi/credentials",
+            "keywords": [
+                "certificado",
+                "cfdi",
+                "csd",
+                "efirma",
+                "fiel",
+                "sat",
+                "sello"
+            ],
+            "support": {
+                "issues": "https://github.com/phpcfdi/credentials/issues",
+                "source": "https://github.com/phpcfdi/credentials"
+            },
+            "time": "2025-04-12T20:29:23+00:00"
+        },
+        {
+            "name": "phpcfdi/finkok",
+            "version": "v0.6.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/phpcfdi/finkok.git",
+                "reference": "793dc7669656c2eb27258a4bde0333289f9b495c"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/phpcfdi/finkok/zipball/793dc7669656c2eb27258a4bde0333289f9b495c",
+                "reference": "793dc7669656c2eb27258a4bde0333289f9b495c",
+                "shasum": ""
+            },
+            "require": {
+                "eclipxe/enum": "^0.2.7",
+                "eclipxe/micro-catalog": "^0.1.4",
+                "ext-dom": "*",
+                "ext-json": "*",
+                "ext-openssl": "*",
+                "ext-soap": "*",
+                "php": ">=8.1",
+                "phpcfdi/cfdi-expresiones": "^3.3.0",
+                "phpcfdi/credentials": "^1.3.0",
+                "phpcfdi/xml-cancelacion": "^2.0.5",
+                "psr/log": "^3.0",
+                "robrichards/xmlseclibs": "^3.1.4"
+            },
+            "require-dev": {
+                "eclipxe/cfdiutils": "^3.0.1",
+                "ext-fileinfo": "*",
+                "phpcfdi/rfc": "^1.2",
+                "phpunit/phpunit": "^10.5.50",
+                "rector/rector": "^2.2",
+                "symfony/dotenv": "^6.0 || ^7.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "PhpCfdi\\Finkok\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Carlos C Soto",
+                    "email": "eclipxe13@gmail.com",
+                    "homepage": "https://eclipxe.com.mx/"
+                }
+            ],
+            "description": "Librería para conectar con la API de servicios de FINKOK",
+            "homepage": "https://github.com/phpcfdi/finkok",
+            "keywords": [
+                "cfdi",
+                "finkok",
+                "phpcfdi",
+                "sat"
+            ],
+            "support": {
+                "issues": "https://github.com/phpcfdi/finkok/issues",
+                "source": "https://github.com/phpcfdi/finkok"
+            },
+            "time": "2026-02-04T19:07:25+00:00"
+        },
+        {
+            "name": "phpcfdi/xml-cancelacion",
+            "version": "v2.0.6",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/phpcfdi/xml-cancelacion.git",
+                "reference": "e2bfd202e95cf372439affdea29c1046d5082654"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/phpcfdi/xml-cancelacion/zipball/e2bfd202e95cf372439affdea29c1046d5082654",
+                "reference": "e2bfd202e95cf372439affdea29c1046d5082654",
+                "shasum": ""
+            },
+            "require": {
+                "eclipxe/enum": "^0.2",
+                "ext-dom": "*",
+                "ext-openssl": "*",
+                "php": "^8.1",
+                "phpcfdi/credentials": "^1.1.1"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^10.5.46",
+                "robrichards/xmlseclibs": "^3.1.0"
+            },
+            "suggest": {
+                "robrichards/xmlseclibs": "Create document signatures (partially) using xmlseclibs"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "PhpCfdi\\XmlCancelacion\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Carlos C Soto",
+                    "email": "eclipxe13@gmail.com"
+                }
+            ],
+            "description": "Genera documentos de cancelación de CFDI firmados (XMLSEC)",
+            "homepage": "https://github.com/phpcfdi/xml-cancelacion",
+            "keywords": [
+                "PeticionConsultaRelacionados",
+                "SolicitudAceptacionRechazo",
+                "cancelacion",
+                "cfdi",
+                "phpcfdi",
+                "sat"
+            ],
+            "support": {
+                "issues": "https://github.com/phpcfdi/xml-cancelacion/issues",
+                "source": "https://github.com/phpcfdi/xml-cancelacion"
+            },
+            "time": "2026-04-02T06:21:22+00:00"
+        },
+        {
             "name": "phpoption/phpoption",
             "version": "1.9.5",
             "source": {
@@ -3655,6 +4346,48 @@
                 "source": "https://github.com/ramsey/uuid/tree/4.9.2"
             },
             "time": "2025-12-14T04:43:48+00:00"
+        },
+        {
+            "name": "robrichards/xmlseclibs",
+            "version": "3.1.5",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/robrichards/xmlseclibs.git",
+                "reference": "03062be78178cbb5e8f605cd255dc32a14981f92"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/robrichards/xmlseclibs/zipball/03062be78178cbb5e8f605cd255dc32a14981f92",
+                "reference": "03062be78178cbb5e8f605cd255dc32a14981f92",
+                "shasum": ""
+            },
+            "require": {
+                "ext-openssl": "*",
+                "php": ">= 5.4"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "RobRichards\\XMLSecLibs\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-3-Clause"
+            ],
+            "description": "A PHP library for XML Security",
+            "homepage": "https://github.com/robrichards/xmlseclibs",
+            "keywords": [
+                "security",
+                "signature",
+                "xml",
+                "xmldsig"
+            ],
+            "support": {
+                "issues": "https://github.com/robrichards/xmlseclibs/issues",
+                "source": "https://github.com/robrichards/xmlseclibs/tree/3.1.5"
+            },
+            "time": "2026-03-13T10:31:56+00:00"
         },
         {
             "name": "sabberworm/php-css-parser",

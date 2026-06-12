@@ -66,6 +66,97 @@
             </div>
 
             <div class="border-t pt-4 mt-4">
+                <h3 class="text-lg font-semibold mb-1">Proveedor de facturación <span class="text-sm font-normal text-gray-400 ml-1">(quién timbra tus CFDI)</span></h3>
+                <p class="text-xs text-gray-400 mb-4">Con Finkok el CRM construye y sella el CFDI 4.0 con tu CSD y Finkok sólo lo timbra (más barato por timbre). Puedes cambiar de proveedor en cualquier momento; las cancelaciones usan el proveedor que timbró cada factura.</p>
+
+                <div class="flex gap-6 mb-4">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="invoicing_provider" value="facturapi" {{ ($settings['invoicing_provider'] ?? 'facturapi') === 'facturapi' ? 'checked' : '' }}>
+                        <span class="text-sm">Facturapi</span>
+                    </label>
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="radio" name="invoicing_provider" value="finkok" {{ ($settings['invoicing_provider'] ?? '') === 'finkok' ? 'checked' : '' }}>
+                        <span class="text-sm">Finkok</span>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Usuario Finkok</label>
+                        <input type="text" name="finkok_username" value="" autocomplete="off"
+                            placeholder="{{ ($settings['finkok_username'] ?? '') ? '•••••• guardado — déjalo vacío para conservar' : 'usuario@correo.com' }}"
+                            class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña Finkok</label>
+                        <input type="password" name="finkok_password" value="" autocomplete="off"
+                            placeholder="{{ ($settings['finkok_password'] ?? '') ? '•••••• guardado — déjalo vacío para conservar' : 'Contraseña de tu cuenta Finkok' }}"
+                            class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div class="md:col-span-2 flex gap-6">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="finkok_environment" value="demo" {{ ($settings['finkok_environment'] ?? 'demo') === 'demo' ? 'checked' : '' }}>
+                            <span class="text-sm">Demo (pruebas, sin timbres reales)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="radio" name="finkok_environment" value="live" {{ ($settings['finkok_environment'] ?? '') === 'live' ? 'checked' : '' }}>
+                            <span class="text-sm">Producción</span>
+                        </label>
+                    </div>
+                </div>
+
+                <h4 class="text-sm font-semibold text-gray-700 mt-5 mb-2">Datos del emisor (requeridos para timbrar con Finkok)</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Razón social SAT</label>
+                        <input type="text" name="company_legal_name" value="{{ $settings['company_legal_name'] ?? '' }}"
+                            placeholder="Como aparece en tu constancia (sin régimen societario)"
+                            class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Régimen fiscal</label>
+                        <input type="text" name="company_tax_system" value="{{ $settings['company_tax_system'] ?? '' }}"
+                            placeholder="Ej: 612, 626, 601" maxlength="3"
+                            class="w-full border rounded-lg px-3 py-2 font-mono text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">C.P. de expedición</label>
+                        <input type="text" name="company_zip" value="{{ $settings['company_zip'] ?? '' }}"
+                            placeholder="64000" maxlength="5"
+                            class="w-full border rounded-lg px-3 py-2 font-mono text-sm">
+                    </div>
+                </div>
+
+                <h4 class="text-sm font-semibold text-gray-700 mt-5 mb-2">Certificado de Sello Digital (CSD)</h4>
+                @if(!empty($csdInfo))
+                    @if(isset($csdInfo['error']))
+                        <p class="text-xs text-red-600 mb-2"><i class="fas fa-exclamation-triangle mr-1"></i>{{ $csdInfo['error'] }}</p>
+                    @else
+                        <p class="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2 inline-block mb-2">
+                            <i class="fas fa-check-circle mr-1"></i>CSD cargado: <strong>{{ $csdInfo['rfc'] }}</strong> ({{ $csdInfo['name'] }}) — vigente hasta {{ $csdInfo['valid_to'] }}
+                        </p>
+                    @endif
+                @endif
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Certificado (.cer)</label>
+                        <input type="file" name="csd_cer" accept=".cer" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Llave privada (.key)</label>
+                        <input type="file" name="csd_key" accept=".key" class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña de la llave</label>
+                        <input type="password" name="csd_key_password" value="" autocomplete="off"
+                            placeholder="{{ ($settings['csd_key_password'] ?? '') ? '•••••• guardada — déjala vacía para conservar' : 'Contraseña del .key' }}"
+                            class="w-full border rounded-lg px-3 py-2 text-sm">
+                    </div>
+                </div>
+                <p class="text-xs text-gray-400 mt-2">Los archivos se guardan en disco privado del servidor (no son accesibles por web). Sólo se usan para sellar y cancelar tus CFDI.</p>
+            </div>
+
+            <div class="border-t pt-4 mt-4">
                 <h3 class="text-lg font-semibold mb-4">20i <span class="text-sm font-normal text-gray-400 ml-1">(Gestión de correos y hosting)</span></h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>

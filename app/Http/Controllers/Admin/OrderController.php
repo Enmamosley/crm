@@ -294,13 +294,13 @@ class OrderController extends Controller
             return back()->with('error', 'Esta orden ya tiene un CFDI timbrado.');
         }
 
-        $apiKey = \App\Models\Setting::get('facturapi_api_key');
-        if (!$apiKey) {
-            return back()->with('error', 'Configura el API Key de FacturAPI en Configuración antes de facturar.');
+        $invoicing = new \App\Services\InvoicingManager();
+        if (!$invoicing->isConfigured()) {
+            return back()->with('error', 'Configura tu proveedor de facturación (Facturapi o Finkok) en Ajustes antes de timbrar.');
         }
 
         try {
-            $result = (new FacturapiService())->stampInvoice($order);
+            $result = $invoicing->stampInvoice($order);
 
             if ($result['success']) {
                 ActivityLog::log('order_stamped', $order, "Orden {$order->folio()} timbrada ante el SAT");
@@ -319,10 +319,13 @@ class OrderController extends Controller
                     ->with('success', '¡CFDI timbrado exitosamente ante el SAT!');
             }
 
-            return back()->with('error', $result['data']['message'] ?? 'Error al timbrar en FacturAPI.');
+            return back()->with('error', $result['data']['message'] ?? 'Error al timbrar.');
+        } catch (\RuntimeException $e) {
+            // Errores accionables del builder (falta CP, total no coincide, CSD, etc.)
+            return back()->with('error', $e->getMessage());
         } catch (\Throwable $e) {
-            Log::error('FacturAPI stamp failed', ['order_id' => $order->id, 'error' => $e->getMessage()]);
-            return back()->with('error', 'Error al conectar con FacturAPI. Revisa el log de actividad.');
+            Log::error('Stamp failed', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+            return back()->with('error', 'Error al conectar con el proveedor de facturación. Revisa el log.');
         }
     }
 
@@ -366,7 +369,7 @@ class OrderController extends Controller
         }
 
         try {
-            $result = (new FacturapiService())->cancelInvoice($order, $request->motive);
+            $result = (new \App\Services\InvoicingManager())->cancelInvoice($order, $request->motive ?: '02');
 
             if ($result['success']) {
                 ActivityLog::log('fiscal_document_cancelled', $order, "CFDI de orden {$order->folio()} cancelado ante el SAT");
@@ -432,12 +435,12 @@ class OrderController extends Controller
     {
         $doc = $order->fiscalDocument;
 
-        // CFDI externo: servir el archivo guardado
-        if ($doc?->isExternal()) {
-            if (!$doc->pdf_path) {
-                return back()->with('error', 'Este CFDI externo no tiene PDF adjunto (sólo XML).');
-            }
+        // CFDI con archivos locales (externo o Finkok): servir el guardado
+        if ($doc && $doc->pdf_path) {
             return \App\Support\FileResponse::download('local', $doc->pdf_path, "factura-{$order->folio()}.pdf", 'application/pdf');
+        }
+        if ($doc && $doc->source !== 'facturapi') {
+            return back()->with('error', 'Este CFDI no tiene PDF disponible (sólo XML).');
         }
 
         $pdf = (new FacturapiService())->downloadPdf($order);
@@ -459,8 +462,8 @@ class OrderController extends Controller
     {
         $doc = $order->fiscalDocument;
 
-        // CFDI externo: servir el archivo guardado
-        if ($doc?->isExternal()) {
+        // CFDI con archivos locales (externo o Finkok): servir el guardado
+        if ($doc && ($doc->xml_path || $doc->source !== 'facturapi')) {
             return \App\Support\FileResponse::download('local', $doc->xml_path, "factura-{$order->folio()}.xml", 'application/xml');
         }
 

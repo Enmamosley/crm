@@ -40,9 +40,34 @@ class SettingController extends Controller
             'meta_pixel_id'        => Setting::get('meta_pixel_id', ''),
             'meta_capi_token'      => Setting::get('meta_capi_token', ''),
             'meta_test_event_code' => Setting::get('meta_test_event_code', ''),
+            'invoicing_provider'   => Setting::get('invoicing_provider', 'facturapi'),
+            'finkok_username'      => Setting::get('finkok_username', ''),
+            'finkok_password'      => Setting::get('finkok_password', ''),
+            'finkok_environment'   => Setting::get('finkok_environment', 'demo'),
+            'company_legal_name'   => Setting::get('company_legal_name', ''),
+            'company_tax_system'   => Setting::get('company_tax_system', ''),
+            'company_zip'          => Setting::get('company_zip', ''),
+            'csd_cer_path'         => Setting::get('csd_cer_path', ''),
+            'csd_key_path'         => Setting::get('csd_key_path', ''),
+            'csd_key_password'     => Setting::get('csd_key_password', ''),
         ];
 
-        return view('admin.settings.index', compact('settings'));
+        // Información del CSD cargado (RFC y vigencia) para mostrar en Ajustes
+        $csdInfo = null;
+        if ($settings['csd_cer_path'] && $settings['csd_key_path']) {
+            try {
+                $credential = (new \App\Services\CfdiBuilderService())->credential();
+                $csdInfo = [
+                    'rfc'      => $credential->rfc(),
+                    'name'     => $credential->legalName(),
+                    'valid_to' => $credential->certificate()->validToDateTime()->format('d/m/Y'),
+                ];
+            } catch (\Throwable $e) {
+                $csdInfo = ['error' => 'CSD cargado pero inválido: ' . $e->getMessage()];
+            }
+        }
+
+        return view('admin.settings.index', compact('settings', 'csdInfo'));
     }
 
     public function update(Request $request)
@@ -70,6 +95,16 @@ class SettingController extends Controller
             'meta_pixel_id'        => 'nullable|string|max:50',
             'meta_capi_token'      => 'nullable|string|max:600',
             'meta_test_event_code' => 'nullable|string|max:50',
+            'invoicing_provider'   => 'nullable|in:facturapi,finkok',
+            'finkok_username'      => 'nullable|string|max:150',
+            'finkok_password'      => 'nullable|string|max:150',
+            'finkok_environment'   => 'nullable|in:demo,live',
+            'company_legal_name'   => 'nullable|string|max:255',
+            'company_tax_system'   => 'nullable|string|max:3',
+            'company_zip'          => 'nullable|string|max:5',
+            'csd_cer'              => 'nullable|file|max:10',
+            'csd_key'              => 'nullable|file|max:10',
+            'csd_key_password'     => 'nullable|string|max:100',
             'bank_name'         => 'nullable|string|max:100',
             'bank_beneficiary'  => 'nullable|string|max:200',
             'bank_account'      => 'nullable|string|max:30',
@@ -125,6 +160,28 @@ class SettingController extends Controller
         Setting::set('meta_test_event_code', $request->input('meta_test_event_code', ''));
         if ($request->filled('meta_capi_token')) {
             Setting::set('meta_capi_token', $request->input('meta_capi_token'));
+        }
+
+        // Facturación: proveedor + Finkok + datos del emisor + CSD
+        Setting::set('invoicing_provider', $request->input('invoicing_provider', 'facturapi'));
+        Setting::set('finkok_environment', $request->input('finkok_environment', 'demo'));
+        foreach (['company_legal_name', 'company_tax_system', 'company_zip'] as $key) {
+            if ($request->filled($key)) {
+                Setting::set($key, $request->input($key));
+            }
+        }
+        // Secretos: sólo se actualizan si vienen rellenos
+        foreach (['finkok_username', 'finkok_password', 'csd_key_password'] as $key) {
+            if ($request->filled($key)) {
+                Setting::set($key, $request->input($key));
+            }
+        }
+        // CSD: archivos .cer/.key a disco privado
+        if ($request->hasFile('csd_cer')) {
+            Setting::set('csd_cer_path', $request->file('csd_cer')->storeAs('csd', 'certificado.cer', 'local'));
+        }
+        if ($request->hasFile('csd_key')) {
+            Setting::set('csd_key_path', $request->file('csd_key')->storeAs('csd', 'llave.key', 'local'));
         }
 
         if ($request->hasFile('company_logo')) {
