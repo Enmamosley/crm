@@ -9,6 +9,7 @@ use App\Models\ActivityLog;
 use App\Models\Client;
 use App\Models\InvoiceItem;
 use App\Models\Order;
+use App\Support\TaxBreakdown;
 use App\Models\Payment;
 use App\Models\Quote;
 use App\Models\Service;
@@ -83,7 +84,6 @@ class OrderController extends Controller
         ]);
 
         $subtotal = 0; $iva = 0; $total = 0;
-        $ivaRate  = (float) \App\Models\Setting::get('iva_percentage', 16) / 100;
 
         // Auto-generar folio si no se proporcionó
         if (empty($validated['folio_number'])) {
@@ -96,11 +96,16 @@ class OrderController extends Controller
             $iva      = $quote->iva_amount;
             $total    = $quote->total;
         } elseif (!empty($validated['items'])) {
-            foreach ($validated['items'] as $row) {
-                $subtotal += (float)$row['quantity'] * (float)$row['unit_price'];
-            }
-            $iva   = $subtotal * $ivaRate;
-            $total = $subtotal + $iva;
+            // Las líneas exentas o fuera del objeto del impuesto suman al
+            // subtotal pero no causan IVA, igual que al timbrar.
+            $taxes = TaxBreakdown::forLines(array_map(fn (array $row) => [
+                'amount' => (float) $row['quantity'] * (float) $row['unit_price'],
+                'taxed'  => empty($row['iva_exempt']) && ($row['tax_object'] ?? '02') !== '01',
+            ], $validated['items']));
+
+            $subtotal = $taxes->net;
+            $iva      = $taxes->iva;
+            $total    = $taxes->total;
         }
 
         $order = DB::transaction(function () use ($validated, $subtotal, $iva, $total) {

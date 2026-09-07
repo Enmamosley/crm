@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\CausesIva;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class InvoiceItem extends Model
 {
+    use CausesIva;
+
     protected $fillable = [
         'order_id',
         'description',

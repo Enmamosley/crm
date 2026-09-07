@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\DiscountCode;
 use App\Models\Service;
 use App\Models\Setting;
+use App\Support\TaxBreakdown;
 use App\Services\MercadoPagoService;
 use App\Services\PayPalService;
 use Illuminate\Http\Request;
@@ -30,7 +31,6 @@ class CartController extends Controller
         $mpPublicKey = Setting::get('mp_public_key', '');
 
         $subtotal = $items->sum(fn ($item) => $item->service->price * $item->quantity);
-        $ivaRate = (float) Setting::get('iva_percentage', 16) / 100;
         $discount = 0;
         $discountCode = session('discount_code');
         if ($discountCode) {
@@ -43,9 +43,17 @@ class CartController extends Controller
             }
         }
 
-        $adjustedSubtotal = max(0, $subtotal - $discount);
-        $iva = round($adjustedSubtotal * $ivaRate, 2);
-        $total = round($adjustedSubtotal + $iva, 2);
+        // El IVA se calcula línea por línea: un servicio exento no lo causa,
+        // y el descuento se reparte a prorrata entre lo gravado y lo exento.
+        $taxes = TaxBreakdown::forLines(
+            $items->map(fn ($item) => [
+                'amount' => (float) $item->service->price * $item->quantity,
+                'taxed'  => $item->service->causesIva(),
+            ]),
+            $discount,
+        );
+        $iva   = $taxes->iva;
+        $total = $taxes->total;
 
         return view('buy.cart', compact(
             'items', 'subtotal', 'iva', 'discount', 'discountCode', 'total', 'companyName', 'mpPublicKey'
@@ -382,7 +390,6 @@ class CartController extends Controller
         }
 
         $subtotal = $items->sum(fn ($item) => $item->service->price * $item->quantity);
-        $ivaRate = (float) Setting::get('iva_percentage', 16) / 100;
 
         $discount = 0;
         $discountCode = session('discount_code');
@@ -393,9 +400,18 @@ class CartController extends Controller
             }
         }
 
-        $adjustedSubtotal = max(0, $subtotal - $discount);
-        $iva = round($adjustedSubtotal * $ivaRate, 2);
-        $total = round($adjustedSubtotal + $iva, 2);
+        // El IVA se calcula línea por línea: un servicio exento no lo causa,
+        // y el descuento se reparte a prorrata entre lo gravado y lo exento.
+        $taxes = TaxBreakdown::forLines(
+            $items->map(fn ($item) => [
+                'amount' => (float) $item->service->price * $item->quantity,
+                'taxed'  => $item->service->causesIva(),
+            ]),
+            $discount,
+        );
+        $adjustedSubtotal = $taxes->net;
+        $iva              = $taxes->iva;
+        $total            = $taxes->total;
 
         $notes = $items->map(fn ($i) => "{$i->quantity}x {$i->service->name}")->implode(', ');
 

@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Service;
+use App\Support\TaxBreakdown;
 use App\Models\Setting;
 use App\Services\CosmotownService;
 use App\Services\MercadoPagoService;
@@ -126,10 +127,12 @@ class DirectCheckoutController extends Controller
         $client = $this->resolveOrCreateClient($validated);
 
         // Crear factura borrador
-        $subtotal = (float) $service->price;
-        $ivaRate = (float) Setting::get('iva_percentage', 16) / 100;
-        $iva = round($subtotal * $ivaRate, 2);
-        $total = round($subtotal + $iva, 2);
+        // Un servicio exento o no objeto del impuesto no se cobra con IVA:
+        // el CFDI lo timbra sin él y los totales tienen que cuadrar.
+        $taxes    = TaxBreakdown::forLine((float) $service->price, $service->causesIva());
+        $subtotal = $taxes->net;
+        $iva      = $taxes->iva;
+        $total    = $taxes->total;
 
         try {
             return DB::transaction(function () use ($client, $service, $slug, $validated, $subtotal, $iva, $total, $request) {
@@ -210,10 +213,12 @@ class DirectCheckoutController extends Controller
 
         $client = $this->resolveOrCreateClient($validated);
 
-        $subtotal = (float) $service->price;
-        $ivaRate = (float) Setting::get('iva_percentage', 16) / 100;
-        $iva = round($subtotal * $ivaRate, 2);
-        $total = round($subtotal + $iva, 2);
+        // Un servicio exento o no objeto del impuesto no se cobra con IVA:
+        // el CFDI lo timbra sin él y los totales tienen que cuadrar.
+        $taxes    = TaxBreakdown::forLine((float) $service->price, $service->causesIva());
+        $subtotal = $taxes->net;
+        $iva      = $taxes->iva;
+        $total    = $taxes->total;
 
         try {
             return DB::transaction(function () use ($client, $service, $slug, $validated, $subtotal, $iva, $total) {
@@ -275,10 +280,12 @@ class DirectCheckoutController extends Controller
 
         $client = $this->resolveOrCreateClient($validated);
 
-        $subtotal = (float) $service->price;
-        $ivaRate = (float) Setting::get('iva_percentage', 16) / 100;
-        $iva = round($subtotal * $ivaRate, 2);
-        $total = round($subtotal + $iva, 2);
+        // Un servicio exento o no objeto del impuesto no se cobra con IVA:
+        // el CFDI lo timbra sin él y los totales tienen que cuadrar.
+        $taxes    = TaxBreakdown::forLine((float) $service->price, $service->causesIva());
+        $subtotal = $taxes->net;
+        $iva      = $taxes->iva;
+        $total    = $taxes->total;
 
         try {
             return DB::transaction(function () use ($client, $service, $slug, $validated, $subtotal, $iva, $total) {
@@ -340,10 +347,12 @@ class DirectCheckoutController extends Controller
         ]);
 
         $client   = $this->resolveOrCreateClient($validated);
-        $subtotal = (float) $service->price;
-        $ivaRate  = (float) Setting::get('iva_percentage', 16) / 100;
-        $iva      = round($subtotal * $ivaRate, 2);
-        $total    = round($subtotal + $iva, 2);
+        // Un servicio exento o no objeto del impuesto no se cobra con IVA:
+        // el CFDI lo timbra sin él y los totales tienen que cuadrar.
+        $taxes    = TaxBreakdown::forLine((float) $service->price, $service->causesIva());
+        $subtotal = $taxes->net;
+        $iva      = $taxes->iva;
+        $total    = $taxes->total;
 
         try {
             return DB::transaction(function () use ($client, $service, $slug, $validated, $subtotal, $iva, $total, $request) {
@@ -425,10 +434,12 @@ class DirectCheckoutController extends Controller
 
         $client = $this->resolveOrCreateClient($validated);
 
-        $subtotal = (float) $service->price;
-        $ivaRate  = (float) Setting::get('iva_percentage', 16) / 100;
-        $iva      = round($subtotal * $ivaRate, 2);
-        $total    = round($subtotal + $iva, 2);
+        // Un servicio exento o no objeto del impuesto no se cobra con IVA:
+        // el CFDI lo timbra sin él y los totales tienen que cuadrar.
+        $taxes    = TaxBreakdown::forLine((float) $service->price, $service->causesIva());
+        $subtotal = $taxes->net;
+        $iva      = $taxes->iva;
+        $total    = $taxes->total;
 
         try {
             return DB::transaction(function () use ($client, $service, $slug, $subtotal, $iva, $total, $paypal, $validated) {

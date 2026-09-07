@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\CausesIva;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
 class Service extends Model
 {
+    use CausesIva;
+
     protected $fillable = [
         'service_category_id', 'name', 'slug', 'description', 'info_url', 'price',
         'active', 'public', 'requires_domain', 'email_service', 'twentyi_package_bundle_id',

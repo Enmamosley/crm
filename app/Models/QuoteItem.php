@@ -26,4 +26,13 @@ class QuoteItem extends Model
     {
         return $this->belongsTo(Service::class);
     }
+
+    /**
+     * La línea de una cotización no guarda su propia marca fiscal: la hereda
+     * del servicio. Una línea suelta, sin servicio, causa IVA.
+     */
+    public function causesIva(): bool
+    {
+        return $this->service?->causesIva() ?? true;
+    }
 }
