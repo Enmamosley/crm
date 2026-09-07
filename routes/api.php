@@ -25,8 +25,10 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
         ]);
     });
 
+    // Catálogo público: sólo los servicios marcados como públicos en el panel.
+    // Antes devolvía todos los activos, incluidos los que no se publican.
     Route::get('services', function () {
-        $services = \App\Models\Service::where('active', true)
+        $services = \App\Models\Service::public()
             ->with('category:id,name')
             ->get(['id', 'name', 'description', 'price', 'service_category_id']);
         return response()->json(['success' => true, 'data' => $services]);

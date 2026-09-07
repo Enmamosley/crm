@@ -294,8 +294,11 @@ function scanRoutes(Graph $g, string $file, string $kind, string $rootPrefix, ar
     $lines = file($file, FILE_IGNORE_NEW_LINES);
     $uses = [];
     foreach ($lines as $l) {
-        if (preg_match('/^use\s+App\\\\Http\\\\Controllers\\\\([A-Za-z\\\\]+);/', $l, $u)) {
-            $uses[basename(str_replace('\\', '/', $u[1]))] = str_replace('\\', '/', $u[1]);
+        // Admite alias: use App\Http\Controllers\Portal\DnsController as PortalDnsController;
+        if (preg_match('/^use\s+App\\\\Http\\\\Controllers\\\\([A-Za-z\\\\]+)(?:\s+as\s+(\w+))?;/', $l, $u)) {
+            $path  = str_replace('\\', '/', $u[1]);
+            $alias = $u[2] ?? basename($path);
+            $uses[$alias] = $path;
         }
     }
 

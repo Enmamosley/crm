@@ -4,7 +4,7 @@ Mapa de dependencias del repositorio generado a partir del código (rutas, contr
 
 | Artefacto | Qué contiene |
 |---|---|
-| `docs/graph/crm-graph.json` | Grafo completo: 128 nodos y 360 aristas tipadas. Fuente de verdad para herramientas. |
+| `docs/graph/crm-graph.json` | Grafo completo: 136 nodos y 361 aristas tipadas. Fuente de verdad para herramientas. |
 | `docs/graph/crm-overview.svg` / `.dot` | Vista de arquitectura: entradas → controladores → servicios → APIs externas (sin modelos). |
 | `docs/graph/crm-models.svg` / `.dot` | Modelos Eloquent y sus relaciones. |
 | `docs/graph/crm-graph.svg` / `.dot` | Todo junto (denso; útil para buscar un nodo concreto). |
@@ -27,7 +27,7 @@ Los diagramas de abajo son una lectura curada del mismo grafo (Mermaid, se rende
 | Capa | Cantidad | Detalle |
 |---|---|---|
 | Zonas de entrada HTTP | 17 | 12 web + 5 API, agrupadas por prefijo y middleware |
-| Controladores | 38 | 26 `Admin/*`, 5 `Api/*`, 2 `Auth/*`, 5 públicos (tienda, portal, webhooks) |
+| Controladores | 46 | 26 `Admin/*`, 9 `Portal/*`, 5 `Api/*`, 2 `Auth/*`, 4 públicos (tienda, webhooks) |
 | Servicios | 12 | 8 hablan con APIs externas, 4 son orquestadores internos |
 | Modelos Eloquent | 32 | 60 relaciones; 40 tablas en migraciones |
 | Comandos Artisan | 6 | 5 programados en el scheduler + `mail:test` |
@@ -35,7 +35,7 @@ Los diagramas de abajo son una lectura curada del mismo grafo (Mermaid, se rende
 | Eventos de modelo | 4 | Observers en `AppServiceProvider` que sincronizan con DM Champ |
 | APIs externas | 8 | Mercado Pago, PayPal, Facturapi, Finkok, 20i, Cosmotown, DM Champ, Meta CAPI |
 | Vistas Blade | 88 | admin (54), portal (11), tienda (7), emails (6), pdf (3), resto |
-| Tests | 13 archivos | 56 casos, todos `Feature` |
+| Tests | 18 archivos | 92 casos, todos `Feature` |
 
 Stack: Laravel 12 · PHP 8.2+ · MySQL 8 · Blade + Alpine.js + Tailwind 4 · Sanctum · DomPDF · Docker/Nginx/Traefik.
 
@@ -139,6 +139,7 @@ Lecturas rápidas:
 - **`InvoicingManager` decide el PAC** según `Setting('invoicing_provider')`: Facturapi (timbra el PAC) o Finkok (el CRM construye y sella el XML con `CfdiBuilderService`, Finkok solo timbra).
 - **`ProvisioningService` es idempotente**: registra el dominio en Cosmotown y crea el hosting en 20i tras un pago confirmado.
 - `Api/*` (OpenClaw) y `Api/DmChampFunction` no tocan servicios externos: solo leen y escriben modelos.
+- **Los servicios se resuelven por el contenedor** (`scoped`) y se inyectan por constructor; leen su configuración de Ajustes en cada uso.
 
 ---
 
@@ -308,12 +309,12 @@ Cada zona es un prefijo con su middleware de grupo. El middleware inline por rut
 ## 7. Hallazgos derivados del grafo
 
 1. ~~**`ClientInvoice` es código muerto.**~~ **Resuelto.** El modelo huérfano se eliminó junto con la tabla `client_invoices` y las tres columnas `client_invoice_id` que quedaban en `payments`, `invoice_items` y `dunning_attempts`.
-2. **`invoices:process-recurring` salta `InvoicingManager`.** Timbra con `FacturapiService` directamente y solo si existe `facturapi_api_key`, por lo que con `invoicing_provider = finkok` las facturas recurrentes con `auto_stamp` no se timbran (o se timbran con el PAC equivocado). Es el único flujo de timbrado que no pasa por el manager.
-3. **`ClientPortalController` es el nodo más cargado del grafo:** 37 rutas, 11 modelos, 5 servicios (pagos, facturación, correo, dominios, DNS) en un solo archivo. Dividirlo por dominio (pagos, soporte, dominio/DNS) reduciría el radio de impacto de cada cambio.
-4. **Post-pago repartido en cinco sitios.** `ProvisioningService` y `MetaConversionsService` se invocan desde `CartController`, `DirectCheckoutController`, `MercadoPagoWebhookController`, `PayPalWebhookController` y `OrderController`, mientras que timbrado y correo ya están centralizados en `OrderFinalizationService`. Mover esas dos llamadas al mismo servicio cerraría el embudo.
-5. **Servicios instanciados con `new` en lugar del contenedor.** Salvo `DmChampService` (singleton), todos los servicios se crean con `new XService()` dentro de controladores y otros servicios, y leen su configuración de `Setting::get()` en el constructor. Funciona, pero dificulta sustituirlos en tests (los tests existentes usan `Http::fake()` para sortearlo).
-6. **Acceso a `/api/v1/services` es público** (solo `throttle`), expone catálogo y precios sin token. Coincide con la documentación de OpenClaw; se anota por si no era intencional.
-7. **Cosmotown apunta a sandbox por defecto** (`cosmotown_base_url` en `Setting`); conviene verificar el valor en producción.
+2. ~~**`invoices:process-recurring` salta `InvoicingManager`.**~~ **Resuelto.** El comando enruta el timbrado por el manager, que decide el PAC según `invoicing_provider`.
+3. ~~**`ClientPortalController` es el nodo más cargado del grafo.**~~ **Resuelto.** Sus 1138 líneas se repartieron en ocho controladores bajo `app/Http/Controllers/Portal/` sobre una clase base común. Los nombres de ruta y las URIs no cambiaron.
+4. ~~**Post-pago repartido en cinco sitios.**~~ **Resuelto.** `OrderFinalizationService` es ahora el embudo único: timbrado, comprobante, aprovisionamiento, cupón y evento de Meta. La transición a pagada vive en `Order::markPaid()` y es idempotente.
+5. ~~**Servicios instanciados con `new` en lugar del contenedor.**~~ **Resuelto.** Los once servicios de integración se registran como `scoped` y se inyectan por constructor, y las credenciales se leen de Ajustes en cada uso en vez de cachearse al construir. (El hallazgo original decía que los tests usaban `Http::fake()`: no era cierto, evitaban la red dejando las credenciales vacías. Ahora sí hay `Http::fake()` y dobles inyectados por el contenedor.)
+6. **Acceso a `/api/v1/services` es público** (solo `throttle`), expone catálogo y precios sin token. Es intencional: lo consume el agente OpenClaw. Se corrigió que devolviera también los servicios no marcados como públicos.
+7. **Cosmotown apunta a sandbox por defecto** (`cosmotown_base_url` en `Setting`); el valor real está configurado en producción, así que el default no se cambia.
 
 ---
 
