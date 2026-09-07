@@ -7,6 +7,7 @@ use App\Models\Client;
 use App\Models\Lead;
 use App\Models\Order;
 use App\Models\Service;
+use App\Support\Phone;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -286,10 +287,6 @@ class DmChampFunctionController extends Controller
 
     private function normalizePhone(string $phone): string
     {
-        $digits = preg_replace('/\D/', '', $phone);
-        if (strlen($digits) === 10) {
-            $digits = '52' . $digits;
-        }
-        return $digits ? '+' . ltrim($digits, '+') : '';
+        return Phone::normalize($phone);
     }
 }

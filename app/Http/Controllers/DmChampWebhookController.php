@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Client;
 use App\Models\Lead;
+use App\Support\Phone;
 use App\Services\DmChampService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -54,28 +55,43 @@ class DmChampWebhookController extends Controller
     /** Nuevo contacto en DM Champ → crear Lead en CRM si no existe */
     private function handleNewContact(array $data): void
     {
-        $phone = $data['contactPhone'] ?? null;
+        $phone = Phone::normalize($data['contactPhone'] ?? null);
         $email = $data['contactEmail'] ?? null;
 
         if (! $phone && ! $email) {
             return;
         }
 
-        // Buscar si ya existe un lead con ese teléfono o email
-        $exists = Lead::where('phone', $phone)
-            ->orWhere('email', $email)
-            ->exists();
+        // Sólo se compara contra los datos que llegaron. Un orWhere('email', null)
+        // degenera en "email IS NULL", así que en cuanto existía un lead sin
+        // correo —lo normal en WhatsApp— la consulta daba positivo siempre y
+        // este canal descartaba en silencio todos los contactos nuevos.
+        $exists = Lead::where(function ($query) use ($phone, $email) {
+            if ($phone) {
+                $query->orWhere('phone', $phone);
+            }
+            if ($email) {
+                $query->orWhere('email', $email);
+            }
+        })->exists();
 
         if ($exists) {
             return;
         }
 
-        Lead::create([
+        $lead = Lead::create([
             'name'    => trim(($data['contactFirstName'] ?? '') . ' ' . ($data['contactLastName'] ?? '')) ?: 'Sin nombre',
-            'phone'   => $phone,
+            'phone'   => $phone ?: null,
             'email'   => $email,
             'source'  => 'dmchamp',
             'status'  => 'nuevo',
+        ]);
+
+        // Igual que los otros tres puntos de alta, para que el lead nazca con historial.
+        $lead->statusHistory()->create([
+            'old_status' => null,
+            'new_status' => 'nuevo',
+            'changed_by' => 'dmchamp',
         ]);
 
         Log::info('DmChamp: Lead creado desde nuevo contacto', ['phone' => $phone]);
@@ -84,7 +100,7 @@ class DmChampWebhookController extends Controller
     /** Contacto etiquetado en DM Champ → actualizar estado del Lead */
     private function handleContactTagged(array $data): void
     {
-        $phone = $data['contactPhone'] ?? null;
+        $phone = Phone::normalize($data['contactPhone'] ?? null);
         $tag   = $data['tag'] ?? null;
 
         if (! $phone || ! $tag) {
@@ -106,8 +122,10 @@ class DmChampWebhookController extends Controller
             'perdido'      => 'perdido',
         ];
 
-        if (isset($statusMap[$tag])) {
-            $lead->update(['status' => $statusMap[$tag]]);
+        if (isset($statusMap[$tag]) && $lead->status !== $statusMap[$tag]) {
+            // updateStatus() y no update(): es el único sitio que deja rastro
+            // en el historial, y ésta es la vía automática de mayor volumen.
+            $lead->updateStatus($statusMap[$tag], 'dmchamp');
             Log::info("DmChamp: Lead #{$lead->id} actualizado a '{$statusMap[$tag]}' por tag '{$tag}'");
         }
     }
@@ -115,7 +133,7 @@ class DmChampWebhookController extends Controller
     /** Cita agendada en DM Champ → registrar nota en Lead/Cliente */
     private function handleAppointmentBooked(array $data): void
     {
-        $phone = $data['contactPhone'] ?? null;
+        $phone = Phone::normalize($data['contactPhone'] ?? null);
         if (! $phone) {
             return;
         }
@@ -127,7 +145,7 @@ class DmChampWebhookController extends Controller
         $note = "Cita agendada vía DM Champ para {$date}.";
 
         if ($lead) {
-            $lead->notes()->create(['note' => $note, 'author' => 'DM Champ']);
+            $lead->notes()->create(['content' => $note, 'author' => 'DM Champ']);
         }
 
         if ($client) {
