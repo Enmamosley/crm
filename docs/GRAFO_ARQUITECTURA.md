@@ -4,7 +4,7 @@ Mapa de dependencias del repositorio generado a partir del código (rutas, contr
 
 | Artefacto | Qué contiene |
 |---|---|
-| `docs/graph/crm-graph.json` | Grafo completo: 136 nodos y 361 aristas tipadas. Fuente de verdad para herramientas. |
+| `docs/graph/crm-graph.json` | Grafo completo: 136 nodos y 362 aristas tipadas. Fuente de verdad para herramientas. |
 | `docs/graph/crm-overview.svg` / `.dot` | Vista de arquitectura: entradas → controladores → servicios → APIs externas (sin modelos). |
 | `docs/graph/crm-models.svg` / `.dot` | Modelos Eloquent y sus relaciones. |
 | `docs/graph/crm-graph.svg` / `.dot` | Todo junto (denso; útil para buscar un nodo concreto). |
@@ -35,7 +35,7 @@ Los diagramas de abajo son una lectura curada del mismo grafo (Mermaid, se rende
 | Eventos de modelo | 4 | Observers en `AppServiceProvider` que sincronizan con DM Champ |
 | APIs externas | 8 | Mercado Pago, PayPal, Facturapi, Finkok, 20i, Cosmotown, DM Champ, Meta CAPI |
 | Vistas Blade | 88 | admin (54), portal (11), tienda (7), emails (6), pdf (3), resto |
-| Tests | 18 archivos | 92 casos, todos `Feature` |
+| Tests | 21 archivos | 112 casos, todos `Feature` |
 
 Stack: Laravel 12 · PHP 8.2+ · MySQL 8 · Blade + Alpine.js + Tailwind 4 · Sanctum · DomPDF · Docker/Nginx/Traefik.
 
