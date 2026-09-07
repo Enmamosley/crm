@@ -114,6 +114,10 @@ docker compose up -d --build app nginx
 | `FACTURAPI_KEY` | API key de FacturAPI para timbrado |
 | `TWENTYI_API_KEY` | API key de 20i para gestión de correos |
 
+## Arquitectura
+
+Ver [`docs/GRAFO_ARQUITECTURA.md`](docs/GRAFO_ARQUITECTURA.md): grafo de dependencias (rutas → controladores → servicios → APIs externas), modelo de datos, automatizaciones y hallazgos. Se regenera con `php scripts/build-graph.php` (salida en `docs/graph/`, incluye un explorador interactivo `explorer.html`).
+
 ## API para OpenClaw
 
 Ver [`OPENCLAW_API.md`](OPENCLAW_API.md) — documentación completa de todos los endpoints, flujos recomendados y reglas de negocio.
