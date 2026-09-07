@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Lead;
 use App\Models\Order;
 use App\Models\Quote;
+use App\Support\Phone;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -187,13 +188,6 @@ class DmChampService
     /** Normaliza el teléfono: asegura que empiece con + y código de país */
     private function normalizePhone(string $phone): string
     {
-        $phone = preg_replace('/\D/', '', $phone);
-
-        // Si tiene 10 dígitos, asumir México (+52)
-        if (strlen($phone) === 10) {
-            $phone = '52' . $phone;
-        }
-
-        return '+' . ltrim($phone, '+');
+        return Phone::normalize($phone);
     }
 }
