@@ -91,7 +91,8 @@ Retorna la configuración pública del negocio. Llama esto al inicio de cada ses
 ### `GET /services`
 > Público · Sin autenticación
 
-Retorna el catálogo de servicios disponibles con precios.
+Retorna el catálogo de servicios con precios. Sólo incluye los servicios
+marcados como públicos y activos en el panel.
 
 **Response 200:**
 ```json
@@ -101,11 +102,13 @@ Retorna el catálogo de servicios disponibles con precios.
     {
       "id": 1,
       "name": "Desarrollo Web",
-      "slug": "desarrollo-web",
       "description": "Sitio web empresarial",
       "price": "15000.00",
-      "category": "desarrollo",
-      "active": true
+      "service_category_id": 3,
+      "category": {
+        "id": 3,
+        "name": "Desarrollo"
+      }
     }
   ]
 }

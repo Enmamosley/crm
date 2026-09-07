@@ -1,12 +1,12 @@
 {
-    "generated_at": "2026-09-07T21:13:31+00:00",
+    "generated_at": "2026-09-07T21:31:58+00:00",
     "generator": "scripts/build-graph.php",
     "stats": {
-        "nodes": 128,
-        "edges": 360,
+        "nodes": 136,
+        "edges": 361,
         "nodes_by_type": {
             "command": 6,
-            "controller": 38,
+            "controller": 46,
             "event": 4,
             "external": 8,
             "mail": 6,
@@ -22,11 +22,11 @@
             "guarded_by": 7,
             "invokes": 1,
             "relation": 60,
-            "routes_to": 40,
+            "routes_to": 47,
             "schedules": 5,
-            "sends_mail": 9,
-            "uses_model": 179,
-            "uses_service": 47
+            "sends_mail": 8,
+            "uses_model": 187,
+            "uses_service": 34
         }
     },
     "nodes": [
@@ -417,7 +417,7 @@
             "type": "service",
             "meta": {
                 "file": "app/Services/CosmotownService.php",
-                "description": "Check if a domain is available for registration."
+                "description": "Las credenciales se leen en cada uso, no se cachean al construir: los"
             }
         },
         {
@@ -451,7 +451,7 @@
             "type": "service",
             "meta": {
                 "file": "app/Services/FacturapiService.php",
-                "description": "Crea o actualiza el cliente en FacturAPI y guarda el ID en la BD."
+                "description": "Se lee en cada uso, no se cachea en el constructor: los servicios viven"
             }
         },
         {
@@ -494,16 +494,7 @@
             "type": "service",
             "meta": {
                 "file": "app/Services/MercadoPagoService.php",
-                "description": "Pago con tarjeta (token generado por MercadoPago.js)."
-            }
-        },
-        {
-            "id": "service:OrderFinalizationService",
-            "label": "OrderFinalizationService",
-            "type": "service",
-            "meta": {
-                "file": "app/Services/OrderFinalizationService.php",
-                "description": "Acciones tras CONFIRMARSE un pago, comunes a TODOS los flujos"
+                "description": "Las credenciales se leen en cada uso, no se cachean al construir: los"
             }
         },
         {
@@ -532,12 +523,21 @@
             }
         },
         {
+            "id": "service:OrderFinalizationService",
+            "label": "OrderFinalizationService",
+            "type": "service",
+            "meta": {
+                "file": "app/Services/OrderFinalizationService.php",
+                "description": "Todo lo que ocurre cuando una orden pasa a pagada, en un solo sitio y sea"
+            }
+        },
+        {
             "id": "service:PayPalService",
             "label": "PayPalService",
             "type": "service",
             "meta": {
                 "file": "app/Services/PayPalService.php",
-                "description": "Crea una orden de PayPal. Devuelve el id de la orden y la URL de aprobación."
+                "description": "Las credenciales se leen en cada uso, no se cachean al construir: los"
             }
         },
         {
@@ -563,7 +563,7 @@
             "type": "service",
             "meta": {
                 "file": "app/Services/TwentyIService.php",
-                "description": "Devuelve el dominio de correo asociado al paquete del cliente."
+                "description": "Se lee en cada uso, no se cachea en el constructor: los servicios viven"
             }
         },
         {
@@ -872,15 +872,6 @@
             }
         },
         {
-            "id": "controller:ClientPortalController",
-            "label": "ClientPortalController",
-            "type": "controller",
-            "meta": {
-                "area": "Public",
-                "file": "app/Http/Controllers/ClientPortalController.php"
-            }
-        },
-        {
             "id": "controller:DirectCheckoutController",
             "label": "DirectCheckoutController",
             "type": "controller",
@@ -914,6 +905,87 @@
             "meta": {
                 "area": "Public",
                 "file": "app/Http/Controllers/PayPalWebhookController.php"
+            }
+        },
+        {
+            "id": "controller:Portal/DashboardController",
+            "label": "DashboardController",
+            "type": "controller",
+            "meta": {
+                "area": "Portal",
+                "file": "app/Http/Controllers/Portal/DashboardController.php"
+            }
+        },
+        {
+            "id": "controller:Portal/DnsController",
+            "label": "DnsController",
+            "type": "controller",
+            "meta": {
+                "area": "Portal",
+                "file": "app/Http/Controllers/Portal/DnsController.php"
+            }
+        },
+        {
+            "id": "controller:Portal/DomainController",
+            "label": "DomainController",
+            "type": "controller",
+            "meta": {
+                "area": "Portal",
+                "file": "app/Http/Controllers/Portal/DomainController.php"
+            }
+        },
+        {
+            "id": "controller:Portal/FiscalDataController",
+            "label": "FiscalDataController",
+            "type": "controller",
+            "meta": {
+                "area": "Portal",
+                "file": "app/Http/Controllers/Portal/FiscalDataController.php"
+            }
+        },
+        {
+            "id": "controller:Portal/MailboxController",
+            "label": "MailboxController",
+            "type": "controller",
+            "meta": {
+                "area": "Portal",
+                "file": "app/Http/Controllers/Portal/MailboxController.php"
+            }
+        },
+        {
+            "id": "controller:Portal/PaymentController",
+            "label": "PaymentController",
+            "type": "controller",
+            "meta": {
+                "area": "Portal",
+                "file": "app/Http/Controllers/Portal/PaymentController.php"
+            }
+        },
+        {
+            "id": "controller:Portal/PortalController",
+            "label": "PortalController",
+            "type": "controller",
+            "meta": {
+                "area": "Portal",
+                "file": "app/Http/Controllers/Portal/PortalController.php"
+            }
+        },
+        {
+            "id": "controller:Portal/QuoteController",
+            "label": "QuoteController",
+            "type": "controller",
+            "meta": {
+                "area": "Portal",
+                "file": "app/Http/Controllers/Portal/QuoteController.php"
+            }
+        },
+        {
+            "id": "controller:Portal/TicketController",
+            "label": "TicketController",
+            "type": "controller",
+            "meta": {
+                "area": "Portal",
+                "file": "app/Http/Controllers/Portal/TicketController.php"
             }
         },
         {
@@ -1909,12 +1981,6 @@
         },
         {
             "from": "service:FinkokService",
-            "to": "service:CfdiBuilderService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "service:FinkokService",
             "to": "model:Order",
             "type": "uses_model",
             "meta": []
@@ -1935,18 +2001,6 @@
         },
         {
             "from": "service:InvoicingManager",
-            "to": "service:FacturapiService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "service:InvoicingManager",
-            "to": "service:FinkokService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "service:InvoicingManager",
             "to": "model:Order",
             "type": "uses_model",
             "meta": []
@@ -1954,18 +2008,6 @@
         {
             "from": "service:InvoicingManager",
             "to": "model:Setting",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "service:MercadoPagoService",
-            "to": "service:OrderFinalizationService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "service:MercadoPagoService",
-            "to": "model:ActivityLog",
             "type": "uses_model",
             "meta": []
         },
@@ -1985,12 +2027,6 @@
             "from": "service:MercadoPagoService",
             "to": "model:Setting",
             "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "service:MercadoPagoService",
-            "to": "mail:PaymentConfirmed",
-            "type": "sends_mail",
             "meta": []
         },
         {
@@ -2027,19 +2063,19 @@
         },
         {
             "from": "service:OrderFinalizationService",
-            "to": "service:InvoicingManager",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "service:OrderFinalizationService",
-            "to": "service:MercadoPagoService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "service:OrderFinalizationService",
             "to": "model:ActivityLog",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "service:OrderFinalizationService",
+            "to": "model:DiscountCode",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "service:OrderFinalizationService",
+            "to": "model:Order",
             "type": "uses_model",
             "meta": []
         },
@@ -2051,20 +2087,8 @@
         },
         {
             "from": "service:OrderFinalizationService",
-            "to": "model:Setting",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "service:OrderFinalizationService",
             "to": "mail:PaymentConfirmed",
             "type": "sends_mail",
-            "meta": []
-        },
-        {
-            "from": "service:PayPalService",
-            "to": "service:OrderFinalizationService",
-            "type": "uses_service",
             "meta": []
         },
         {
@@ -2099,12 +2123,6 @@
         {
             "from": "service:ProvisioningService",
             "to": "service:CosmotownService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "service:ProvisioningService",
-            "to": "service:TwentyIService",
             "type": "uses_service",
             "meta": []
         },
@@ -2402,13 +2420,7 @@
         },
         {
             "from": "controller:Admin/OrderController",
-            "to": "service:MetaConversionsService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "controller:Admin/OrderController",
-            "to": "service:ProvisioningService",
+            "to": "service:OrderFinalizationService",
             "type": "uses_service",
             "meta": []
         },
@@ -2421,12 +2433,6 @@
         {
             "from": "controller:Admin/OrderController",
             "to": "model:Client",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "controller:Admin/OrderController",
-            "to": "model:DiscountCode",
             "type": "uses_model",
             "meta": []
         },
@@ -2840,19 +2846,7 @@
         },
         {
             "from": "controller:CartController",
-            "to": "service:MetaConversionsService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "controller:CartController",
             "to": "service:PayPalService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "controller:CartController",
-            "to": "service:ProvisioningService",
             "type": "uses_service",
             "meta": []
         },
@@ -2899,114 +2893,6 @@
             "meta": []
         },
         {
-            "from": "controller:ClientPortalController",
-            "to": "service:CosmotownService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "service:FacturapiService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "service:MercadoPagoService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "service:PayPalService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "service:TwentyIService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "model:ActivityLog",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "model:Client",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "model:ClientDocument",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "model:Notification",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "model:Order",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "model:Payment",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "model:Quote",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "model:QuoteItem",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "model:Service",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "model:Setting",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "model:SupportTicket",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "model:TicketReply",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "controller:ClientPortalController",
-            "to": "model:User",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
             "from": "controller:DirectCheckoutController",
             "to": "service:CosmotownService",
             "type": "uses_service",
@@ -3027,12 +2913,6 @@
         {
             "from": "controller:DirectCheckoutController",
             "to": "service:PayPalService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "controller:DirectCheckoutController",
-            "to": "service:ProvisioningService",
             "type": "uses_service",
             "meta": []
         },
@@ -3110,50 +2990,14 @@
         },
         {
             "from": "controller:MercadoPagoWebhookController",
-            "to": "service:MetaConversionsService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "controller:MercadoPagoWebhookController",
-            "to": "service:ProvisioningService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "controller:MercadoPagoWebhookController",
-            "to": "model:DiscountCode",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "controller:MercadoPagoWebhookController",
             "to": "model:Payment",
             "type": "uses_model",
             "meta": []
         },
         {
             "from": "controller:PayPalWebhookController",
-            "to": "service:MetaConversionsService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "controller:PayPalWebhookController",
             "to": "service:PayPalService",
             "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "controller:PayPalWebhookController",
-            "to": "service:ProvisioningService",
-            "type": "uses_service",
-            "meta": []
-        },
-        {
-            "from": "controller:PayPalWebhookController",
-            "to": "model:DiscountCode",
-            "type": "uses_model",
             "meta": []
         },
         {
@@ -3171,6 +3015,198 @@
         {
             "from": "controller:PayPalWebhookController",
             "to": "model:Setting",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/DashboardController",
+            "to": "service:FacturapiService",
+            "type": "uses_service",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/DashboardController",
+            "to": "service:TwentyIService",
+            "type": "uses_service",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/DashboardController",
+            "to": "model:ClientDocument",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/DashboardController",
+            "to": "model:Order",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/DashboardController",
+            "to": "model:Setting",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/DnsController",
+            "to": "service:TwentyIService",
+            "type": "uses_service",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/DnsController",
+            "to": "model:Setting",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/DomainController",
+            "to": "service:CosmotownService",
+            "type": "uses_service",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/DomainController",
+            "to": "model:ActivityLog",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/DomainController",
+            "to": "model:Notification",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/DomainController",
+            "to": "model:User",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/FiscalDataController",
+            "to": "service:FacturapiService",
+            "type": "uses_service",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/FiscalDataController",
+            "to": "model:ActivityLog",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/FiscalDataController",
+            "to": "model:Setting",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/MailboxController",
+            "to": "service:TwentyIService",
+            "type": "uses_service",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/MailboxController",
+            "to": "model:Setting",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/PaymentController",
+            "to": "service:MercadoPagoService",
+            "type": "uses_service",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/PaymentController",
+            "to": "service:PayPalService",
+            "type": "uses_service",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/PaymentController",
+            "to": "model:Order",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/PaymentController",
+            "to": "model:Payment",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/PaymentController",
+            "to": "model:Setting",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/PortalController",
+            "to": "model:Client",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/PortalController",
+            "to": "model:Quote",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/PortalController",
+            "to": "model:Setting",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/QuoteController",
+            "to": "model:ActivityLog",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/QuoteController",
+            "to": "model:Order",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/QuoteController",
+            "to": "model:Quote",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/QuoteController",
+            "to": "model:Setting",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/TicketController",
+            "to": "model:Notification",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/TicketController",
+            "to": "model:SupportTicket",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/TicketController",
+            "to": "model:TicketReply",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
+            "from": "controller:Portal/TicketController",
+            "to": "model:User",
             "type": "uses_model",
             "meta": []
         },
@@ -3750,7 +3786,7 @@
         },
         {
             "from": "routes:web:/portal|portal",
-            "to": "controller:ClientPortalController",
+            "to": "controller:Portal/DashboardController",
             "type": "routes_to",
             "meta": {
                 "routes": [
@@ -3758,12 +3794,32 @@
                     "GET /portal/{token}/orders/{order}/pdf → downloadInvoicePdf()",
                     "GET /portal/{token}/orders/{order}/receipt → downloadReceipt()",
                     "GET /portal/{token}/orders/{order}/xml → downloadInvoiceXml()",
-                    "GET /portal/{token}/documents/{document} → downloadDocument()",
+                    "GET /portal/{token}/documents/{document} → downloadDocument()"
+                ],
+                "middleware": []
+            }
+        },
+        {
+            "from": "routes:web:/portal|portal",
+            "to": "controller:Portal/MailboxController",
+            "type": "routes_to",
+            "meta": {
+                "routes": [
                     "GET /portal/{token}/mailboxes → mailboxes()",
                     "POST /portal/{token}/mailboxes → storeMailbox()",
                     "DELETE /portal/{token}/mailboxes/{mailbox} → destroyMailbox()",
                     "POST /portal/{token}/mailboxes/{mailbox}/password → changeMailboxPassword()",
-                    "POST /portal/{token}/mailboxes/{mailbox}/webmail → webmail()",
+                    "POST /portal/{token}/mailboxes/{mailbox}/webmail → webmail()"
+                ],
+                "middleware": []
+            }
+        },
+        {
+            "from": "routes:web:/portal|portal",
+            "to": "controller:Portal/PaymentController",
+            "type": "routes_to",
+            "meta": {
+                "routes": [
                     "GET /portal/{token}/orders/{order}/checkout → checkout()",
                     "POST /portal/{token}/orders/{order}/pay/card → payWithCard() {throttle:payments}",
                     "POST /portal/{token}/orders/{order}/pay/oxxo → payWithOxxo() {throttle:payments}",
@@ -3771,26 +3827,7 @@
                     "POST /portal/{token}/orders/{order}/pay/paypal/create → createPaypalOrder() {throttle:payments}",
                     "POST /portal/{token}/orders/{order}/pay/paypal/capture → capturePaypalOrder() {throttle:payments}",
                     "POST /portal/{token}/orders/{order}/pay/transfer → payWithTransfer() {throttle:payments}",
-                    "GET /portal/{token}/payments/{payment} → paymentStatus()",
-                    "GET /portal/{token}/quotes/{quote} → showQuote()",
-                    "POST /portal/{token}/quotes/{quote}/accept → acceptQuote()",
-                    "POST /portal/{token}/quotes/{quote}/reject → rejectQuote()",
-                    "GET /portal/{token}/fiscal → editFiscalData()",
-                    "PUT /portal/{token}/fiscal → updateFiscalData()",
-                    "GET /portal/{token}/tickets → tickets()",
-                    "GET /portal/{token}/tickets/create → createTicket()",
-                    "POST /portal/{token}/tickets → storeTicket()",
-                    "GET /portal/{token}/tickets/{ticket} → showTicket()",
-                    "POST /portal/{token}/tickets/{ticket}/reply → replyToTicket()",
-                    "POST /portal/{token}/domain/choose → chooseDomain() {throttle:10,1}",
-                    "GET /portal/{token}/domain → domain()",
-                    "GET /portal/{token}/domain/dns → domainDns()",
-                    "POST /portal/{token}/domain/dns → saveDomainDns()",
-                    "POST /portal/{token}/domain/nameservers → saveDomainNameservers()",
-                    "GET /portal/{token}/dns → dns()",
-                    "POST /portal/{token}/dns → storeDns()",
-                    "PUT /portal/{token}/dns/{record} → updateDns()",
-                    "DELETE /portal/{token}/dns/{record} → destroyDns()"
+                    "GET /portal/{token}/payments/{payment} → paymentStatus()"
                 ],
                 "middleware": [
                     "throttle:payments",
@@ -3798,9 +3835,79 @@
                     "throttle:payments",
                     "throttle:payments",
                     "throttle:payments",
-                    "throttle:payments",
+                    "throttle:payments"
+                ]
+            }
+        },
+        {
+            "from": "routes:web:/portal|portal",
+            "to": "controller:Portal/QuoteController",
+            "type": "routes_to",
+            "meta": {
+                "routes": [
+                    "GET /portal/{token}/quotes/{quote} → showQuote()",
+                    "POST /portal/{token}/quotes/{quote}/accept → acceptQuote()",
+                    "POST /portal/{token}/quotes/{quote}/reject → rejectQuote()"
+                ],
+                "middleware": []
+            }
+        },
+        {
+            "from": "routes:web:/portal|portal",
+            "to": "controller:Portal/FiscalDataController",
+            "type": "routes_to",
+            "meta": {
+                "routes": [
+                    "GET /portal/{token}/fiscal → editFiscalData()",
+                    "PUT /portal/{token}/fiscal → updateFiscalData()"
+                ],
+                "middleware": []
+            }
+        },
+        {
+            "from": "routes:web:/portal|portal",
+            "to": "controller:Portal/TicketController",
+            "type": "routes_to",
+            "meta": {
+                "routes": [
+                    "GET /portal/{token}/tickets → tickets()",
+                    "GET /portal/{token}/tickets/create → createTicket()",
+                    "POST /portal/{token}/tickets → storeTicket()",
+                    "GET /portal/{token}/tickets/{ticket} → showTicket()",
+                    "POST /portal/{token}/tickets/{ticket}/reply → replyToTicket()"
+                ],
+                "middleware": []
+            }
+        },
+        {
+            "from": "routes:web:/portal|portal",
+            "to": "controller:Portal/DomainController",
+            "type": "routes_to",
+            "meta": {
+                "routes": [
+                    "POST /portal/{token}/domain/choose → chooseDomain() {throttle:10,1}",
+                    "GET /portal/{token}/domain → domain()",
+                    "GET /portal/{token}/domain/dns → domainDns()",
+                    "POST /portal/{token}/domain/dns → saveDomainDns()",
+                    "POST /portal/{token}/domain/nameservers → saveDomainNameservers()"
+                ],
+                "middleware": [
                     "throttle:10,1"
                 ]
+            }
+        },
+        {
+            "from": "routes:web:/portal|portal",
+            "to": "controller:Portal/DnsController",
+            "type": "routes_to",
+            "meta": {
+                "routes": [
+                    "GET /portal/{token}/dns → dns()",
+                    "POST /portal/{token}/dns → storeDns()",
+                    "PUT /portal/{token}/dns/{record} → updateDns()",
+                    "DELETE /portal/{token}/dns/{record} → destroyDns()"
+                ],
+                "middleware": []
             }
         },
         {
