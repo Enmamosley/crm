@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DiscountCode;
 use App\Models\Payment;
 use App\Services\MercadoPagoService;
-use App\Services\ProvisioningService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -43,8 +41,6 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['status' => 'not_found'], 200);
         }
 
-        $wasPending = $payment->status !== 'approved';
-
         try {
             $service->syncPaymentStatus($payment);
             Cache::put($cacheKey, true, 3600);
@@ -53,12 +49,8 @@ class MercadoPagoWebhookController extends Controller
                 'status'     => $payment->fresh()->status,
             ]);
 
-            // Provisionar y consumir cupón sólo cuando un pago pendiente se aprueba.
-            if ($wasPending && $payment->fresh()->status === 'approved' && $payment->order) {
-                (new ProvisioningService())->provisionForOrder($payment->order);
-                DiscountCode::consumeForCode($payment->order->discount_code);
-                (new \App\Services\MetaConversionsService())->sendPurchase($payment->order);
-            }
+            // Aprovisionamiento, cupón y Meta los hace OrderFinalizationService
+            // desde syncPaymentStatus, una sola vez por orden.
         } catch (\Throwable $e) {
             Log::error('MP webhook: sync error', ['error' => $e->getMessage()]);
         }

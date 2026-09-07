@@ -186,7 +186,7 @@ class OrderController extends Controller
             $proofPath = $request->file('proof')->store('payment-proofs', 'local');
         }
 
-        $order->payments()->create([
+        $payment = $order->payments()->create([
             'amount'            => $validated['amount'],
             'currency'          => 'MXN',
             'status'            => 'approved',
@@ -197,21 +197,21 @@ class OrderController extends Controller
             'paid_at'           => now(),
         ]);
 
-        $updates = ['status' => 'paid', 'paid_at' => now()];
         if ($validated['payment_form'] !== '99') {
-            $updates['payment_form'] = $validated['payment_form'];
+            $order->update(['payment_form' => $validated['payment_form']]);
         }
-        $order->update($updates);
 
-        (new \App\Services\ProvisioningService())->provisionForOrder($order);
-        \App\Models\DiscountCode::consumeForCode($order->discount_code);
-        (new \App\Services\MetaConversionsService())->sendPurchase($order);
+        // Marca pagada, timbra, envía comprobante, aprovisiona, consume cupón
+        // y notifica a Meta. Antes este flujo no timbraba ni enviaba correo.
+        (new \App\Services\OrderFinalizationService())->finalize($payment, null, 'paid');
 
         ActivityLog::log('manual_payment_registered', $order,
             "Pago manual de \${$validated['amount']} MXN registrado");
 
         return redirect()->route('admin.orders.show', $order)
-            ->with('success', 'Pago registrado. Ahora puedes timbrar la factura.');
+            ->with('success', $order->fresh()->isStamped()
+                ? 'Pago registrado y CFDI timbrado automáticamente.'
+                : 'Pago registrado. Ahora puedes timbrar la factura.');
     }
 
     /** Reenvía el correo de confirmación (comprobante) del pago aprobado de la orden. */
@@ -245,17 +245,18 @@ class OrderController extends Controller
         $payment->update(['status' => 'approved', 'paid_at' => now()]);
 
         $order = $payment->order;
-        $order->update(['status' => 'paid', 'paid_at' => now()]);
 
-        (new \App\Services\ProvisioningService())->provisionForOrder($order);
-        \App\Models\DiscountCode::consumeForCode($order->discount_code);
-        (new \App\Services\MetaConversionsService())->sendPurchase($order);
+        // Marca pagada, timbra, envía comprobante, aprovisiona, consume cupón
+        // y notifica a Meta. Antes este flujo no timbraba ni enviaba correo.
+        (new \App\Services\OrderFinalizationService())->finalize($payment, null, 'paid');
 
         ActivityLog::log('transfer_approved', $order,
             "Transferencia de \${$payment->amount} MXN confirmada por " . auth()->user()->name);
 
         return redirect()->route('admin.orders.show', $order)
-            ->with('success', 'Transferencia confirmada. Ahora puedes timbrar la factura.');
+            ->with('success', $order->fresh()->isStamped()
+                ? 'Transferencia confirmada y CFDI timbrado automáticamente.'
+                : 'Transferencia confirmada. Ahora puedes timbrar la factura.');
     }
 
     /**

@@ -11,7 +11,6 @@ use App\Models\Service;
 use App\Models\Setting;
 use App\Services\MercadoPagoService;
 use App\Services\PayPalService;
-use App\Services\ProvisioningService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -185,23 +184,17 @@ class CartController extends Controller
         $client = $this->resolveOrCreateClient($validated);
 
         try {
-            return DB::transaction(function () use ($client, $validated, $cartData) {
+            return DB::transaction(function () use ($client, $validated, $cartData, $request) {
                 $invoice = $this->createInvoiceFromCart($client, $cartData, '04');
 
                 $payment = (new MercadoPagoService())->createCardPayment(
                     $invoice, $validated['token'], $validated['payment_method_id'],
                     $validated['email'], (int) ($validated['installments'] ?? 1),
-                    $validated['issuer_id'] ?? null,
+                    $validated['issuer_id'] ?? null, $request,
                 );
 
                 $this->clearCart($cartData);
                 ActivityLog::log('cart_purchase', $invoice, "Compra por carrito (tarjeta) por {$validated['email']}");
-
-                if ($payment->status === 'approved') {
-                    DiscountCode::consumeForCode($invoice->discount_code);
-                    (new ProvisioningService())->provisionForOrder($invoice);
-                    (new \App\Services\MetaConversionsService())->sendPurchase($invoice, request());
-                }
 
                 return response()->json([
                     'success'       => $payment->status === 'approved',
@@ -239,7 +232,7 @@ class CartController extends Controller
         $client = $this->resolveOrCreateClient($validated);
 
         try {
-            return DB::transaction(function () use ($client, $validated, $cartData) {
+            return DB::transaction(function () use ($client, $validated, $cartData, $request) {
                 $invoice = $this->createInvoiceFromCart($client, $cartData, '01');
                 $payment = (new MercadoPagoService())->createOxxoPayment($invoice, $validated['email']);
                 $this->clearCart($cartData);
@@ -276,7 +269,7 @@ class CartController extends Controller
         $client = $this->resolveOrCreateClient($validated);
 
         try {
-            return DB::transaction(function () use ($client, $validated, $cartData) {
+            return DB::transaction(function () use ($client, $validated, $cartData, $request) {
                 $invoice = $this->createInvoiceFromCart($client, $cartData, '03');
                 $payment = (new MercadoPagoService())->createSpeiPayment($invoice, $validated['email']);
                 $this->clearCart($cartData);
@@ -353,18 +346,15 @@ class CartController extends Controller
 
         try {
             $capture = $paypal->captureOrder($validated['paypalOrderId']);
-            $payment = $paypal->processCapture($order, $capture);
+            $payment = $paypal->processCapture($order, $capture, $request);
 
             ActivityLog::log('cart_purchase', $order, "Compra carrito (PayPal) por {$order->client->email}");
 
             if ($payment->isApproved()) {
-                // Limpia carrito de la sesión actual
+                // Limpia carrito de la sesión actual. El cupón, el
+                // aprovisionamiento y Meta los hace OrderFinalizationService.
                 CartItem::where('session_id', session()->getId())->delete();
                 session()->forget(['discount_code', 'discount_amount']);
-                DiscountCode::consumeForCode($order->discount_code);
-
-                (new ProvisioningService())->provisionForOrder($order);
-                (new \App\Services\MetaConversionsService())->sendPurchase($order, $request);
             }
 
             return response()->json([

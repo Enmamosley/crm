@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DiscountCode;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Services\PayPalService;
-use App\Services\ProvisioningService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -75,29 +73,17 @@ class PayPalWebhookController extends Controller
                         'status' => 'COMPLETED',
                         'purchase_units' => [['payments' => ['captures' => [$resource]]]],
                     ]);
-                    if ($order->paid_at) {
-                        (new ProvisioningService())->provisionForOrder($order);
-                        DiscountCode::consumeForCode($order->discount_code);
-                        (new \App\Services\MetaConversionsService())->sendPurchase($order);
-                    }
                 } catch (\Throwable $e) {
                     Log::error('PayPal webhook: process capture failed', ['error' => $e->getMessage()]);
                 }
             }
         } elseif ($payment) {
-            $wasPending = $payment->status !== 'approved';
             try {
                 $service->processCapture($payment->order, [
                     'id' => $payment->paypal_order_id,
                     'status' => $resource['status'] ?? 'COMPLETED',
                     'purchase_units' => [['payments' => ['captures' => [$resource]]]],
                 ]);
-
-                if ($wasPending && $payment->fresh()->status === 'approved' && $payment->order) {
-                    (new ProvisioningService())->provisionForOrder($payment->order);
-                    DiscountCode::consumeForCode($payment->order->discount_code);
-                    (new \App\Services\MetaConversionsService())->sendPurchase($payment->order);
-                }
             } catch (\Throwable $e) {
                 Log::error('PayPal webhook: update failed', ['error' => $e->getMessage()]);
             }

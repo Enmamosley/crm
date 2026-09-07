@@ -4,55 +4,123 @@ namespace App\Services;
 
 use App\Mail\PaymentConfirmed;
 use App\Models\ActivityLog;
+use App\Models\DiscountCode;
+use App\Models\Order;
 use App\Models\Payment;
-use App\Models\Setting;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 /**
- * Acciones tras CONFIRMARSE un pago, comunes a TODOS los flujos
- * (tarjeta, PayPal, OXXO/SPEI, transferencia/manual): auto-timbrado del CFDI y
- * correo de confirmación (que también sirve de comprobante de pago al cliente).
+ * Todo lo que ocurre cuando una orden pasa a pagada, en un solo sitio y sea
+ * cual sea el flujo (tarjeta, PayPal, OXXO/SPEI por webhook, transferencia o
+ * pago manual del panel): timbrado del CFDI, comprobante por correo,
+ * aprovisionamiento, consumo del cupón y evento de compra a Meta.
  *
- * Antes, esto vivía sólo dentro de MercadoPagoService::syncPaymentStatus, así que
- * los pagos con tarjeta síncronos y PayPal NO enviaban correo ni timbraban.
+ * Antes esto estaba partido en dos: el timbrado y el correo vivían aquí, pero
+ * el aprovisionamiento, el cupón y Meta los llamaba cada controlador que
+ * confirmaba el pago — cinco copias que había que mantener sincronizadas. Los
+ * pagos del portal no aprovisionaban nada y los pagos manuales del panel ni
+ * timbraban ni enviaban comprobante.
  *
- * Debe llamarse UNA sola vez: justo cuando la orden pasa a pagada.
+ * Es idempotente: la transición a pagada la resuelve Order::markPaid(), así
+ * que llamarlo dos veces sobre la misma orden no duplica nada.
  */
 class OrderFinalizationService
 {
-    public function finalize(Payment $payment): void
+    /** @return bool true si esta llamada fue la que finalizó la orden. */
+    public function finalize(Payment $payment, ?Request $request = null, string $status = 'sent'): bool
     {
         $order = $payment->order;
-        if (!$order) {
+
+        if (!$order || !$order->markPaid($payment->paid_at ?? now(), $status)) {
+            return false;
+        }
+
+        $this->stamp($order, $payment);
+        $this->sendConfirmation($order, $payment);
+        $this->provision($order);
+        $this->consumeDiscount($order);
+        $this->sendMetaPurchase($order, $request);
+
+        ActivityLog::log('payment_approved', $payment, "Pago #{$payment->id} aprobado por \${$payment->amount}");
+
+        return true;
+    }
+
+    /**
+     * Auto-timbra el CFDI si procede. "Sin factura" (none) NO se timbra: esas
+     * ventas van al recibo de pago y, en su caso, a la factura global mensual.
+     */
+    private function stamp(Order $order, Payment $payment): void
+    {
+        $invoicing = new InvoicingManager();
+
+        if (($order->billing_preference ?? 'none') === 'none'
+            || $order->isStamped()
+            || !$invoicing->isConfigured()) {
             return;
         }
 
-        // Auto-timbrar el CFDI si no está timbrado y hay proveedor configurado.
-        // "Sin factura" (none) NO se timbra automáticamente: esas ventas van al
-        // recibo de pago y, en su caso, a la factura global mensual del contador.
-        $invoicing = new InvoicingManager();
-        if (($order->billing_preference ?? 'none') !== 'none'
-            && !$order->isStamped()
-            && $invoicing->isConfigured()) {
-            try {
-                $order->update(['payment_form' => $payment->satPaymentForm()]);
-                $invoicing->stampInvoice($order);
-                ActivityLog::log('auto_stamped', $order, "Factura {$order->folio()} timbrada automáticamente tras el pago");
-            } catch (\Throwable $e) {
-                Log::error('Auto-stamp failed after payment', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+        try {
+            // '99' es "por definir": no debe pisar la forma de pago que el
+            // admin eligió al registrar un pago manual.
+            $satForm = $payment->satPaymentForm();
+            if ($satForm !== '99') {
+                $order->update(['payment_form' => $satForm]);
             }
+
+            $invoicing->stampInvoice($order);
+            ActivityLog::log('auto_stamped', $order, "Factura {$order->folio()} timbrada automáticamente tras el pago");
+        } catch (\Throwable $e) {
+            Log::error('Auto-stamp failed after payment', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /** Correo de confirmación, que también sirve de comprobante para el cliente. */
+    private function sendConfirmation(Order $order, Payment $payment): void
+    {
+        if (!$order->client?->email) {
+            return;
         }
 
-        // Correo de confirmación (comprobante de pago para el cliente).
-        if ($order->client && $order->client->email) {
-            try {
-                Mail::to($order->client->email)->send(new PaymentConfirmed($payment));
-            } catch (\Throwable $e) {
-                Log::error('Payment confirmation email failed', ['payment_id' => $payment->id, 'error' => $e->getMessage()]);
-            }
+        try {
+            Mail::to($order->client->email)->send(new PaymentConfirmed($payment));
+        } catch (\Throwable $e) {
+            Log::error('Payment confirmation email failed', ['payment_id' => $payment->id, 'error' => $e->getMessage()]);
         }
+    }
 
-        ActivityLog::log('payment_approved', $payment, "Pago #{$payment->id} aprobado por \${$payment->amount}");
+    /** Dominio en Cosmotown y hosting en 20i. El servicio ya es idempotente. */
+    private function provision(Order $order): void
+    {
+        try {
+            (new ProvisioningService())->provisionForOrder($order);
+        } catch (\Throwable $e) {
+            Log::error('Provisioning failed after payment', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    private function consumeDiscount(Order $order): void
+    {
+        try {
+            DiscountCode::consumeForCode($order->discount_code);
+        } catch (\Throwable $e) {
+            Log::error('Discount consumption failed after payment', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Evento Purchase de la Conversions API. El Request sólo llega desde los
+     * flujos síncronos: aporta IP, user agent y cookies del navegador. En
+     * webhooks y pagos del panel no hay navegador del comprador que mirar.
+     */
+    private function sendMetaPurchase(Order $order, ?Request $request): void
+    {
+        try {
+            (new MetaConversionsService())->sendPurchase($order, $request);
+        } catch (\Throwable $e) {
+            Log::error('Meta purchase event failed after payment', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+        }
     }
 }
