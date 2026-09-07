@@ -5,7 +5,7 @@ namespace App\Console\Commands;
 use App\Models\ActivityLog;
 use App\Models\Order;
 use App\Models\RecurringInvoiceSchedule;
-use App\Services\FacturapiService;
+use App\Services\InvoicingManager;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -14,7 +14,7 @@ class ProcessRecurringInvoices extends Command
     protected $signature = 'invoices:process-recurring';
     protected $description = 'Generate invoices from active recurring schedules';
 
-    public function handle(): int
+    public function handle(InvoicingManager $invoicing): int
     {
         $schedules = RecurringInvoiceSchedule::with(['client', 'quote', 'items'])
             ->where('active', true)
@@ -60,13 +60,25 @@ class ProcessRecurringInvoices extends Command
                     ]);
                 }
 
-                if ($schedule->auto_stamp && \App\Models\Setting::get('facturapi_api_key')) {
+                // El timbrado se enruta SIEMPRE por InvoicingManager: con
+                // invoicing_provider=finkok este bloque antes no timbraba nada
+                // (o timbraba con el PAC equivocado si quedaba una key vieja).
+                if ($schedule->auto_stamp && $invoicing->isConfigured()) {
                     try {
-                        (new FacturapiService())->stampInvoice($order);
+                        $result = $invoicing->stampInvoice($order);
+                        if (!($result['success'] ?? false)) {
+                            Log::error('Auto-stamp recurring invoice rejected', [
+                                'order_id'    => $order->id,
+                                'schedule_id' => $schedule->id,
+                                'provider'    => $invoicing->provider(),
+                                'data'        => $result['data'] ?? null,
+                            ]);
+                        }
                     } catch (\Throwable $e) {
                         Log::error('Auto-stamp recurring invoice failed', [
-                            'invoice_id'  => $order->id,
+                            'order_id'    => $order->id,
                             'schedule_id' => $schedule->id,
+                            'provider'    => $invoicing->provider(),
                             'error'       => $e->getMessage(),
                         ]);
                     }
