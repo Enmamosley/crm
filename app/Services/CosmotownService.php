@@ -301,6 +301,71 @@ class CosmotownService
         return $response->json() ?? [];
     }
 
+    /**
+     * Normaliza la respuesta de domainInfo(). Cosmotown devuelve los datos en
+     * el nivel raíz o anidados bajo 'domain', y cada campo con varios nombres
+     * posibles (auto_billing/autoRenew/auto_renew, etc.).
+     *
+     * @return array{domain: array, nameservers: array, contact: array, _raw: array}
+     */
+    public function normalizeDomainInfo(array $raw): array
+    {
+        $d = is_array($raw['domain'] ?? null) ? $raw['domain'] : $raw;
+
+        $d['auto_billing']    = (bool) ($d['auto_billing']   ?? $d['autoRenew']      ?? $d['auto_renew']  ?? false);
+        $d['whois_privacy']   = (bool) ($d['whois_privacy']  ?? $d['whoisPrivacy']   ?? $d['privacy']     ?? false);
+        $d['locked']          = (bool) ($d['locked']         ?? $d['registrarLock']  ?? $d['domain_lock'] ?? false);
+        $d['created']         = $d['created']         ?? $d['createdDate']    ?? $d['created_at'] ?? null;
+        $d['expiration_date'] = $d['expiration_date'] ?? $d['expirationDate'] ?? $d['expires']    ?? $d['expire_date'] ?? null;
+
+        return [
+            'domain'      => $d,
+            'nameservers' => $raw['nameservers']
+                ?? $d['nameservers']
+                ?? array_values(array_filter([
+                    $d['ns1'] ?? null, $d['ns2'] ?? null,
+                    $d['ns3'] ?? null, $d['ns4'] ?? null,
+                ])),
+            'contact' => $raw['contact'] ?? $d['contact'] ?? [],
+            '_raw'    => $raw,
+        ];
+    }
+
+    /**
+     * Convierte los registros DNS agrupados por tipo que envía el formulario
+     * a la lista plana que espera Cosmotown.
+     */
+    public function denormalizeDnsRecords(array $recordsByType): array
+    {
+        $records = [];
+
+        foreach ($recordsByType as $type => $typeRecords) {
+            $type = strtoupper($type);
+
+            foreach ((array) $typeRecords as $rec) {
+                $record = [
+                    'type' => $type,
+                    'host' => $rec['host'] ?? '@',
+                    'ttl'  => (int) ($rec['ttl'] ?? 300),
+                ];
+
+                if ($type === 'TXT') {
+                    $record['data'] = $rec['content'] ?? $rec['pointto'] ?? '';
+                } else {
+                    $record['pointsTo'] = $rec['pointto'] ?? $rec['content'] ?? '';
+                }
+
+                if ($type === 'MX') {
+                    $record['priority'] = (int) ($rec['priority'] ?? 10);
+                }
+
+                $records[] = $record;
+            }
+        }
+
+        return $records;
+    }
+
     public function isConfigured(): bool
     {
         return !empty($this->apiKey);

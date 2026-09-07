@@ -111,29 +111,7 @@ class DomainController extends Controller
             return redirect()->route('admin.domains.index')->with('error', 'Error al obtener info: ' . $e->getMessage());
         }
 
-        // Cosmotown puede devolver la info en el nivel raíz o anidada bajo 'domain'
-        // Si 'domain' es un string (el nombre), los datos están en el nivel raíz
-        $d = is_array($raw['domain'] ?? null) ? $raw['domain'] : $raw;
-
-        // Normalizar campos a nombres conocidos
-        $domainInfo = [
-            'domain'      => $d,
-            'nameservers' => $raw['nameservers']
-                ?? $d['nameservers']
-                ?? array_values(array_filter([
-                    $d['ns1'] ?? null, $d['ns2'] ?? null,
-                    $d['ns3'] ?? null, $d['ns4'] ?? null,
-                ])),
-            'contact' => $raw['contact'] ?? $d['contact'] ?? [],
-            '_raw'    => $raw,
-        ];
-
-        // Normalizar campos booleanos con múltiples variantes de nombre
-        $domainInfo['domain']['auto_billing']  = (bool) ($d['auto_billing']  ?? $d['autoRenew']    ?? $d['auto_renew']    ?? false);
-        $domainInfo['domain']['whois_privacy']  = (bool) ($d['whois_privacy'] ?? $d['whoisPrivacy']  ?? $d['privacy']       ?? false);
-        $domainInfo['domain']['locked']         = (bool) ($d['locked']        ?? $d['registrarLock'] ?? $d['domain_lock']   ?? false);
-        $domainInfo['domain']['created']        = $d['created']         ?? $d['createdDate']    ?? $d['created_at']    ?? null;
-        $domainInfo['domain']['expiration_date']= $d['expiration_date'] ?? $d['expirationDate'] ?? $d['expires']       ?? $d['expire_date'] ?? null;
+        $domainInfo = $service->normalizeDomainInfo($raw);
 
         $environment = Setting::get('cosmotown_base_url', 'https://sandbox.cosmotown.com');
         $isSandbox   = str_contains($environment, 'sandbox');
@@ -212,26 +190,7 @@ class DomainController extends Controller
             return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
         }
 
-        // Denormalizar: convertir nombres de campo del frontend → Cosmotown
-        $records = [];
-        foreach ($validated['records'] as $type => $typeRecords) {
-            foreach ((array) $typeRecords as $rec) {
-                $record = [
-                    'type'   => strtoupper($type),
-                    'host'   => $rec['host'] ?? '@',
-                    'ttl'    => (int) ($rec['ttl'] ?? 300),
-                ];
-                if (strtoupper($type) === 'TXT') {
-                    $record['data'] = $rec['content'] ?? $rec['pointto'] ?? '';
-                } else {
-                    $record['pointsTo'] = $rec['pointto'] ?? $rec['content'] ?? '';
-                }
-                if (strtoupper($type) === 'MX') {
-                    $record['priority'] = (int) ($rec['priority'] ?? 10);
-                }
-                $records[] = $record;
-            }
-        }
+        $records = $service->denormalizeDnsRecords($validated['records']);
 
         try {
             $service->saveDnsSettings($domain, $records);

@@ -67,27 +67,9 @@ class DomainController extends PortalController
 
         if ($cosmotown->isConfigured()) {
             try {
-                $raw = $cosmotown->domainInfo($client->domain);
-
-                // Cosmotown puede devolver 'domain' como string o como array
-                $d = is_array($raw['domain'] ?? null) ? $raw['domain'] : $raw;
-
-                // Normalizar campos con múltiples variantes de nombre
-                $d['auto_billing']    = (bool) ($d['auto_billing']    ?? $d['autoRenew']      ?? $d['auto_renew']    ?? false);
-                $d['whois_privacy']   = (bool) ($d['whois_privacy']   ?? $d['whoisPrivacy']   ?? $d['privacy']       ?? false);
-                $d['locked']          = (bool) ($d['locked']          ?? $d['registrarLock']  ?? $d['domain_lock']   ?? false);
-                $d['created']         = $d['created']          ?? $d['createdDate']    ?? $d['created_at']    ?? null;
-                $d['expiration_date'] = $d['expiration_date']  ?? $d['expirationDate'] ?? $d['expires']       ?? $d['expire_date'] ?? null;
-
-                $domainInfo = [
-                    'domain'      => $d,
-                    'nameservers' => $raw['nameservers']
-                        ?? $d['nameservers']
-                        ?? array_values(array_filter([
-                            $d['ns1'] ?? null, $d['ns2'] ?? null,
-                            $d['ns3'] ?? null, $d['ns4'] ?? null,
-                        ])),
-                ];
+                $domainInfo = $cosmotown->normalizeDomainInfo(
+                    $cosmotown->domainInfo($client->domain)
+                );
             } catch (\Throwable $e) {
                 $error = 'No se pudo obtener la información del dominio.';
             }
@@ -134,26 +116,7 @@ class DomainController extends PortalController
         }
 
         try {
-            // Denormalizar: convertir nombres de campo del frontend → Cosmotown
-            $records = [];
-            foreach ($validated['records'] as $type => $typeRecords) {
-                foreach ((array) $typeRecords as $rec) {
-                    $record = [
-                        'type'   => strtoupper($type),
-                        'host'   => $rec['host'] ?? '@',
-                        'ttl'    => (int) ($rec['ttl'] ?? 300),
-                    ];
-                    if (strtoupper($type) === 'TXT') {
-                        $record['data'] = $rec['content'] ?? $rec['pointto'] ?? '';
-                    } else {
-                        $record['pointsTo'] = $rec['pointto'] ?? $rec['content'] ?? '';
-                    }
-                    if (strtoupper($type) === 'MX') {
-                        $record['priority'] = (int) ($rec['priority'] ?? 10);
-                    }
-                    $records[] = $record;
-                }
-            }
+            $records = $cosmotown->denormalizeDnsRecords($validated['records']);
             $cosmotown->saveDnsSettings($client->domain, $records);
             return response()->json(['success' => true]);
         } catch (\Throwable $e) {
