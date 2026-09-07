@@ -450,7 +450,7 @@ class CartController extends Controller
 
     private function createInvoiceFromCart(Client $client, array $cartData, string $paymentForm): Order
     {
-        return Order::create([
+        return Order::createWithFolio([
             'client_id'      => $client->id,
             'series'         => 'V',
             'payment_form'   => $paymentForm,

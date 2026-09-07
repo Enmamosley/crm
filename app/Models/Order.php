@@ -5,6 +5,7 @@ namespace App\Models;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -51,9 +52,58 @@ class Order extends Model
         return $this->hasMany(InvoiceItem::class);
     }
 
+    /**
+     * El CFDI vigente de la orden.
+     *
+     * Una orden puede acumular varios documentos: al cancelar ante el SAT la
+     * fila se conserva con status 'cancelled' (es el registro fiscal) y una
+     * reexpedición añade otra. Sin `latestOfMany()` la relación devolvía el
+     * primero por orden de inserción, es decir el cancelado, así que el panel
+     * mostraba el documento equivocado, isStamped() seguía diciendo "no" y el
+     * botón de timbrar permitía emitir CFDIs nuevos sin límite.
+     */
     public function fiscalDocument(): HasOne
     {
-        return $this->hasOne(FiscalDocument::class);
+        return $this->hasOne(FiscalDocument::class)->latestOfMany();
+    }
+
+    /** Todos los CFDI de la orden, incluidos los cancelados. Para auditoría. */
+    public function fiscalDocuments(): HasMany
+    {
+        return $this->hasMany(FiscalDocument::class);
+    }
+
+    /**
+     * Siguiente folio de la serie.
+     *
+     * El SAT exige que serie+folio sea único por emisor, no por cliente. Se
+     * cuentan también las órdenes borradas: su folio ya se emitió y no puede
+     * reutilizarse.
+     */
+    public static function allocateFolio(string $series): int
+    {
+        return (int) static::withTrashed()->where('series', $series)->max('folio_number') + 1;
+    }
+
+    /**
+     * Crea la orden asignándole folio de su serie. Dos altas simultáneas leen
+     * el mismo folio libre y una choca contra el índice único: se reintenta
+     * con el siguiente, que es más barato que bloquear la tabla.
+     */
+    public static function createWithFolio(array $attributes, int $attempts = 5): self
+    {
+        $series = $attributes['series'] ?? 'F';
+        unset($attributes['folio_number']);
+
+        for ($attempt = 1; ; $attempt++) {
+            try {
+                return static::create($attributes + ['folio_number' => static::allocateFolio($series)]);
+            } catch (UniqueConstraintViolationException $e) {
+                if ($attempt >= $attempts) {
+                    throw $e;
+                }
+            }
+        }
     }
 
     // ─── Scopes ─────────────────────────────────────────────

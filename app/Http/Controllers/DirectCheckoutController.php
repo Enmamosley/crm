@@ -612,7 +612,7 @@ class DirectCheckoutController extends Controller
             return $existing;
         }
 
-        return Order::create($invoiceData);
+        return Order::createWithFolio($invoiceData);
     }
 
     /** Deja el evento Purchase listo para el Pixel del navegador en la página de éxito. */

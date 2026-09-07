@@ -25,15 +25,10 @@ class ProcessRecurringInvoices extends Command
         $created = 0;
         foreach ($schedules as $schedule) {
             try {
-                $nextFolio = Order::where('client_id', $schedule->client_id)
-                    ->where('series', $schedule->series)
-                    ->max('folio_number');
-
-                $order = Order::create([
+                $order = Order::createWithFolio([
                     'client_id'          => $schedule->client_id,
                     'quote_id'           => $schedule->quote_id,
                     'series'             => $schedule->series,
-                    'folio_number'       => ($nextFolio ?? 0) + 1,
                     'payment_form'       => $schedule->payment_form,
                     'payment_method'     => $schedule->payment_method,
                     'use_cfdi'           => $schedule->use_cfdi,
