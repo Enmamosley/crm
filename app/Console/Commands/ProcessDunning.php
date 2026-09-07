@@ -20,13 +20,18 @@ class ProcessDunning extends Command
     // Días después de emisión para cada intento
     private const SCHEDULE = [3, 7, 14, 30];
 
-    public function handle(): void
+    public function handle(): int
     {
-        $unpaid = Order::whereNull('paid_at')
-            ->where('status', 'valid')
-            ->where('stamped_at', '<=', now()->subDays(3))
-            ->with('client')
-            ->get();
+        // La fecha de emisión vive en el CFDI (fiscal_documents.stamped_at) o,
+        // sin CFDI, en la creación de la orden. Se prefiltra por created_at
+        // porque siempre es anterior o igual al timbrado.
+        $threshold = now()->subDays(self::SCHEDULE[0]);
+
+        $unpaid = Order::with(['client', 'fiscalDocument'])
+            ->awaitingPayment()
+            ->where('created_at', '<=', $threshold)
+            ->get()
+            ->filter(fn (Order $order) => $order->issuedAt()->lte($threshold));
 
         $processed = 0;
 
@@ -40,7 +45,7 @@ class ProcessDunning extends Command
             $nextAttemptDays = self::SCHEDULE[$attempts] ?? null;
             if (!$nextAttemptDays) continue;
 
-            $dueDate = $order->stamped_at->addDays($nextAttemptDays);
+            $dueDate = $order->issuedAt()->addDays($nextAttemptDays);
             if (now()->lt($dueDate)) continue;
 
             // Check if this attempt was already created
@@ -86,5 +91,6 @@ class ProcessDunning extends Command
         }
 
         $this->info("Dunning: {$processed} recordatorios enviados.");
+        return self::SUCCESS;
     }
 }

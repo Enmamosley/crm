@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -54,11 +56,37 @@ class Order extends Model
         return $this->hasOne(FiscalDocument::class);
     }
 
+    // ─── Scopes ─────────────────────────────────────────────
+
+    /**
+     * Órdenes que esperan pago: sin pagar, no canceladas y ya emitidas —
+     * enviadas al cliente (sent/pending) o con un CFDI vigente (las
+     * recurrentes auto-timbradas se quedan en draft). Los draft sin CFDI
+     * son checkouts abandonados y no deben recibir cobranza.
+     */
+    public function scopeAwaitingPayment(Builder $query): Builder
+    {
+        return $query->whereNull('paid_at')
+            ->where('status', '!=', 'cancelled')
+            ->where(fn (Builder $q) => $q->whereIn('status', ['sent', 'pending'])
+                ->orWhereHas('fiscalDocument', fn (Builder $f) => $f->where('status', 'valid')));
+    }
+
     // ─── Helpers ────────────────────────────────────────────
 
     public function isPaid(): bool
     {
         return $this->paid_at !== null || $this->status === 'paid';
+    }
+
+    /**
+     * Fecha de emisión para los plazos de cobranza: el timbrado del CFDI o,
+     * si la orden no se factura, su creación. Devuelve una copia porque
+     * quien la usa suele encadenar addDays(), que muta la instancia.
+     */
+    public function issuedAt(): CarbonInterface
+    {
+        return ($this->fiscalDocument?->stamped_at ?? $this->created_at)->copy();
     }
 
     /** Hay un CFDI activo (timbrado y no cancelado). */

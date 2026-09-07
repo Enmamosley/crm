@@ -74,7 +74,7 @@ class ReportController extends Controller
         $from = $request->input('from', now()->startOfMonth()->format('Y-m-d'));
         $to   = $request->input('to', now()->format('Y-m-d'));
 
-        $invoices = Order::with('client')
+        $invoices = Order::with(['client', 'fiscalDocument'])
             ->whereBetween('created_at', [$from, "{$to} 23:59:59"])
             ->get();
 
@@ -90,7 +90,7 @@ class ReportController extends Controller
             $i->status,
             $i->payment_method,
             $i->paid_at?->format('d/m/Y') ?? 'Pendiente',
-            $i->stamped_at?->format('d/m/Y') ?? 'No',
+            $i->fiscalDocument?->stamped_at?->format('d/m/Y') ?? 'No',
             $i->created_at->format('d/m/Y'),
         ]));
     }

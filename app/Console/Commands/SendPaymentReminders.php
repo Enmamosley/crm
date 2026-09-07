@@ -19,15 +19,18 @@ class SendPaymentReminders extends Command
         $days = (int) $this->option('days');
         $cutoff = now()->subDays($days);
 
-        $invoices = Order::with('client')
-            ->whereNull('paid_at')
-            ->where('status', 'valid')
-            ->where('stamped_at', '<=', $cutoff)
-            ->get();
+        // La fecha de emisión vive en el CFDI (fiscal_documents.stamped_at) o,
+        // sin CFDI, en la creación de la orden. Se prefiltra por created_at
+        // porque siempre es anterior o igual al timbrado.
+        $invoices = Order::with(['client', 'fiscalDocument'])
+            ->awaitingPayment()
+            ->where('created_at', '<=', $cutoff)
+            ->get()
+            ->filter(fn (Order $order) => $order->issuedAt()->lte($cutoff));
 
         $sent = 0;
         foreach ($invoices as $order) {
-            if (!$order->client->email) {
+            if (!$order->client?->email) {
                 continue;
             }
 
