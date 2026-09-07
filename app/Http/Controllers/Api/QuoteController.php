@@ -25,8 +25,7 @@ class QuoteController extends Controller
 
         $ivaPercentage = (float) Setting::get('iva_percentage', 16);
 
-        $quote = Quote::create([
-            'quote_number' => Quote::generateQuoteNumber(),
+        $quote = Quote::createWithNumber([
             'lead_id' => $validated['lead_id'],
             'iva_percentage' => $ivaPercentage,
             'status' => 'borrador',
