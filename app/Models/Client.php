@@ -72,6 +72,110 @@ class Client extends Model
         return $this->hasMany(Task::class);
     }
 
+    /**
+     * ¿El cliente pagó un servicio que requiere dominio pero eligió
+     * "decidir después"? (sin dominio, sin hosting creado, y con un
+     * servicio u orden pagada que lo requiere).
+     */
+    public function awaitsDomain(): bool
+    {
+        if ($this->domain || $this->twentyi_package_id) {
+            return false;
+        }
+
+        // Servicios asignados manualmente que requieren dominio
+        if ($this->clientServices->contains(fn ($cs) => $cs->status === 'active' && $cs->service?->requires_domain)) {
+            return true;
+        }
+
+        // Órdenes pagadas de compra directa/carrito cuyo servicio requiere dominio.
+        // Match EXACTO contra el formato de las notas (no substring: "Hosting" no
+        // debe coincidir con "Hosting Mantenimiento").
+        $names = Service::where('requires_domain', true)->pluck('name');
+        if ($names->isEmpty()) {
+            return false;
+        }
+
+        foreach ($this->invoices as $order) {
+            if (!$order->paid_at || $order->status === 'cancelled' || empty($order->notes)) {
+                continue;
+            }
+
+            $notes = $order->notes;
+
+            if (str_starts_with($notes, 'Compra directa: ')) {
+                if ($names->contains(str_replace('Compra directa: ', '', $notes))) {
+                    return true;
+                }
+            } elseif (str_starts_with($notes, 'Carrito: ')) {
+                $items = collect(explode(',', str_replace('Carrito: ', '', $notes)))
+                    ->map(fn ($n) => trim(preg_replace('/^\d+x\s*/', '', trim($n))));
+                if ($items->intersect($names)->isNotEmpty()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * ¿El cliente tiene contratado un servicio que habilita la gestión de
+     * correos en el portal? Se determina por el flag `email_service` del
+     * servicio (configurable por paquete en el panel), no por nombre.
+     */
+    public function hasEmailService(): bool
+    {
+        $emailServices = Service::where('email_service', true)->get(['id', 'name']);
+        if ($emailServices->isEmpty()) {
+            return false;
+        }
+
+        $emailServiceIds   = $emailServices->pluck('id');
+        $emailServiceNames = $emailServices->pluck('name');
+
+        // Camino 0: servicio asignado directamente al cliente (p.ej. venta por WhatsApp)
+        if ($this->clientServices()
+            ->where('status', 'active')
+            ->whereIn('service_id', $emailServiceIds)
+            ->exists()) {
+            return true;
+        }
+
+        // Camino 1: orden pagada con cotización que incluye ítems de correo
+        $viaQuote = $this->invoices()
+            ->whereNotNull('paid_at')
+            ->whereHas('quote.items', fn ($q) => $q->whereIn('service_id', $emailServiceIds))
+            ->exists();
+
+        if ($viaQuote) {
+            return true;
+        }
+
+        // Camino 2: compra directa o carrito — match exacto contra las notas
+        $paidNotes = $this->invoices()
+            ->whereNotNull('paid_at')
+            ->where('status', '!=', 'cancelled')
+            ->whereNotNull('notes')
+            ->pluck('notes');
+
+        foreach ($paidNotes as $notes) {
+            if (str_starts_with($notes, 'Compra directa: ')) {
+                if ($emailServiceNames->contains(str_replace('Compra directa: ', '', $notes))) {
+                    return true;
+                }
+            } elseif (str_starts_with($notes, 'Carrito: ')) {
+                $items = collect(explode(',', str_replace('Carrito: ', '', $notes)))
+                    ->map(fn ($n) => trim(preg_replace('/^\d+x\s*/', '', trim($n))));
+                if ($items->intersect($emailServiceNames)->isNotEmpty()) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
     public function portalUrl(): string
     {
         return url('/portal/' . $this->portal_token);

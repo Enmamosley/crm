@@ -25,8 +25,10 @@ class ValidatePortalToken
             abort(404, 'Portal no disponible.');
         }
 
-        // Share client with all views for convenience
-        $request->merge(['portal_client' => $client]);
+        // Los controladores del portal lo recogen con PortalController::client().
+        // Va en attributes, no en merge(): merge() lo mete en la entrada del
+        // request, donde acabaría mezclado con los datos que valida cada acción.
+        $request->attributes->set('portal_client', $client);
 
         return $next($request);
     }
