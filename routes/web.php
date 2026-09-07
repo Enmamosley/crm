@@ -27,7 +27,14 @@ use App\Http\Controllers\Admin\TagController;
 use App\Http\Controllers\Admin\TaskController;
 use App\Http\Controllers\Admin\TicketController;
 use App\Http\Controllers\Admin\PermissionController;
-use App\Http\Controllers\ClientPortalController;
+use App\Http\Controllers\Portal\DashboardController as PortalDashboardController;
+use App\Http\Controllers\Portal\DnsController as PortalDnsController;
+use App\Http\Controllers\Portal\DomainController as PortalDomainController;
+use App\Http\Controllers\Portal\FiscalDataController;
+use App\Http\Controllers\Portal\MailboxController as PortalMailboxController;
+use App\Http\Controllers\Portal\PaymentController as PortalPaymentController;
+use App\Http\Controllers\Portal\QuoteController as PortalQuoteController;
+use App\Http\Controllers\Portal\TicketController as PortalTicketController;
 use App\Http\Controllers\DirectCheckoutController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\Auth\MagicLinkController;
@@ -235,55 +242,55 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
 
 // Portal Cliente (acceso público por token, validado)
 Route::prefix('portal')->name('portal.')->middleware('portal')->group(function () {
-    Route::get('{token}', [ClientPortalController::class, 'show'])->name('dashboard');
-    Route::get('{token}/orders/{order}/pdf', [ClientPortalController::class, 'downloadInvoicePdf'])->name('invoice.pdf');
-    Route::get('{token}/orders/{order}/receipt', [ClientPortalController::class, 'downloadReceipt'])->name('invoice.receipt');
-    Route::get('{token}/orders/{order}/xml', [ClientPortalController::class, 'downloadInvoiceXml'])->name('invoice.xml');
-    Route::get('{token}/documents/{document}', [ClientPortalController::class, 'downloadDocument'])->name('document.download');
+    Route::get('{token}', [PortalDashboardController::class, 'show'])->name('dashboard');
+    Route::get('{token}/orders/{order}/pdf', [PortalDashboardController::class, 'downloadInvoicePdf'])->name('invoice.pdf');
+    Route::get('{token}/orders/{order}/receipt', [PortalDashboardController::class, 'downloadReceipt'])->name('invoice.receipt');
+    Route::get('{token}/orders/{order}/xml', [PortalDashboardController::class, 'downloadInvoiceXml'])->name('invoice.xml');
+    Route::get('{token}/documents/{document}', [PortalDashboardController::class, 'downloadDocument'])->name('document.download');
 
     // Gestión de correos
-    Route::get('{token}/mailboxes', [ClientPortalController::class, 'mailboxes'])->name('mailboxes');
-    Route::post('{token}/mailboxes', [ClientPortalController::class, 'storeMailbox'])->name('mailboxes.store');
-    Route::delete('{token}/mailboxes/{mailbox}', [ClientPortalController::class, 'destroyMailbox'])->name('mailboxes.destroy');
-    Route::post('{token}/mailboxes/{mailbox}/password', [ClientPortalController::class, 'changeMailboxPassword'])->name('mailboxes.password');
-    Route::post('{token}/mailboxes/{mailbox}/webmail', [ClientPortalController::class, 'webmail'])->name('mailbox.webmail');
+    Route::get('{token}/mailboxes', [PortalMailboxController::class, 'mailboxes'])->name('mailboxes');
+    Route::post('{token}/mailboxes', [PortalMailboxController::class, 'storeMailbox'])->name('mailboxes.store');
+    Route::delete('{token}/mailboxes/{mailbox}', [PortalMailboxController::class, 'destroyMailbox'])->name('mailboxes.destroy');
+    Route::post('{token}/mailboxes/{mailbox}/password', [PortalMailboxController::class, 'changeMailboxPassword'])->name('mailboxes.password');
+    Route::post('{token}/mailboxes/{mailbox}/webmail', [PortalMailboxController::class, 'webmail'])->name('mailbox.webmail');
 
     // Pagos Mercado Pago
-    Route::get('{token}/orders/{order}/checkout', [ClientPortalController::class, 'checkout'])->name('checkout');
-    Route::post('{token}/orders/{order}/pay/card', [ClientPortalController::class, 'payWithCard'])->name('pay.card')->middleware('throttle:payments');
-    Route::post('{token}/orders/{order}/pay/oxxo', [ClientPortalController::class, 'payWithOxxo'])->name('pay.oxxo')->middleware('throttle:payments');
-    Route::post('{token}/orders/{order}/pay/spei', [ClientPortalController::class, 'payWithSpei'])->name('pay.spei')->middleware('throttle:payments');
-    Route::post('{token}/orders/{order}/pay/paypal/create',  [ClientPortalController::class, 'createPaypalOrder'])->name('pay.paypal.create')->middleware('throttle:payments');
-    Route::post('{token}/orders/{order}/pay/paypal/capture', [ClientPortalController::class, 'capturePaypalOrder'])->name('pay.paypal.capture')->middleware('throttle:payments');
-    Route::post('{token}/orders/{order}/pay/transfer', [ClientPortalController::class, 'payWithTransfer'])->name('pay.transfer')->middleware('throttle:payments');
-    Route::get('{token}/payments/{payment}', [ClientPortalController::class, 'paymentStatus'])->name('payment.status');
+    Route::get('{token}/orders/{order}/checkout', [PortalPaymentController::class, 'checkout'])->name('checkout');
+    Route::post('{token}/orders/{order}/pay/card', [PortalPaymentController::class, 'payWithCard'])->name('pay.card')->middleware('throttle:payments');
+    Route::post('{token}/orders/{order}/pay/oxxo', [PortalPaymentController::class, 'payWithOxxo'])->name('pay.oxxo')->middleware('throttle:payments');
+    Route::post('{token}/orders/{order}/pay/spei', [PortalPaymentController::class, 'payWithSpei'])->name('pay.spei')->middleware('throttle:payments');
+    Route::post('{token}/orders/{order}/pay/paypal/create',  [PortalPaymentController::class, 'createPaypalOrder'])->name('pay.paypal.create')->middleware('throttle:payments');
+    Route::post('{token}/orders/{order}/pay/paypal/capture', [PortalPaymentController::class, 'capturePaypalOrder'])->name('pay.paypal.capture')->middleware('throttle:payments');
+    Route::post('{token}/orders/{order}/pay/transfer', [PortalPaymentController::class, 'payWithTransfer'])->name('pay.transfer')->middleware('throttle:payments');
+    Route::get('{token}/payments/{payment}', [PortalPaymentController::class, 'paymentStatus'])->name('payment.status');
 
     // Cotizaciones (aceptar/rechazar)
-    Route::get('{token}/quotes/{quote}', [ClientPortalController::class, 'showQuote'])->name('quote.show');
-    Route::post('{token}/quotes/{quote}/accept', [ClientPortalController::class, 'acceptQuote'])->name('quote.accept');
-    Route::post('{token}/quotes/{quote}/reject', [ClientPortalController::class, 'rejectQuote'])->name('quote.reject');
+    Route::get('{token}/quotes/{quote}', [PortalQuoteController::class, 'showQuote'])->name('quote.show');
+    Route::post('{token}/quotes/{quote}/accept', [PortalQuoteController::class, 'acceptQuote'])->name('quote.accept');
+    Route::post('{token}/quotes/{quote}/reject', [PortalQuoteController::class, 'rejectQuote'])->name('quote.reject');
 
     // Datos fiscales
-    Route::get('{token}/fiscal', [ClientPortalController::class, 'editFiscalData'])->name('fiscal.edit');
-    Route::put('{token}/fiscal', [ClientPortalController::class, 'updateFiscalData'])->name('fiscal.update');
+    Route::get('{token}/fiscal', [FiscalDataController::class, 'editFiscalData'])->name('fiscal.edit');
+    Route::put('{token}/fiscal', [FiscalDataController::class, 'updateFiscalData'])->name('fiscal.update');
 
     // Tickets de soporte
-    Route::get('{token}/tickets', [ClientPortalController::class, 'tickets'])->name('tickets.index');
-    Route::get('{token}/tickets/create', [ClientPortalController::class, 'createTicket'])->name('tickets.create');
-    Route::post('{token}/tickets', [ClientPortalController::class, 'storeTicket'])->name('tickets.store');
-    Route::get('{token}/tickets/{ticket}', [ClientPortalController::class, 'showTicket'])->name('tickets.show');
-    Route::post('{token}/tickets/{ticket}/reply', [ClientPortalController::class, 'replyToTicket'])->name('tickets.reply');
+    Route::get('{token}/tickets', [PortalTicketController::class, 'tickets'])->name('tickets.index');
+    Route::get('{token}/tickets/create', [PortalTicketController::class, 'createTicket'])->name('tickets.create');
+    Route::post('{token}/tickets', [PortalTicketController::class, 'storeTicket'])->name('tickets.store');
+    Route::get('{token}/tickets/{ticket}', [PortalTicketController::class, 'showTicket'])->name('tickets.show');
+    Route::post('{token}/tickets/{ticket}/reply', [PortalTicketController::class, 'replyToTicket'])->name('tickets.reply');
 
     // Dominio (Cosmotown)
-    Route::post('{token}/domain/choose', [ClientPortalController::class, 'chooseDomain'])->name('domain.choose')->middleware('throttle:10,1');
-    Route::get('{token}/domain', [ClientPortalController::class, 'domain'])->name('domain');
-    Route::get('{token}/domain/dns', [ClientPortalController::class, 'domainDns'])->name('domain.dns');
-    Route::post('{token}/domain/dns', [ClientPortalController::class, 'saveDomainDns'])->name('domain.dns.save');
-    Route::post('{token}/domain/nameservers', [ClientPortalController::class, 'saveDomainNameservers'])->name('domain.nameservers.save');
+    Route::post('{token}/domain/choose', [PortalDomainController::class, 'chooseDomain'])->name('domain.choose')->middleware('throttle:10,1');
+    Route::get('{token}/domain', [PortalDomainController::class, 'domain'])->name('domain');
+    Route::get('{token}/domain/dns', [PortalDomainController::class, 'domainDns'])->name('domain.dns');
+    Route::post('{token}/domain/dns', [PortalDomainController::class, 'saveDomainDns'])->name('domain.dns.save');
+    Route::post('{token}/domain/nameservers', [PortalDomainController::class, 'saveDomainNameservers'])->name('domain.nameservers.save');
 
     // DNS 20i (hosting)
-    Route::get('{token}/dns', [ClientPortalController::class, 'dns'])->name('dns');
-    Route::post('{token}/dns', [ClientPortalController::class, 'storeDns'])->name('dns.store');
-    Route::put('{token}/dns/{record}', [ClientPortalController::class, 'updateDns'])->name('dns.update');
-    Route::delete('{token}/dns/{record}', [ClientPortalController::class, 'destroyDns'])->name('dns.destroy');
+    Route::get('{token}/dns', [PortalDnsController::class, 'dns'])->name('dns');
+    Route::post('{token}/dns', [PortalDnsController::class, 'storeDns'])->name('dns.store');
+    Route::put('{token}/dns/{record}', [PortalDnsController::class, 'updateDns'])->name('dns.update');
+    Route::delete('{token}/dns/{record}', [PortalDnsController::class, 'destroyDns'])->name('dns.destroy');
 });
