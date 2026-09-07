@@ -10,6 +10,10 @@ use Illuminate\Http\Request;
 
 class MailboxController extends Controller
 {
+    public function __construct(
+        private TwentyIService $twentyi,
+    ) {}
+
     public function index(Client $client)
     {
         $mailboxes = [];
@@ -18,7 +22,7 @@ class MailboxController extends Controller
 
         if ($client->twentyi_package_id && Setting::get('twentyi_api_key')) {
             try {
-                $service   = new TwentyIService();
+                $service   = $this->twentyi;
                 $domain    = $service->getDomain($client);
                 $mailboxes = $service->listMailboxes($client);
             } catch (\Throwable $e) {
@@ -46,7 +50,7 @@ class MailboxController extends Controller
         }
 
         try {
-            (new TwentyIService())->createMailbox(
+            $this->twentyi->createMailbox(
                 $client,
                 $validated['local'],
                 $validated['password'],
@@ -67,7 +71,7 @@ class MailboxController extends Controller
         }
 
         try {
-            (new TwentyIService())->deleteMailbox($client, $mailboxId);
+            $this->twentyi->deleteMailbox($client, $mailboxId);
         } catch (\Throwable $e) {
             return back()->with('error', 'No se pudo eliminar el buzón: ' . $e->getMessage());
         }
@@ -87,7 +91,7 @@ class MailboxController extends Controller
         }
 
         try {
-            (new TwentyIService())->updateMailboxPassword($client, $mailboxId, $validated['password']);
+            $this->twentyi->updateMailboxPassword($client, $mailboxId, $validated['password']);
         } catch (\Throwable $e) {
             return back()->with('error', 'No se pudo cambiar la contraseña: ' . $e->getMessage());
         }
@@ -102,7 +106,7 @@ class MailboxController extends Controller
         }
 
         try {
-            $url = (new TwentyIService())->getWebmailUrl($client, $mailboxId);
+            $url = $this->twentyi->getWebmailUrl($client, $mailboxId);
         } catch (\Throwable $e) {
             return back()->with('error', 'No se pudo obtener el enlace webmail: ' . $e->getMessage());
         }

@@ -10,6 +10,10 @@ use Illuminate\Support\Facades\Log;
 
 class MercadoPagoWebhookController extends Controller
 {
+    public function __construct(
+        private MercadoPagoService $mercadoPago,
+    ) {}
+
     public function handle(Request $request)
     {
         $type   = $request->input('type');
@@ -25,7 +29,7 @@ class MercadoPagoWebhookController extends Controller
             return response()->json(['status' => 'already_processed'], 200);
         }
 
-        $service   = new MercadoPagoService();
+        $service   = $this->mercadoPago;
         $signature = $request->header('x-signature', '');
         $requestId = $request->header('x-request-id', '');
 

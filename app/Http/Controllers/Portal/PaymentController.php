@@ -16,6 +16,11 @@ use Illuminate\Support\Facades\Log;
 
 class PaymentController extends PortalController
 {
+    public function __construct(
+        private MercadoPagoService $mercadoPago,
+        private PayPalService $paypal,
+    ) {}
+
     public function checkout(string $token, Order $order)
     {
         $client = $this->client();
@@ -28,7 +33,7 @@ class PaymentController extends PortalController
         }
 
         $mpPublicKey = Setting::get('mp_public_key', '');
-        $paypal = new PayPalService();
+        $paypal = $this->paypal;
         $paypalClientId = $paypal->isConfigured() ? $paypal->clientId() : '';
         $paypalMode     = $paypal->mode();
 
@@ -69,7 +74,7 @@ class PaymentController extends PortalController
         }
 
         try {
-            $payment = (new MercadoPagoService())->createCardPayment(
+            $payment = $this->mercadoPago->createCardPayment(
                 $order,
                 $validated['token'],
                 $validated['payment_method_id'],
@@ -109,7 +114,7 @@ class PaymentController extends PortalController
         }
 
         try {
-            $payment = (new MercadoPagoService())->createOxxoPayment($order, $validated['email']);
+            $payment = $this->mercadoPago->createOxxoPayment($order, $validated['email']);
             return redirect()->route('portal.payment.status', [$token, $payment]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Portal OXXO falló', ['order' => $order->id, 'error' => $e->getMessage()]);
@@ -135,7 +140,7 @@ class PaymentController extends PortalController
         }
 
         try {
-            $payment = (new MercadoPagoService())->createSpeiPayment($order, $validated['email']);
+            $payment = $this->mercadoPago->createSpeiPayment($order, $validated['email']);
             return redirect()->route('portal.payment.status', [$token, $payment]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Portal SPEI falló', ['order' => $order->id, 'error' => $e->getMessage()]);
@@ -151,7 +156,7 @@ class PaymentController extends PortalController
             return response()->json(['error' => 'Esta factura ya fue pagada.'], 422);
         }
 
-        $paypal = new PayPalService();
+        $paypal = $this->paypal;
         if (!$paypal->isConfigured()) {
             return response()->json(['error' => 'PayPal no está configurado.'], 422);
         }
@@ -183,7 +188,7 @@ class PaymentController extends PortalController
             'paypalOrderId' => 'required|string',
         ]);
 
-        $paypal = new PayPalService();
+        $paypal = $this->paypal;
         try {
             $capture = $paypal->captureOrder($validated['paypalOrderId']);
             $payment = $paypal->processCapture($order, $capture, $request);
@@ -243,7 +248,7 @@ class PaymentController extends PortalController
         // Refrescar estado desde MP si sigue pendiente
         if ($payment->isPending() && $payment->mp_payment_id) {
             try {
-                (new MercadoPagoService())->syncPaymentStatus($payment, $request);
+                $this->mercadoPago->syncPaymentStatus($payment, $request);
                 $payment->refresh();
             } catch (\Throwable) {}
         }

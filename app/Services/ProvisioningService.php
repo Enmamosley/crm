@@ -15,6 +15,11 @@ use Illuminate\Support\Facades\Log;
  */
 class ProvisioningService
 {
+    public function __construct(
+        private CosmotownService $cosmotown,
+        private TwentyIService $twentyi,
+    ) {}
+
     public function provisionForOrder(Order $order): void
     {
         $client = $order->client;
@@ -25,7 +30,7 @@ class ProvisioningService
         // 1. Registro de dominio en Cosmotown (idempotente vía cosmotown_registered)
         if ($client->domain_type === 'cosmotown' && !$client->cosmotown_registered) {
             try {
-                $cosmotown = new CosmotownService();
+                $cosmotown = $this->cosmotown;
                 if ($cosmotown->isConfigured()) {
                     $cosmotown->register($client->domain);
                     $client->update(['cosmotown_registered' => true]);
@@ -52,7 +57,7 @@ class ProvisioningService
             $service = $this->resolveHostingService($order);
             if ($service && $service->twentyi_package_bundle_id) {
                 try {
-                    $packageId = (new TwentyIService())->createHostingPackage($client->domain, $service->twentyi_package_bundle_id);
+                    $packageId = $this->twentyi->createHostingPackage($client->domain, $service->twentyi_package_bundle_id);
                     $client->update(['twentyi_package_id' => $packageId]);
                     ActivityLog::log('hosting_provisioned', $client, "Hosting 20i creado: paquete #{$packageId} para {$client->domain}");
                 } catch (\Throwable $e) {

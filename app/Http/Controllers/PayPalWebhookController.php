@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Log;
 
 class PayPalWebhookController extends Controller
 {
+    public function __construct(
+        private PayPalService $paypal,
+    ) {}
+
     public function handle(Request $request)
     {
         $body  = $request->getContent();
@@ -28,7 +32,7 @@ class PayPalWebhookController extends Controller
             }
         }
 
-        $service = new PayPalService();
+        $service = $this->paypal;
 
         // Verificación de firma OBLIGATORIA. Sin webhook_id no se puede validar
         // el origen del evento, así que rechazamos para evitar webhooks forjados

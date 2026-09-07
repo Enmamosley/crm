@@ -44,7 +44,7 @@ class MetaPixelTest extends TestCase
 
     public function test_capi_event_id_is_deterministic_and_unconfigured_by_default(): void
     {
-        $service = new MetaConversionsService();
+        $service = app(MetaConversionsService::class);
         $this->assertFalse($service->isConfigured());
 
         $order = new Order(['total' => 100]);

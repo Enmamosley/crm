@@ -12,6 +12,10 @@ use Illuminate\Http\Request;
 
 class MailboxController extends PortalController
 {
+    public function __construct(
+        private TwentyIService $twentyi,
+    ) {}
+
     public function mailboxes(string $token)
     {
         $client = $this->client();
@@ -24,7 +28,7 @@ class MailboxController extends PortalController
 
         if ($client->twentyi_package_id && Setting::get('twentyi_api_key')) {
             try {
-                $service   = new TwentyIService();
+                $service   = $this->twentyi;
                 $domain    = $service->getDomain($client);
                 $mailboxes = $service->listMailboxes($client);
             } catch (\Throwable $e) {
@@ -51,7 +55,7 @@ class MailboxController extends PortalController
         }
 
         try {
-            (new TwentyIService())->createMailbox($client, $validated['local'], $validated['password']);
+            $this->twentyi->createMailbox($client, $validated['local'], $validated['password']);
         } catch (\Throwable $e) {
             return back()->with('error', 'No se pudo crear el buzón: ' . $e->getMessage());
         }
@@ -71,7 +75,7 @@ class MailboxController extends PortalController
         }
 
         try {
-            (new TwentyIService())->deleteMailbox($client, $mailbox);
+            $this->twentyi->deleteMailbox($client, $mailbox);
         } catch (\Throwable $e) {
             return back()->with('error', 'No se pudo eliminar el buzón: ' . $e->getMessage());
         }
@@ -95,7 +99,7 @@ class MailboxController extends PortalController
         }
 
         try {
-            (new TwentyIService())->updateMailboxPassword($client, $mailbox, $validated['password']);
+            $this->twentyi->updateMailboxPassword($client, $mailbox, $validated['password']);
         } catch (\Throwable $e) {
             return back()->with('error', 'No se pudo cambiar la contraseña: ' . $e->getMessage());
         }
@@ -113,7 +117,7 @@ class MailboxController extends PortalController
             abort(404);
         }
 
-        $url = (new TwentyIService())->getWebmailUrl($client, $mailbox);
+        $url = $this->twentyi->getWebmailUrl($client, $mailbox);
 
         if (!$url) {
             return back()->with('error', 'No se pudo obtener el enlace de webmail.');

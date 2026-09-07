@@ -13,34 +13,38 @@ use Illuminate\Support\Facades\Log;
 
 class PayPalService
 {
-    private string $clientId;
-    private string $secret;
-    private string $mode;
-    private string $baseUrl;
+    public function __construct(private OrderFinalizationService $finalization) {}
 
-    public function __construct()
+    /**
+     * Las credenciales se leen en cada uso, no se cachean al construir: los
+     * servicios viven en el contenedor y un cambio en Ajustes debe verse sin
+     * reinstanciarlos.
+     */
+    private function secret(): string
     {
-        $this->clientId = Setting::get('paypal_client_id', '');
-        $this->secret   = Setting::get('paypal_secret', '');
-        $this->mode     = Setting::get('paypal_mode', 'sandbox');
-        $this->baseUrl  = $this->mode === 'live'
+        return (string) Setting::get('paypal_secret', '');
+    }
+
+    private function baseUrl(): string
+    {
+        return $this->mode() === 'live'
             ? 'https://api-m.paypal.com'
             : 'https://api-m.sandbox.paypal.com';
     }
 
     public function isConfigured(): bool
     {
-        return $this->clientId !== '' && $this->secret !== '';
+        return $this->clientId() !== '' && $this->secret() !== '';
     }
 
     public function clientId(): string
     {
-        return $this->clientId;
+        return (string) Setting::get('paypal_client_id', '');
     }
 
     public function mode(): string
     {
-        return $this->mode;
+        return (string) Setting::get('paypal_mode', 'sandbox');
     }
 
     /**
@@ -67,7 +71,7 @@ class PayPalService
             ],
         ];
 
-        $response = $this->http()->post("{$this->baseUrl}/v2/checkout/orders", $payload);
+        $response = $this->http()->post("{$this->baseUrl()}/v2/checkout/orders", $payload);
 
         if (!$response->successful()) {
             Log::error('PayPal createOrder failed', ['status' => $response->status(), 'body' => $response->body()]);
@@ -90,7 +94,7 @@ class PayPalService
      */
     public function captureOrder(string $paypalOrderId): array
     {
-        $response = $this->http()->post("{$this->baseUrl}/v2/checkout/orders/{$paypalOrderId}/capture");
+        $response = $this->http()->post("{$this->baseUrl()}/v2/checkout/orders/{$paypalOrderId}/capture");
 
         if (!$response->successful()) {
             Log::error('PayPal captureOrder failed', ['order' => $paypalOrderId, 'status' => $response->status(), 'body' => $response->body()]);
@@ -102,7 +106,7 @@ class PayPalService
 
     public function getOrder(string $paypalOrderId): ?array
     {
-        $response = $this->http()->get("{$this->baseUrl}/v2/checkout/orders/{$paypalOrderId}");
+        $response = $this->http()->get("{$this->baseUrl()}/v2/checkout/orders/{$paypalOrderId}");
         return $response->successful() ? $response->json() : null;
     }
 
@@ -173,7 +177,7 @@ class PayPalService
         // servicio hace la transición a pagada y es idempotente, así que no
         // hace falta vigilar aquí si la captura ya se había procesado.
         if ($internalStatus === 'approved') {
-            (new OrderFinalizationService())->finalize($payment, $request);
+            $this->finalization->finalize($payment, $request);
         }
 
         return $payment;
@@ -199,7 +203,7 @@ class PayPalService
             'webhook_event'     => json_decode($body, true),
         ];
 
-        $response = $this->http()->post("{$this->baseUrl}/v1/notifications/verify-webhook-signature", $payload);
+        $response = $this->http()->post("{$this->baseUrl()}/v1/notifications/verify-webhook-signature", $payload);
 
         if (!$response->successful()) {
             Log::warning('PayPal webhook verify failed', ['body' => $response->body()]);
@@ -220,14 +224,14 @@ class PayPalService
 
     private function getAccessToken(): string
     {
-        $cacheKey = "paypal_access_token_{$this->mode}_" . md5($this->clientId);
+        $cacheKey = "paypal_access_token_{$this->mode()}_" . md5($this->clientId());
 
         return Cache::remember($cacheKey, now()->addMinutes(8), function () {
             $response = Http::asForm()
                 ->timeout(15)
                 ->connectTimeout(5)
-                ->withBasicAuth($this->clientId, $this->secret)
-                ->post("{$this->baseUrl}/v1/oauth2/token", ['grant_type' => 'client_credentials']);
+                ->withBasicAuth($this->clientId(), $this->secret())
+                ->post("{$this->baseUrl()}/v1/oauth2/token", ['grant_type' => 'client_credentials']);
 
             if (!$response->successful()) {
                 throw new \RuntimeException('PayPal OAuth failed: ' . $response->body());

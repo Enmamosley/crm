@@ -8,24 +8,24 @@ use Illuminate\Support\Facades\Log;
 
 class CosmotownService
 {
-    private string $baseUrl;
-    private string $apiKey;
-
-    public function __construct()
+    /**
+     * Las credenciales se leen en cada uso, no se cachean al construir: los
+     * servicios viven en el contenedor y un cambio en Ajustes debe verse sin
+     * reinstanciarlos.
+     */
+    private function apiKey(): string
     {
-        $this->apiKey  = Setting::get('cosmotown_api_key', '');
-        $this->baseUrl = rtrim(Setting::get('cosmotown_base_url', 'https://sandbox.cosmotown.com'), '/');
+        return (string) Setting::get('cosmotown_api_key', '');
+    }
 
-        Log::debug('CosmotownService:init', [
-            'baseUrl'    => $this->baseUrl,
-            'apiKey_len' => strlen($this->apiKey),
-            'apiKey_preview' => $this->apiKey ? substr($this->apiKey, 0, 6) . '...' : '(vacío)',
-        ]);
+    private function baseUrl(): string
+    {
+        return rtrim((string) Setting::get('cosmotown_base_url', 'https://sandbox.cosmotown.com'), '/');
     }
 
     private function request(string $method, string $endpoint, array $payload = []): \Illuminate\Http\Client\Response
     {
-        $url = "{$this->baseUrl}{$endpoint}";
+        $url = "{$this->baseUrl()}{$endpoint}";
 
         // Redactar datos personales (contactos WHOIS) antes de loguear
         $logPayload = $payload;
@@ -36,10 +36,10 @@ class CosmotownService
         Log::debug("Cosmotown:{$method}:{$endpoint}", [
             'url'     => $url,
             'payload' => $logPayload,
-            'header'  => 'X-API-TOKEN: ' . (substr($this->apiKey, 0, 6) ?: '(vacío)') . '...',
+            'header'  => 'X-API-TOKEN: ' . (substr($this->apiKey(), 0, 6) ?: '(vacío)') . '...',
         ]);
 
-        $http = Http::withHeaders(['X-API-TOKEN' => $this->apiKey])
+        $http = Http::withHeaders(['X-API-TOKEN' => $this->apiKey()])
             ->withOptions(['curl' => [CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4]]);
 
         $response = match(strtoupper($method)) {
@@ -368,6 +368,6 @@ class CosmotownService
 
     public function isConfigured(): bool
     {
-        return !empty($this->apiKey);
+        return !empty($this->apiKey());
     }
 }

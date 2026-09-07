@@ -13,6 +13,11 @@ use App\Models\Setting;
  */
 class InvoicingManager
 {
+    public function __construct(
+        private FinkokService $finkok,
+        private FacturapiService $facturapi,
+    ) {}
+
     public function provider(): string
     {
         return Setting::get('invoicing_provider', 'facturapi');
@@ -21,18 +26,18 @@ class InvoicingManager
     public function isConfigured(): bool
     {
         return $this->provider() === 'finkok'
-            ? (new FinkokService())->isConfigured()
-            : (bool) Setting::get('facturapi_api_key');
+            ? $this->finkok->isConfigured()
+            : $this->facturapi->isConfigured();
     }
 
     /** @return array{success: bool, data: array} */
     public function stampInvoice(Order $order): array
     {
         if ($this->provider() === 'finkok') {
-            return (new FinkokService())->stampInvoice($order);
+            return $this->finkok->stampInvoice($order);
         }
 
-        return (new FacturapiService())->stampInvoice($order);
+        return $this->facturapi->stampInvoice($order);
     }
 
     /** @return array{success: bool, data: array} */
@@ -41,9 +46,9 @@ class InvoicingManager
         $source = $order->fiscalDocument?->source ?? 'facturapi';
 
         if ($source === 'finkok') {
-            return (new FinkokService())->cancelInvoice($order, $motive);
+            return $this->finkok->cancelInvoice($order, $motive);
         }
 
-        return (new FacturapiService())->cancelInvoice($order, $motive);
+        return $this->facturapi->cancelInvoice($order, $motive);
     }
 }

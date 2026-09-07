@@ -10,9 +10,13 @@ use Illuminate\Http\Request;
 
 class DomainController extends Controller
 {
+    public function __construct(
+        private CosmotownService $cosmotown,
+    ) {}
+
     public function index()
     {
-        $service     = new CosmotownService();
+        $service     = $this->cosmotown;
         $configured  = $service->isConfigured();
         $environment = Setting::get('cosmotown_base_url', 'https://sandbox.cosmotown.com');
         $isSandbox   = str_contains($environment, 'sandbox');
@@ -35,7 +39,7 @@ class DomainController extends Controller
             'domain' => ['required', 'string', 'max:253', 'regex:/^[a-zA-Z0-9][a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}$/'],
         ]);
 
-        $service = new CosmotownService();
+        $service = $this->cosmotown;
 
         if (!$service->isConfigured()) {
             return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
@@ -58,7 +62,7 @@ class DomainController extends Controller
             'domain' => ['required', 'string', 'max:253', 'regex:/^[a-zA-Z0-9][a-zA-Z0-9\-\.]+\.[a-zA-Z]{2,}$/'],
         ]);
 
-        $service = new CosmotownService();
+        $service = $this->cosmotown;
 
         if (!$service->isConfigured()) {
             return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
@@ -77,7 +81,7 @@ class DomainController extends Controller
      */
     public function list(Request $request)
     {
-        $service = new CosmotownService();
+        $service = $this->cosmotown;
 
         if (!$service->isConfigured()) {
             return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
@@ -99,7 +103,7 @@ class DomainController extends Controller
      */
     public function info(string $domain)
     {
-        $service = new CosmotownService();
+        $service = $this->cosmotown;
 
         if (!$service->isConfigured()) {
             return redirect()->route('admin.domains.index')->with('error', 'API key de Cosmotown no configurada.');
@@ -161,7 +165,7 @@ class DomainController extends Controller
      */
     public function dns(string $domain)
     {
-        $service = new CosmotownService();
+        $service = $this->cosmotown;
 
         if (!$service->isConfigured()) {
             return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
@@ -184,7 +188,7 @@ class DomainController extends Controller
             'records' => ['required', 'array'],
         ]);
 
-        $service = new CosmotownService();
+        $service = $this->cosmotown;
 
         if (!$service->isConfigured()) {
             return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
@@ -210,7 +214,7 @@ class DomainController extends Controller
             'nameservers.*' => ['required', 'string', 'max:253'],
         ]);
 
-        $service = new CosmotownService();
+        $service = $this->cosmotown;
 
         if (!$service->isConfigured()) {
             return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
@@ -233,7 +237,7 @@ class DomainController extends Controller
             'years' => ['required', 'integer', 'min:1', 'max:10'],
         ]);
 
-        $service = new CosmotownService();
+        $service = $this->cosmotown;
 
         if (!$service->isConfigured()) {
             return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
@@ -257,7 +261,7 @@ class DomainController extends Controller
             'domains.*' => ['required', 'string', 'max:253'],
         ]);
 
-        $service = new CosmotownService();
+        $service = $this->cosmotown;
 
         if (!$service->isConfigured()) {
             return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);
@@ -276,7 +280,7 @@ class DomainController extends Controller
      */
     public function ping()
     {
-        $service = new CosmotownService();
+        $service = $this->cosmotown;
 
         if (!$service->isConfigured()) {
             return response()->json(['error' => 'API key de Cosmotown no configurada.'], 422);

@@ -79,7 +79,7 @@ class PaymentSecurityTest extends TestCase
         $order = $this->makeOrder(100.0);
 
         try {
-            (new PayPalService())->processCapture($order, $this->capture($order, '1.00'));
+            app(PayPalService::class)->processCapture($order, $this->capture($order, '1.00'));
             $this->fail('Se esperaba una excepción por monto incorrecto.');
         } catch (\RuntimeException $e) {
             $this->assertNull($order->fresh()->paid_at);
@@ -93,7 +93,7 @@ class PaymentSecurityTest extends TestCase
         $order = $this->makeOrder(100.0);
 
         $this->expectException(\RuntimeException::class);
-        (new PayPalService())->processCapture($order, $this->capture($order, '100.00', '999999'));
+        app(PayPalService::class)->processCapture($order, $this->capture($order, '100.00', '999999'));
     }
 
     /** Camino feliz: monto y referencia correctos → pago aprobado y orden pagada. */
@@ -101,7 +101,7 @@ class PaymentSecurityTest extends TestCase
     {
         $order = $this->makeOrder(100.0);
 
-        $payment = (new PayPalService())->processCapture($order, $this->capture($order, '100.00'));
+        $payment = app(PayPalService::class)->processCapture($order, $this->capture($order, '100.00'));
 
         $this->assertTrue($payment->isApproved());
         $this->assertNotNull($order->fresh()->paid_at);

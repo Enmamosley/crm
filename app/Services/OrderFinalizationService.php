@@ -28,6 +28,12 @@ use Illuminate\Support\Facades\Mail;
  */
 class OrderFinalizationService
 {
+    public function __construct(
+        private InvoicingManager $invoicing,
+        private ProvisioningService $provisioning,
+        private MetaConversionsService $meta,
+    ) {}
+
     /** @return bool true si esta llamada fue la que finalizó la orden. */
     public function finalize(Payment $payment, ?Request $request = null, string $status = 'sent'): bool
     {
@@ -54,11 +60,9 @@ class OrderFinalizationService
      */
     private function stamp(Order $order, Payment $payment): void
     {
-        $invoicing = new InvoicingManager();
-
         if (($order->billing_preference ?? 'none') === 'none'
             || $order->isStamped()
-            || !$invoicing->isConfigured()) {
+            || !$this->invoicing->isConfigured()) {
             return;
         }
 
@@ -70,7 +74,7 @@ class OrderFinalizationService
                 $order->update(['payment_form' => $satForm]);
             }
 
-            $invoicing->stampInvoice($order);
+            $this->invoicing->stampInvoice($order);
             ActivityLog::log('auto_stamped', $order, "Factura {$order->folio()} timbrada automáticamente tras el pago");
         } catch (\Throwable $e) {
             Log::error('Auto-stamp failed after payment', ['order_id' => $order->id, 'error' => $e->getMessage()]);
@@ -95,7 +99,7 @@ class OrderFinalizationService
     private function provision(Order $order): void
     {
         try {
-            (new ProvisioningService())->provisionForOrder($order);
+            $this->provisioning->provisionForOrder($order);
         } catch (\Throwable $e) {
             Log::error('Provisioning failed after payment', ['order_id' => $order->id, 'error' => $e->getMessage()]);
         }
@@ -118,7 +122,7 @@ class OrderFinalizationService
     private function sendMetaPurchase(Order $order, ?Request $request): void
     {
         try {
-            (new MetaConversionsService())->sendPurchase($order, $request);
+            $this->meta->sendPurchase($order, $request);
         } catch (\Throwable $e) {
             Log::error('Meta purchase event failed after payment', ['order_id' => $order->id, 'error' => $e->getMessage()]);
         }
