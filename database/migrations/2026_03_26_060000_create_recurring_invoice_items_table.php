@@ -8,12 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // recurring_invoice_schedules se crea después (2026_06_15_000003), así que
+        // en una instalación nueva la tabla referenciada todavía no existe. SQLite
+        // lo tolera, pero MySQL aborta con errno 150 y deja la migración a medias.
+        // La FK la coloca 2026_06_15_000004, que recrea esta tabla ya con destino.
+        $canConstrain = Schema::hasTable('recurring_invoice_schedules');
+
         Schema::dropIfExists('recurring_invoice_items');
-        Schema::create('recurring_invoice_items', function (Blueprint $table) {
+        Schema::create('recurring_invoice_items', function (Blueprint $table) use ($canConstrain) {
             $table->id();
-            $table->foreignId('recurring_invoice_schedule_id')
-                  ->constrained()
-                  ->cascadeOnDelete();
+            $column = $table->foreignId('recurring_invoice_schedule_id');
+            if ($canConstrain) {
+                $column->constrained()->cascadeOnDelete();
+            }
             $table->string('description');
             $table->string('sat_product_key')->default('80101501');
             $table->string('sat_unit_key')->default('E48');

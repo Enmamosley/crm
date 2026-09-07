@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Services\PayPalService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
 class PaymentSecurityTest extends TestCase
@@ -54,7 +55,7 @@ class PaymentSecurityTest extends TestCase
         ];
     }
 
-    /** Regresión P0: un Payment debe poder crearse sólo con order_id (client_invoice_id nullable). */
+    /** Regresión P0: un Payment debe poder crearse sólo con order_id (la columna legacy ya no existe). */
     public function test_payment_can_be_created_with_order_only(): void
     {
         $order = $this->makeOrder();
@@ -68,7 +69,7 @@ class PaymentSecurityTest extends TestCase
         ]);
 
         $this->assertNotNull($payment->id);
-        $this->assertNull($payment->client_invoice_id);
+        $this->assertFalse(Schema::hasColumn('payments', 'client_invoice_id'));
         $this->assertTrue($payment->order->is($order));
     }
 

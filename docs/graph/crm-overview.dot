@@ -206,7 +206,7 @@ digraph crm {
   "controller:PayPalWebhookController" -> "service:PayPalService" [color="#16a34a"];
   "controller:PayPalWebhookController" -> "service:ProvisioningService" [color="#16a34a"];
   "command:ProcessDunning" -> "mail:PaymentReminder" [color="#db2777"];
-  "command:ProcessRecurringInvoices" -> "service:FacturapiService" [color="#16a34a"];
+  "command:ProcessRecurringInvoices" -> "service:InvoicingManager" [color="#16a34a"];
   "command:SendPaymentReminders" -> "mail:PaymentReminder" [color="#db2777"];
   "scheduler" -> "command:SendPaymentReminders" [color="#2563eb" fontsize=8 label="dailyAt(09:00)"];
   "scheduler" -> "command:ProcessRecurringInvoices" [color="#2563eb" fontsize=8 label="dailyAt(06:00)"];
