@@ -67,6 +67,12 @@ class Order extends Model
         return $this->hasOne(FiscalDocument::class)->latestOfMany();
     }
 
+    /** Recibos Electrónicos de Pago (CFDI tipo P) emitidos contra esta factura. */
+    public function paymentComplements(): HasMany
+    {
+        return $this->hasMany(PaymentComplement::class);
+    }
+
     /** Todos los CFDI de la orden, incluidos los cancelados. Para auditoría. */
     public function fiscalDocuments(): HasMany
     {
@@ -163,6 +169,27 @@ class Order extends Model
         $this->forceFill(['paid_at' => $paidAt, 'status' => $status])->syncOriginal();
 
         return true;
+    }
+
+    /** Pago en parcialidades o diferido: obliga a emitir complemento de pago. */
+    public function isPpd(): bool
+    {
+        return ($this->payment_method ?: 'PUE') === 'PPD';
+    }
+
+    /**
+     * ¿Falta por emitir el REP de algún pago? Sólo aplica a facturas PPD ya
+     * timbradas: el SAT da hasta el día 5 del mes siguiente al pago.
+     */
+    public function owesPaymentComplement(): bool
+    {
+        if (!$this->isPpd() || !$this->isStamped()) {
+            return false;
+        }
+
+        return $this->paymentComplements()
+            ->where('status', '!=', 'valid')
+            ->exists();
     }
 
     /** Hay un CFDI activo (timbrado y no cancelado). */

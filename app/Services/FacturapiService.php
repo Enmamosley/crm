@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Client;
 use App\Models\FiscalDocument;
 use App\Models\Order;
+use App\Models\PaymentComplement;
 use App\Models\Setting;
 use App\Support\TaxBreakdown;
 use Illuminate\Http\Client\Response;
@@ -189,14 +190,26 @@ class FacturapiService
     // ──────────────────────────────────────────────
 
     /**
-     * Crea un CFDI de complemento de pago para facturas PPD.
+     * Timbra el Recibo Electrónico de Pago (CFDI tipo P) de un pago contra una
+     * factura PPD ya timbrada. El método existía y no lo llamaba nadie, así que
+     * ninguna factura en parcialidades llegó nunca a tener su complemento.
      */
-    public function createPaymentComplement(Order $order, Payment $payment): array
+    public function stampPaymentComplement(PaymentComplement $complement): array
     {
-        $doc = $order->fiscalDocument;
+        $order   = $complement->order;
+        $payment = $complement->payment;
+        $doc     = $order->fiscalDocument;
 
-        if (!$doc?->facturapi_invoice_id) {
-            return ['success' => false, 'message' => 'La orden no tiene un CFDI timbrado.'];
+        $uuid = $doc?->uuid ?: ($doc?->facturapi_data['uuid'] ?? null);
+        if (!$uuid) {
+            return $complement->markFailed('La factura timbrada no tiene UUID: no se puede relacionar el complemento.');
+        }
+
+        // El SAT no admite "por definir" en un REP: la forma de pago es un dato
+        // del cobro, y si no se conoce hay que corregirla antes de emitirlo.
+        $paymentForm = $payment->satPaymentForm();
+        if ($paymentForm === '99') {
+            return $complement->markFailed('La forma de pago del cobro es "99 (por definir)" y un complemento de pago no la admite.');
         }
 
         $client = $order->client;
@@ -205,39 +218,44 @@ class FacturapiService
             $client->refresh();
         }
 
-        $payload = [
-            'type'     => 'P',
-            'customer' => $client->facturapi_customer_id,
-            'complements' => [
-                [
-                    'type' => 'pago',
-                    'data' => [
-                        [
-                            'payment_form' => $payment->satPaymentForm(),
-                            'currency'     => $payment->currency ?? 'MXN',
-                            'date'         => ($payment->paid_at ?? now())->toIso8601String(),
-                            'amount'       => (float) $payment->amount,
-                            'related_documents' => [
-                                [
-                                    'uuid'          => $doc->facturapi_data['uuid'] ?? '',
-                                    'series'        => $order->series,
-                                    'folio_number'  => $order->folio_number,
-                                    'last_balance'  => (float) $order->total,
-                                    'amount'        => (float) $payment->amount,
-                                    'installment'   => 1,
-                                    'currency'      => $payment->currency ?? 'MXN',
-                                ],
-                            ],
-                        ],
-                    ],
-                ],
-            ],
-        ];
+        $response = $this->post('/invoices', [
+            'type'        => 'P',
+            'customer'    => $client->facturapi_customer_id,
+            'complements' => [[
+                'type' => 'pago',
+                'data' => [[
+                    'payment_form'      => $paymentForm,
+                    'currency'          => $payment->currency ?: 'MXN',
+                    'date'              => ($payment->paid_at ?? now())->toIso8601String(),
+                    'amount'            => (float) $complement->amount,
+                    'related_documents' => [[
+                        'uuid'         => $uuid,
+                        'series'       => $order->series,
+                        'folio_number' => $order->folio_number,
+                        'last_balance' => $complement->previousBalance(),
+                        'amount'       => (float) $complement->amount,
+                        'installment'  => $complement->installment,
+                        'currency'     => $payment->currency ?: 'MXN',
+                    ]],
+                ]],
+            ]],
+        ]);
 
-        $response = $this->post('/invoices', $payload);
-        $data     = $response->json();
+        $data = $response->json();
 
-        return ['success' => $response->successful(), 'data' => $data];
+        if (!$response->successful()) {
+            return $complement->markFailed($data['message'] ?? 'FacturAPI rechazó el complemento de pago.', $data);
+        }
+
+        $complement->update([
+            'status'      => ($data['status'] ?? null) === 'valid' ? 'valid' : 'pending',
+            'provider_id' => $data['id'] ?? null,
+            'uuid'        => $data['uuid'] ?? null,
+            'data'        => $data,
+            'stamped_at'  => now(),
+        ]);
+
+        return ['success' => true, 'data' => $data];
     }
 
     /**

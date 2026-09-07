@@ -29,13 +29,13 @@ Los diagramas de abajo son una lectura curada del mismo grafo (Mermaid, se rende
 | Zonas de entrada HTTP | 23 | 18 web + 5 API, agrupadas por prefijo y permiso |
 | Controladores | 46 | 26 `Admin/*`, 9 `Portal/*`, 5 `Api/*`, 2 `Auth/*`, 4 públicos (tienda, webhooks) |
 | Servicios | 12 | 8 hablan con APIs externas, 4 son orquestadores internos |
-| Modelos Eloquent | 32 | 60 relaciones; 40 tablas en migraciones |
+| Modelos Eloquent | 32 | 64 relaciones; 43 tablas en migraciones |
 | Comandos Artisan | 6 | 5 programados en el scheduler + `mail:test` |
 | Mailables | 6 | Cada uno con su vista en `resources/views/emails/` |
 | Eventos de modelo | 4 | Observers en `AppServiceProvider` que sincronizan con DM Champ |
 | APIs externas | 8 | Mercado Pago, PayPal, Facturapi, Finkok, 20i, Cosmotown, DM Champ, Meta CAPI |
 | Vistas Blade | 88 | admin (54), portal (11), tienda (7), emails (6), pdf (3), resto |
-| Tests | 23 archivos | 128 casos, todos `Feature` |
+| Tests | 26 archivos | 160 casos (`Feature` salvo el del reparto de IVA) |
 
 Stack: Laravel 12 · PHP 8.2+ · MySQL 8 · Blade + Alpine.js + Tailwind 4 · Sanctum · DomPDF · Docker/Nginx/Traefik.
 
@@ -162,27 +162,35 @@ flowchart TD
 
   FIN["OrderFinalizationService::finalize(payment)<br/>una sola vez por orden"]
   FIN --> STAMP{"billing_preference ≠ none<br/>y PAC configurado"}
-  STAMP -->|sí| INV["InvoicingManager::stampInvoice"]
+  STAMP -->|no| MAIL
+  STAMP -->|sí| YA{"¿la factura ya<br/>estaba timbrada?"}
+
+  YA -->|"no · se timbra al cobrar<br/>(PPD liquidada → PUE)"| INV["InvoicingManager::stampInvoice"]
   INV -->|invoicing_provider = facturapi| FA["Facturapi"]
-  INV -->|invoicing_provider = finkok| CFDI["CfdiBuilderService<br/>XML + sello CSD"] --> FK["Finkok · timbrado"]
+  INV -->|invoicing_provider = finkok| CFDI["CfdiBuilderService<br/>XML tipo I + sello CSD"] --> FK["Finkok · timbrado"]
   FA --> FD["FiscalDocument<br/>source = facturapi"]
   FK --> FD2["FiscalDocument<br/>source = finkok"]
-  STAMP -->|no| MAIL
+
+  YA -->|"sí y es PPD"| REP["InvoicingManager::issuePaymentComplement<br/>CFDI tipo P · uno por pago"]
+  REP --> PC["PaymentComplement<br/>valid · pending · failed"]
+
   FD --> MAIL
   FD2 --> MAIL
+  PC --> MAIL
   MAIL["Mail PaymentConfirmed<br/>comprobante al cliente"]
 
-  FIN -. "el controlador que confirmó el pago" .-> PROV["ProvisioningService::provisionForOrder"]
+  FIN --> PROV["ProvisioningService::provisionForOrder"]
   PROV --> COS["Cosmotown · registrar dominio<br/>+ contactos WHOIS"]
   PROV --> T20["20i · crear hosting<br/>+ buzones si el paquete lo incluye"]
-  FIN -. "el controlador que confirmó el pago" .-> META["MetaConversionsService::sendPurchase<br/>event_id = order_id"]
+  FIN --> META["MetaConversionsService::sendPurchase<br/>event_id = order_id"]
   A -. "Order::created, al crear la orden" .-> DMC["DmChampService::notifyInvoiceCreated<br/>aviso por WhatsApp"]
 ```
 
 Notas del flujo:
 
-- `ProvisioningService` y `MetaConversionsService` **no** los llama `OrderFinalizationService`, sino cada controlador que confirma el pago (`CartController`, `DirectCheckoutController`, los dos webhooks y `OrderController`). Son cinco puntos de llamada que deben mantenerse sincronizados.
-- La cancelación de CFDI se enruta por el proveedor que **timbró** (`FiscalDocument.source`), no por el ajuste actual, así que cambiar de PAC no rompe cancelaciones antiguas.
+- Todo el post-pago cuelga de `OrderFinalizationService`, incluidos el aprovisionamiento y el evento de Meta, que antes llamaba cada controlador por su cuenta.
+- La cancelación de CFDI y la emisión del complemento se enrutan por el proveedor que **timbró** (`FiscalDocument.source`), no por el ajuste actual: cambiar de PAC no rompe cancelaciones antiguas, y el REP tiene que salir del mismo sitio que la factura que relaciona.
+- Los conceptos del CFDI los deriva `Order::fiscalLines()` para los dos PAC, y `Order::assertChargedTotalMatches()` impide timbrar un total distinto al cobrado.
 
 ---
 
@@ -230,6 +238,8 @@ erDiagram
   ORDER ||--o{ INVOICE_ITEM : contiene
   ORDER ||--o{ PAYMENT : recibe
   ORDER ||--o| FISCAL_DOCUMENT : "CFDI timbrado"
+  ORDER ||--o{ PAYMENT_COMPLEMENT : "REP · sólo PPD"
+  PAYMENT ||--o| PAYMENT_COMPLEMENT : "uno por pago"
   ORDER ||--o{ DUNNING_ATTEMPT : reintentos
 
   SERVICE_CATEGORY ||--o{ SERVICE : agrupa
@@ -313,8 +323,10 @@ Cada zona es un prefijo con su middleware de grupo. El middleware inline por rut
 3. ~~**`ClientPortalController` es el nodo más cargado del grafo.**~~ **Resuelto.** Sus 1138 líneas se repartieron en ocho controladores bajo `app/Http/Controllers/Portal/` sobre una clase base común. Los nombres de ruta y las URIs no cambiaron.
 4. ~~**Post-pago repartido en cinco sitios.**~~ **Resuelto.** `OrderFinalizationService` es ahora el embudo único: timbrado, comprobante, aprovisionamiento, cupón y evento de Meta. La transición a pagada vive en `Order::markPaid()` y es idempotente.
 5. ~~**Servicios instanciados con `new` en lugar del contenedor.**~~ **Resuelto.** Los once servicios de integración se registran como `scoped` y se inyectan por constructor, y las credenciales se leen de Ajustes en cada uso en vez de cachearse al construir. (El hallazgo original decía que los tests usaban `Http::fake()`: no era cierto, evitaban la red dejando las credenciales vacías. Ahora sí hay `Http::fake()` y dobles inyectados por el contenedor.)
-6. **Acceso a `/api/v1/services` es público** (solo `throttle`), expone catálogo y precios sin token. Es intencional: lo consume el agente OpenClaw. Se corrigió que devolviera también los servicios no marcados como públicos.
-7. **Cosmotown apunta a sandbox por defecto** (`cosmotown_base_url` en `Setting`); el valor real está configurado en producción, así que el default no se cambia.
+6. ~~**Las facturas PPD no llevaban complemento de pago.**~~ **Resuelto.** Un CFDI timbrado como PPD obliga a emitir un REP por cada cobro; no se emitía ninguno (el método de Facturapi existía sin que lo llamara nadie —y con un tipo `Payment` que ni siquiera resolvía— y con Finkok no existía). Ahora se emite por `InvoicingManager::issuePaymentComplement()`, queda registrado en `payment_complements` y el panel muestra los pendientes. De raíz: una venta liquidada al timbrarse se marca PUE en vez de PPD, así que la mayoría ya no genera obligación.
+7. ~~**Los servicios exentos de IVA se cobraban con IVA.**~~ **Resuelto.** El impuesto se reparte línea por línea en `App\Support\TaxBreakdown`, con el descuento prorrateado entre la parte gravada y la exenta.
+8. **Acceso a `/api/v1/services` es público** (solo `throttle`), expone catálogo y precios sin token. Es intencional: lo consume el agente OpenClaw. Se corrigió que devolviera también los servicios no marcados como públicos.
+9. **Cosmotown apunta a sandbox por defecto** (`cosmotown_base_url` en `Setting`); el valor real está configurado en producción, así que el default no se cambia.
 
 ---
 

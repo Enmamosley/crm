@@ -142,7 +142,7 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
-        $order->load(['client.lead', 'quote.items.service', 'payments', 'items', 'fiscalDocument']);
+        $order->load(['client.lead', 'quote.items.service', 'payments', 'items', 'fiscalDocument', 'paymentComplements']);
         return view('admin.orders.show', compact('order'));
     }
 
