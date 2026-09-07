@@ -49,12 +49,17 @@ class Payment extends Model
     public function satPaymentForm(): string
     {
         return match ($this->payment_type) {
-            'credit_card'   => '04',
-            'debit_card'    => '28',
-            'bank_transfer' => '03',
-            'ticket'        => '01',
-            'paypal'        => '05', // SAT: Monedero electrónico
-            default         => '99',
+            'credit_card'              => '04',
+            'debit_card'               => '28',
+            'bank_transfer', 'transfer' => '03',
+            'ticket'                   => '01',
+            'paypal'                   => '05', // SAT: Monedero electrónico
+            // Pago manual: el admin elige la forma de pago en el panel y se
+            // guarda como código SAT en payment_method_id.
+            'manual'                   => preg_match('/^\d{2}$/', (string) $this->payment_method_id)
+                ? (string) $this->payment_method_id
+                : '99',
+            default                    => '99',
         };
     }
 

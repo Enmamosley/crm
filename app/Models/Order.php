@@ -89,6 +89,32 @@ class Order extends Model
         return ($this->fiscalDocument?->stamped_at ?? $this->created_at)->copy();
     }
 
+    /**
+     * Marca la orden como pagada, una sola vez. La condición viaja dentro del
+     * UPDATE para que dos procesos simultáneos (webhook, captura y sondeo del
+     * portal llegan a la vez) no puedan finalizar la misma orden dos veces:
+     * sólo el primero recibe true.
+     *
+     * El `status` lo decide quien cobra: las pasarelas usan 'sent' y el panel
+     * 'paid'. isPaid() cubre ambos.
+     */
+    public function markPaid(?\DateTimeInterface $paidAt = null, string $status = 'sent'): bool
+    {
+        $paidAt ??= now();
+
+        $updated = static::whereKey($this->getKey())
+            ->whereNull('paid_at')
+            ->update(['paid_at' => $paidAt, 'status' => $status, 'updated_at' => now()]);
+
+        if ($updated === 0) {
+            return false;
+        }
+
+        $this->forceFill(['paid_at' => $paidAt, 'status' => $status])->syncOriginal();
+
+        return true;
+    }
+
     /** Hay un CFDI activo (timbrado y no cancelado). */
     public function isStamped(): bool
     {

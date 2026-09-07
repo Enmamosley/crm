@@ -486,6 +486,7 @@ class ClientPortalController extends Controller
                 $validated['email'],
                 (int) ($validated['installments'] ?? 1),
                 $validated['issuer_id'] ?? null,
+                $request,
             );
 
             return response()->json([
@@ -595,7 +596,7 @@ class ClientPortalController extends Controller
         $paypal = new PayPalService();
         try {
             $capture = $paypal->captureOrder($validated['paypalOrderId']);
-            $payment = $paypal->processCapture($order, $capture);
+            $payment = $paypal->processCapture($order, $capture, $request);
 
             return response()->json([
                 'success'  => $payment->isApproved(),
@@ -644,7 +645,7 @@ class ClientPortalController extends Controller
         return redirect()->route('portal.payment.status', [$token, $payment]);
     }
 
-    public function paymentStatus(string $token, Payment $payment)
+    public function paymentStatus(Request $request, string $token, Payment $payment)
     {
         $client = $this->resolveClient($token);
         abort_if($payment->order->client_id !== $client->id, 403);
@@ -652,7 +653,7 @@ class ClientPortalController extends Controller
         // Refrescar estado desde MP si sigue pendiente
         if ($payment->isPending() && $payment->mp_payment_id) {
             try {
-                (new MercadoPagoService())->syncPaymentStatus($payment);
+                (new MercadoPagoService())->syncPaymentStatus($payment, $request);
                 $payment->refresh();
             } catch (\Throwable) {}
         }

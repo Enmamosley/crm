@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Setting;
 use Illuminate\Http\Client\PendingRequest;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -108,7 +109,7 @@ class PayPalService
     /**
      * Procesa el resultado de un capture y genera (o actualiza) Payment + Order.
      */
-    public function processCapture(Order $order, array $capture): Payment
+    public function processCapture(Order $order, array $capture, ?Request $request = null): Payment
     {
         $purchaseUnit = $capture['purchase_units'][0] ?? [];
         $captureNode  = $purchaseUnit['payments']['captures'][0] ?? [];
@@ -168,14 +169,11 @@ class PayPalService
             ]
         );
 
-        if ($payment->wasRecentlyCreated || $payment->wasChanged('status')) {
-            if ($internalStatus === 'approved' && !$order->paid_at) {
-                $order->update([
-                    'status'  => 'sent',
-                    'paid_at' => $payment->paid_at,
-                ]);
-                (new OrderFinalizationService())->finalize($payment);
-            }
+        // Finalizar (timbrado, correo, aprovisionamiento, cupón y Meta). El
+        // servicio hace la transición a pagada y es idempotente, así que no
+        // hace falta vigilar aquí si la captura ya se había procesado.
+        if ($internalStatus === 'approved') {
+            (new OrderFinalizationService())->finalize($payment, $request);
         }
 
         return $payment;

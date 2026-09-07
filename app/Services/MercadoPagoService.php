@@ -7,6 +7,7 @@ use App\Models\ActivityLog;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Setting;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -33,6 +34,7 @@ class MercadoPagoService
         string $email,
         int $installments = 1,
         ?string $issuerId = null,
+        ?Request $request = null,
     ): Payment {
         $payload = [
             'transaction_amount' => (float) $order->total,
@@ -48,7 +50,7 @@ class MercadoPagoService
             $payload['issuer_id'] = (int) $issuerId;
         }
 
-        return $this->processPayment($order, $payload);
+        return $this->processPayment($order, $payload, $request);
     }
 
     /**
@@ -103,7 +105,7 @@ class MercadoPagoService
     /**
      * Sincroniza el estado del pago desde MP y actualiza factura si procede.
      */
-    public function syncPaymentStatus(Payment $payment): Payment
+    public function syncPaymentStatus(Payment $payment, ?Request $request = null): Payment
     {
         if (!$payment->mp_payment_id) {
             return $payment;
@@ -131,10 +133,10 @@ class MercadoPagoService
             'paid_at'       => $paidAt,
         ]);
 
-        // Marcar pagada y disparar timbrado + correo (común a todos los flujos).
-        if ($newStatus === 'approved' && $payment->order && !$payment->order->paid_at) {
-            $payment->order->update(['status' => 'sent', 'paid_at' => $paidAt]);
-            (new OrderFinalizationService())->finalize($payment);
+        // Finalizar (timbrado, correo, aprovisionamiento, cupón y Meta). El
+        // servicio hace la transición a pagada y es idempotente.
+        if ($newStatus === 'approved' && $payment->order) {
+            (new OrderFinalizationService())->finalize($payment, $request);
         }
 
         return $payment;
@@ -176,7 +178,7 @@ class MercadoPagoService
 
     // ── Internos ─────────────────────────────────────────
 
-    private function processPayment(Order $order, array $payload): Payment
+    private function processPayment(Order $order, array $payload, ?Request $request = null): Payment
     {
         $idempotencyKey = "inv_{$order->id}_" . now()->timestamp;
 
@@ -216,8 +218,7 @@ class MercadoPagoService
         ]);
 
         if ($isApproved) {
-            $order->update(['status' => 'sent', 'paid_at' => now()]);
-            (new OrderFinalizationService())->finalize($payment);
+            (new OrderFinalizationService())->finalize($payment, $request);
         }
 
         return $payment;

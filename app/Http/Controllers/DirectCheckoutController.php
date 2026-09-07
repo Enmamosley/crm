@@ -11,7 +11,6 @@ use App\Models\Setting;
 use App\Services\CosmotownService;
 use App\Services\MercadoPagoService;
 use App\Services\PayPalService;
-use App\Services\ProvisioningService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -127,7 +126,7 @@ class DirectCheckoutController extends Controller
         $total = round($subtotal + $iva, 2);
 
         try {
-            return DB::transaction(function () use ($client, $service, $slug, $validated, $subtotal, $iva, $total) {
+            return DB::transaction(function () use ($client, $service, $slug, $validated, $subtotal, $iva, $total, $request) {
                 $invoice = $this->findOrCreateInvoice($client, $service, [
                     'client_id'          => $client->id,
                     'series'             => 'V',
@@ -149,13 +148,15 @@ class DirectCheckoutController extends Controller
                     $validated['email'],
                     (int) ($validated['installments'] ?? 1),
                     $validated['issuer_id'] ?? null,
+                    $request,
                 );
 
                 ActivityLog::log('direct_purchase', $invoice, "Compra directa de '{$service->name}' por {$validated['email']}");
 
+                // El aprovisionamiento, el cupón y el evento server-side de Meta
+                // los hace OrderFinalizationService. Aquí sólo queda el Pixel
+                // del navegador, que necesita la sesión de este request.
                 if ($payment->status === 'approved') {
-                    (new ProvisioningService())->provisionForOrder($invoice);
-                    (new \App\Services\MetaConversionsService())->sendPurchase($invoice, request());
                     $this->flashMetaPurchase($invoice, $service);
                 }
 
@@ -475,13 +476,11 @@ class DirectCheckoutController extends Controller
 
         try {
             $capture = $paypal->captureOrder($validated['paypalOrderId']);
-            $payment = $paypal->processCapture($order, $capture);
+            $payment = $paypal->processCapture($order, $capture, $request);
 
             ActivityLog::log('direct_purchase', $order, "Compra directa PayPal de '{$service->name}' por {$order->client->email}");
 
             if ($payment->isApproved()) {
-                (new ProvisioningService())->provisionForOrder($order);
-                (new \App\Services\MetaConversionsService())->sendPurchase($order, $request);
                 $this->flashMetaPurchase($order, $service);
             }
 

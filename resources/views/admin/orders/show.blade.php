@@ -19,7 +19,9 @@
     </form>
 @endif
 
-@if(($order->isPaid() || $order->status === 'sent') && in_array($order->status, ['draft', 'sent']))
+{{-- 'paid' lo escriben los pagos del panel; 'sent' las pasarelas. Sin 'paid'
+     aquí, tras registrar un pago manual no aparecía el botón de timbrar. --}}
+@if(($order->isPaid() || $order->status === 'sent') && in_array($order->status, ['draft', 'sent', 'paid']))
     <form action="{{ route('admin.orders.stamp', $order) }}" method="POST" class="inline"
           onsubmit="return confirm('¿Timbrar esta factura ante el SAT?')">
         @csrf @method('PATCH')
