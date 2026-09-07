@@ -9,6 +9,7 @@ use App\Models\Quote;
 use App\Models\RecurringInvoiceSchedule;
 use App\Models\Service;
 use App\Models\Setting;
+use App\Support\TaxBreakdown;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -59,13 +60,14 @@ class RecurringInvoiceController extends Controller
             'items.*.iva_exempt'               => 'nullable|boolean',
         ]);
 
-        $ivaRate = (float) Setting::get('iva_percentage', 16) / 100;
-        $subtotal = 0;
-        foreach ($validated['items'] as $row) {
-            $subtotal += (float)$row['quantity'] * (float)$row['unit_price'];
-        }
-        $ivaAmount = $subtotal * $ivaRate;
-        $total     = $subtotal + $ivaAmount;
+        // Las líneas exentas o no objeto del impuesto no causan IVA.
+        $taxes     = TaxBreakdown::forLines(array_map(fn (array $row) => [
+            'amount' => (float) $row['quantity'] * (float) $row['unit_price'],
+            'taxed'  => empty($row['iva_exempt']) && ($row['tax_object'] ?? '02') !== '01',
+        ], $validated['items']));
+        $subtotal  = $taxes->net;
+        $ivaAmount = $taxes->iva;
+        $total     = $taxes->total;
 
         $schedule = DB::transaction(function () use ($validated, $subtotal, $ivaAmount, $total) {
             $schedule = RecurringInvoiceSchedule::create(array_merge(
@@ -138,13 +140,14 @@ class RecurringInvoiceController extends Controller
             'items.*.iva_exempt'      => 'nullable|boolean',
         ]);
 
-        $ivaRate = (float) Setting::get('iva_percentage', 16) / 100;
-        $subtotal = 0;
-        foreach ($validated['items'] as $row) {
-            $subtotal += (float)$row['quantity'] * (float)$row['unit_price'];
-        }
-        $ivaAmount = $subtotal * $ivaRate;
-        $total     = $subtotal + $ivaAmount;
+        // Las líneas exentas o no objeto del impuesto no causan IVA.
+        $taxes     = TaxBreakdown::forLines(array_map(fn (array $row) => [
+            'amount' => (float) $row['quantity'] * (float) $row['unit_price'],
+            'taxed'  => empty($row['iva_exempt']) && ($row['tax_object'] ?? '02') !== '01',
+        ], $validated['items']));
+        $subtotal  = $taxes->net;
+        $ivaAmount = $taxes->iva;
+        $total     = $taxes->total;
 
         DB::transaction(function () use ($validated, $subtotal, $ivaAmount, $total, $recurringInvoice) {
             $recurringInvoice->update(array_merge(

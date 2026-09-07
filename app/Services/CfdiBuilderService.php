@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Order;
-use App\Models\Service;
 use App\Models\Setting;
 use CfdiUtils\Certificado\Certificado;
 use CfdiUtils\CfdiCreator40;
@@ -27,7 +26,6 @@ class CfdiBuilderService
     {
         $credential = $this->credential();
         $client     = $order->client;
-        $quote      = $order->quote?->load('items.service');
 
         $ivaRate = (float) Setting::get('iva_percentage', 16) / 100;
         $tasa    = number_format($ivaRate, 6, '.', '');
@@ -100,26 +98,26 @@ class CfdiBuilderService
         }
 
         // ── Conceptos ───────────────────────────────────────────
-        foreach ($this->conceptos($order, $quote) as $c) {
-            $importe = round($c['cantidad'] * $c['valorUnitario'], 2);
+        foreach ($order->fiscalLines() as $c) {
+            $importe = round($c['quantity'] * $c['unit_price'], 2);
 
             $concepto = $comprobante->addConcepto([
-                'ClaveProdServ' => $c['claveProdServ'],
-                'Cantidad'      => $this->money($c['cantidad']),
-                'ClaveUnidad'   => $c['claveUnidad'],
-                'Unidad'        => $c['unidad'],
-                'Descripcion'   => $c['descripcion'],
-                'ValorUnitario' => $this->money($c['valorUnitario']),
+                'ClaveProdServ' => $c['product_key'],
+                'Cantidad'      => $this->money($c['quantity']),
+                'ClaveUnidad'   => $c['unit_key'],
+                'Unidad'        => $c['unit_name'],
+                'Descripcion'   => $c['description'],
+                'ValorUnitario' => $this->money($c['unit_price']),
                 'Importe'       => $this->money($importe),
-                'ObjetoImp'     => $c['objetoImp'],
+                'ObjetoImp'     => $c['tax_object'],
             ]);
 
             // '01' = no objeto de impuesto → sin nodo de impuestos
-            if ($c['objetoImp'] === '01') {
+            if ($c['tax_object'] === '01') {
                 continue;
             }
 
-            if ($c['exento']) {
+            if ($c['exempt']) {
                 $concepto->addImpuestos()->addTraslados()->addTraslado([
                     'Base'       => $this->money($importe),
                     'Impuesto'   => '002',
@@ -139,18 +137,8 @@ class CfdiBuilderService
         // Suma SubTotal/Total/Impuestos a partir de los conceptos
         $creator->addSumasConceptos(null, 2);
 
-        // Coherencia con la orden: NUNCA timbrar un total distinto al cobrado,
-        // ni siquiera por centavos (redondeos por línea vs agregado, exentos, etc.).
-        $cfdiTotal = (float) $comprobante['Total'];
-        if (abs($cfdiTotal - (float) $order->total) > 0.01) {
-            throw new \RuntimeException(sprintf(
-                'El total del CFDI (%.2f) no coincide con el cobrado en la orden (%.2f). '
-                . 'Causas comunes: servicios exentos/no objeto de IVA (la orden cobró IVA sobre todo) '
-                . 'o redondeos por línea. Corrige los conceptos o timbra este caso manualmente.',
-                $cfdiTotal,
-                (float) $order->total
-            ));
-        }
+        // Nunca timbrar un total distinto al cobrado (ver Order).
+        $order->assertChargedTotalMatches((float) $comprobante['Total']);
 
         // ── Certificado + Sello ─────────────────────────────────
         $certificado = new Certificado($this->absolutePath(Setting::get('csd_cer_path')));
@@ -185,61 +173,6 @@ class CfdiBuilderService
             && Setting::get('company_tax_system');
     }
 
-    /**
-     * Conceptos del CFDI: items de cotización, items manuales de la orden,
-     * o un concepto único derivado de las notas (compra directa/carrito).
-     */
-    private function conceptos(Order $order, $quote): array
-    {
-        $items = [];
-
-        if ($quote && $quote->items->isNotEmpty()) {
-            foreach ($quote->items as $item) {
-                $svc = $item->service;
-                $items[] = $this->conceptoFromService($svc, $item->description, (float) $item->quantity, (float) $item->unit_price);
-            }
-            return $items;
-        }
-
-        $order->loadMissing('items');
-        if ($order->items->isNotEmpty()) {
-            foreach ($order->items as $item) {
-                $items[] = [
-                    'claveProdServ' => $item->sat_product_key ?: '80101501',
-                    'claveUnidad'   => $item->sat_unit_key ?: 'E48',
-                    'unidad'        => 'Servicio',
-                    'descripcion'   => $item->description,
-                    'cantidad'      => (float) $item->quantity,
-                    'valorUnitario' => (float) $item->unit_price,
-                    'exento'        => (bool) ($item->iva_exempt ?? false),
-                    'objetoImp'     => $item->tax_object ?: '02',
-                ];
-            }
-            return $items;
-        }
-
-        // Compra directa/carrito sin items: concepto único desde las notas
-        $descripcion = trim(str_replace(['Compra directa: ', 'Carrito: '], '', $order->notes ?? '')) ?: 'Servicios profesionales';
-        $svc = Service::where('name', $descripcion)->first();
-
-        $items[] = $this->conceptoFromService($svc, $descripcion, 1.0, (float) $order->subtotal);
-
-        return $items;
-    }
-
-    private function conceptoFromService(?Service $svc, string $descripcion, float $cantidad, float $valorUnitario): array
-    {
-        return [
-            'claveProdServ' => $svc?->sat_product_key ?: '80101501',
-            'claveUnidad'   => $svc?->sat_unit_key ?: 'E48',
-            'unidad'        => $svc?->sat_unit_name ?: 'Servicio',
-            'descripcion'   => $descripcion,
-            'cantidad'      => $cantidad,
-            'valorUnitario' => $valorUnitario,
-            'exento'        => (bool) ($svc?->iva_exempt ?? false),
-            'objetoImp'     => $svc?->tax_object ?: '02',
-        ];
-    }
 
     private function money(float $value): string
     {

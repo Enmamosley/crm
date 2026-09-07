@@ -19,7 +19,8 @@ document.addEventListener('alpine:init', () => {
         ]])),
         ivaRate: {{ $ivaPercentage / 100 }},
         get subtotal() { return this.items.reduce((s,i) => s + (parseFloat(i.quantity)||0) * (parseFloat(i.unit_price)||0), 0); },
-        get iva()      { return this.subtotal * this.ivaRate; },
+        // Igual que el servidor: lo exento o no objeto del impuesto no causa IVA.
+        get iva()      { return this.items.reduce((s,i) => s + (i.iva_exempt || i.tax_object === '01' ? 0 : (parseFloat(i.quantity)||0) * (parseFloat(i.unit_price)||0)), 0) * this.ivaRate; },
         get total()    { return this.subtotal + this.iva; },
         addItem() { this.items.push({description:'',quantity:1,unit_price:'',sat_product_key:'80101501',sat_unit_key:'E48',sat_unit_name:'Servicio',tax_object:'02',iva_exempt:false}); },
         removeItem(i) { if(this.items.length > 1) this.items.splice(i, 1); },

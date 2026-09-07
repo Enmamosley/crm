@@ -183,6 +183,94 @@ class Order extends Model
         return $this->status !== 'cancelled' && !$this->isStamped();
     }
 
+    /**
+     * Conceptos fiscales de la orden, normalizados. Mandan, por este orden:
+     * las líneas de la cotización, los ítems capturados a mano en el panel y
+     * —cuando no hay ninguno, que es el caso de las compras públicas— el
+     * servicio anotado en las notas ("Compra directa: <servicio>").
+     *
+     * Los dos PAC derivaban sus conceptos por su cuenta y no coincidían:
+     * Finkok tenía el respaldo de las notas y Facturapi no, así que una compra
+     * directa se enviaba a timbrar literalmente sin conceptos.
+     *
+     * @return list<array{description: string, quantity: float, unit_price: float,
+     *                    product_key: string, unit_key: string, unit_name: string,
+     *                    tax_object: string, exempt: bool}>
+     */
+    public function fiscalLines(): array
+    {
+        $quote = $this->quote?->loadMissing('items.service');
+
+        if ($quote && $quote->items->isNotEmpty()) {
+            return $quote->items
+                ->map(fn ($item) => self::lineFromService(
+                    $item->service, $item->description, (float) $item->quantity, (float) $item->unit_price
+                ))
+                ->all();
+        }
+
+        $this->loadMissing('items');
+
+        if ($this->items->isNotEmpty()) {
+            return $this->items->map(fn (InvoiceItem $item) => [
+                'description' => $item->description,
+                'quantity'    => (float) $item->quantity,
+                'unit_price'  => (float) $item->unit_price,
+                'product_key' => $item->sat_product_key ?: '80101501',
+                'unit_key'    => $item->sat_unit_key ?: 'E48',
+                'unit_name'   => $item->sat_unit_name ?: 'Servicio',
+                'tax_object'  => $item->tax_object ?: '02',
+                'exempt'      => !$item->causesIva(),
+            ])->all();
+        }
+
+        $description = trim(str_replace(['Compra directa: ', 'Carrito: '], '', $this->notes ?? ''))
+            ?: 'Servicios profesionales';
+
+        return [self::lineFromService(
+            Service::where('name', $description)->first(),
+            $description,
+            1.0,
+            (float) $this->subtotal,
+        )];
+    }
+
+    /** @return array<string, mixed> */
+    private static function lineFromService(?Service $service, string $description, float $quantity, float $unitPrice): array
+    {
+        return [
+            'description' => $description,
+            'quantity'    => $quantity,
+            'unit_price'  => $unitPrice,
+            'product_key' => $service?->sat_product_key ?: '80101501',
+            'unit_key'    => $service?->sat_unit_key ?: 'E48',
+            'unit_name'   => $service?->sat_unit_name ?: 'Servicio',
+            'tax_object'  => $service?->tax_object ?: '02',
+            'exempt'      => $service ? !$service->causesIva() : false,
+        ];
+    }
+
+    /**
+     * Nunca timbrar un total distinto al cobrado, ni por centavos. Lo vigilaba
+     * sólo Finkok; con Facturapi una orden con servicios exentos se timbraba
+     * por menos de lo que se había cobrado y nadie se enteraba.
+     */
+    public function assertChargedTotalMatches(float $cfdiTotal): void
+    {
+        if (abs($cfdiTotal - (float) $this->total) <= 0.01) {
+            return;
+        }
+
+        throw new \RuntimeException(sprintf(
+            'El total del CFDI (%.2f) no coincide con el cobrado en la orden %s (%.2f). '
+            . 'Causas comunes: una compra con servicios exentos y gravados mezclados, '
+            . 'o un descuento repartido entre ambos. Revisa los conceptos antes de timbrar.',
+            $cfdiTotal,
+            $this->folio(),
+            (float) $this->total
+        ));
+    }
+
     public function folio(): string
     {
         return $this->series . ($this->folio_number ?? '');

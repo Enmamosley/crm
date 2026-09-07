@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\FiscalDocument;
 use App\Models\Order;
 use App\Models\Setting;
+use App\Support\TaxBreakdown;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 
@@ -72,8 +73,6 @@ class FacturapiService
     public function stampInvoice(Order $order): array
     {
         $client = $order->client;
-        $quote  = $order->quote?->load('items.service');
-        $order->load('items'); // Ítems manuales si no hay cotización
 
         // Asegurar que el cliente exista en FacturAPI
         if (!$client->facturapi_customer_id) {
@@ -106,59 +105,34 @@ class FacturapiService
             ];
         }
 
-        // Construir ítems
-        $ivaRate = (float) Setting::get('iva_percentage', 16) / 100;
-        $items = [];
-        if ($quote) {
-            foreach ($quote->items as $item) {
-                $svc = $item->service;
+        // Los conceptos los deriva la orden, igual que para Finkok: así los dos
+        // PAC timbran lo mismo. Antes, una compra directa (sin ítems ni
+        // cotización) se enviaba literalmente sin conceptos.
+        $ivaRate = TaxBreakdown::rate();
+        $lines   = $order->fiscalLines();
 
-                $productKey = $svc?->sat_product_key ?: '80101501';
-                $unitKey    = $svc?->sat_unit_key    ?: 'E48';
-                $unitName   = $svc?->sat_unit_name   ?: 'Servicio';
-                $taxObject  = $svc?->tax_object      ?: '02';
-                $isExempt   = $svc?->iva_exempt      ?? false;
+        // Lo timbrado tiene que cuadrar con lo cobrado; lo comprobamos antes
+        // de enviarlo, que es cuando todavía se puede corregir.
+        $order->assertChargedTotalMatches(TaxBreakdown::forLines(array_map(fn (array $line) => [
+            'amount' => $line['quantity'] * $line['unit_price'],
+            'taxed'  => !$line['exempt'] && $line['tax_object'] !== '01',
+        ], $lines), rate: $ivaRate)->total);
 
-                $product = [
-                    'description'  => $item->description,
-                    'product_key'  => $productKey,
-                    'unit_key'     => $unitKey,
-                    'unit_name'    => $unitName,
-                    'price'        => (float) $item->unit_price,
-                    'tax_included' => false,
-                ];
-
-                if (!$isExempt && $taxObject !== '01') {
-                    $product['taxes'] = [['type' => 'IVA', 'rate' => $ivaRate, 'factor' => 'Tasa']];
-                } else {
-                    $product['taxes'] = [['type' => 'IVA', 'rate' => 0, 'factor' => 'Exento']];
-                }
-
-                $items[] = ['quantity' => $item->quantity, 'product' => $product, 'tax_object' => $taxObject];
-            }
-        } elseif ($order->items->isNotEmpty()) {
-            foreach ($order->items as $item) {
-                $taxObject = $item->tax_object ?: '02';
-                $isExempt  = $item->iva_exempt ?? false;
-
-                $product = [
-                    'description'  => $item->description,
-                    'product_key'  => $item->sat_product_key ?: '80101501',
-                    'unit_key'     => $item->sat_unit_key    ?: 'E48',
-                    'unit_name'    => $item->sat_unit_name   ?: 'Servicio',
-                    'price'        => (float) $item->unit_price,
-                    'tax_included' => false,
-                ];
-
-                if (!$isExempt && $taxObject !== '01') {
-                    $product['taxes'] = [['type' => 'IVA', 'rate' => $ivaRate, 'factor' => 'Tasa']];
-                } else {
-                    $product['taxes'] = [['type' => 'IVA', 'rate' => 0, 'factor' => 'Exento']];
-                }
-
-                $items[] = ['quantity' => (float) $item->quantity, 'product' => $product, 'tax_object' => $taxObject];
-            }
-        }
+        $items = array_map(fn (array $line) => [
+            'quantity'   => $line['quantity'],
+            'tax_object' => $line['tax_object'],
+            'product'    => [
+                'description'  => $line['description'],
+                'product_key'  => $line['product_key'],
+                'unit_key'     => $line['unit_key'],
+                'unit_name'    => $line['unit_name'],
+                'price'        => $line['unit_price'],
+                'tax_included' => false,
+                'taxes'        => ($line['exempt'] || $line['tax_object'] === '01')
+                    ? [['type' => 'IVA', 'rate' => 0, 'factor' => 'Exento']]
+                    : [['type' => 'IVA', 'rate' => $ivaRate, 'factor' => 'Tasa']],
+            ],
+        ], $lines);
 
         $payload = array_filter([
             'customer'       => $customer,

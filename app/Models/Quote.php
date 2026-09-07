@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\TaxBreakdown;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -43,15 +44,18 @@ class Quote extends Model
         return $this->hasMany(Order::class);
     }
 
+    /** Sólo las líneas gravadas causan IVA; las exentas suman al subtotal y ya. */
     public function recalculate(): void
     {
-        $subtotal = $this->items()->sum('total');
-        $ivaAmount = round($subtotal * ($this->iva_percentage / 100), 2);
+        $lines = $this->items()->with('service')->get()
+            ->map(fn (QuoteItem $item) => ['amount' => (float) $item->total, 'taxed' => $item->causesIva()]);
+
+        $taxes = TaxBreakdown::forLines($lines, rate: (float) $this->iva_percentage / 100);
 
         $this->update([
-            'subtotal' => $subtotal,
-            'iva_amount' => $ivaAmount,
-            'total' => $subtotal + $ivaAmount,
+            'subtotal'   => $taxes->subtotal,
+            'iva_amount' => $taxes->iva,
+            'total'      => $taxes->total,
         ]);
     }
 
