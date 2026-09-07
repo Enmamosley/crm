@@ -30,12 +30,12 @@ Los diagramas de abajo son una lectura curada del mismo grafo (Mermaid, se rende
 | Controladores | 46 | 26 `Admin/*`, 9 `Portal/*`, 5 `Api/*`, 2 `Auth/*`, 4 públicos (tienda, webhooks) |
 | Servicios | 12 | 8 hablan con APIs externas, 4 son orquestadores internos |
 | Modelos Eloquent | 32 | 64 relaciones; 43 tablas en migraciones |
-| Comandos Artisan | 6 | 5 programados en el scheduler + `mail:test` |
+| Comandos Artisan | 7 | 5 programados en el scheduler + `mail:test` + `api:token` |
 | Mailables | 6 | Cada uno con su vista en `resources/views/emails/` |
 | Eventos de modelo | 4 | Observers en `AppServiceProvider` que sincronizan con DM Champ |
 | APIs externas | 8 | Mercado Pago, PayPal, Facturapi, Finkok, 20i, Cosmotown, DM Champ, Meta CAPI |
 | Vistas Blade | 88 | admin (54), portal (11), tienda (7), emails (6), pdf (3), resto |
-| Tests | 26 archivos | 160 casos (`Feature` salvo el del reparto de IVA) |
+| Tests | 27 archivos | 171 casos (`Feature` salvo el del reparto de IVA) |
 
 Stack: Laravel 12 · PHP 8.2+ · MySQL 8 · Blade + Alpine.js + Tailwind 4 · Sanctum · DomPDF · Docker/Nginx/Traefik.
 
@@ -304,13 +304,13 @@ Cada zona es un prefijo con su middleware de grupo. El middleware inline por rut
 | `/login`, `/logout`, `/auth` | ninguno · `throttle:login`, `throttle:5,1` | Auth/Login, Auth/MagicLink |
 | `/panel` | `auth` + `can:*` | Cada sección exige su permiso: `leads.view`/`leads.manage`, `quotes.view`/`quotes.manage`, `clients.view`/`clients.manage` (incluye dominios, buzones y DNS), `tickets.view`/`tickets.manage`, `invoices.manage`, `reports.view` |
 | `/panel` | `auth` + `role:admin` | ServiceCategory, Service, ServiceBundle, Setting, AgentControl, ActivityLog, DiscountCode, Tag, Permission, User (`role:admin` inline) |
-| `/panel` | `auth` + `role:admin,accounting` | Order, RecurringInvoice |
-| `/panel/reports` | `auth` + `role:admin,accounting` | Report |
+| `/panel` | `auth` + `can:invoices.manage` | Order, RecurringInvoice |
+| `/panel/reports` | `auth` + `can:reports.view` | Report |
 | `/panel/backups` | `auth` + `role:admin` | closures → `db:backup` |
 | `/panel/notifications` | `auth` | Notification |
-| `/portal/{token}` | `portal` (ValidatePortalToken) | ClientPortal (37 rutas) |
+| `/portal/{token}` | `portal` (ValidatePortalToken) | Portal/* — ocho controladores, 37 rutas |
 | `/api/v1` | `throttle:60,1` (público) | closures: `test`, `services` |
-| `/api/v1` | `auth:sanctum` | Api/Lead, Api/Quote, Api/Agent, Api/Setting |
+| `/api/v1` | `auth:sanctum` + `throttle:120,1` + `abilities:*` | Api/Lead, Api/Quote, Api/Agent, Api/Setting — cada ruta exige el permiso que lleva escrito el token (`leads:read`, `leads:write`, `quotes:read`, `quotes:write`, `agent:read`, `settings:read`) |
 | `/api/v1/dmchamp` | `throttle:60,1` + `no.cache` + DmChampTokenMiddleware | Api/DmChampFunction |
 | `/api/webhooks` | `throttle:webhooks` (firma HMAC / verificación PayPal en el controlador) | MercadoPagoWebhook, PayPalWebhook, DmChampWebhook |
 
@@ -325,8 +325,9 @@ Cada zona es un prefijo con su middleware de grupo. El middleware inline por rut
 5. ~~**Servicios instanciados con `new` en lugar del contenedor.**~~ **Resuelto.** Los once servicios de integración se registran como `scoped` y se inyectan por constructor, y las credenciales se leen de Ajustes en cada uso en vez de cachearse al construir. (El hallazgo original decía que los tests usaban `Http::fake()`: no era cierto, evitaban la red dejando las credenciales vacías. Ahora sí hay `Http::fake()` y dobles inyectados por el contenedor.)
 6. ~~**Las facturas PPD no llevaban complemento de pago.**~~ **Resuelto.** Un CFDI timbrado como PPD obliga a emitir un REP por cada cobro; no se emitía ninguno (el método de Facturapi existía sin que lo llamara nadie —y con un tipo `Payment` que ni siquiera resolvía— y con Finkok no existía). Ahora se emite por `InvoicingManager::issuePaymentComplement()`, queda registrado en `payment_complements` y el panel muestra los pendientes. De raíz: una venta liquidada al timbrarse se marca PUE en vez de PPD, así que la mayoría ya no genera obligación.
 7. ~~**Los servicios exentos de IVA se cobraban con IVA.**~~ **Resuelto.** El impuesto se reparte línea por línea en `App\Support\TaxBreakdown`, con el descuento prorrateado entre la parte gravada y la exenta.
-8. **Acceso a `/api/v1/services` es público** (solo `throttle`), expone catálogo y precios sin token. Es intencional: lo consume el agente OpenClaw. Se corrigió que devolviera también los servicios no marcados como públicos.
-9. **Cosmotown apunta a sandbox por defecto** (`cosmotown_base_url` en `Setting`); el valor real está configurado en producción, así que el default no se cambia.
+8. ~~**Los tokens de la API valían para todo.**~~ **Resuelto.** El único sitio donde nacía un token era el seeder, con `createToken('openclaw-agent')` a secas: sin lista de permisos —que en Sanctum significa comodín `*`— y colgando del administrador. Ahora cada token lleva su alcance escrito (`App\Support\ApiAbilities`), las rutas lo exigen con el middleware `abilities`, la identidad es una cuenta de máquina sin permisos de panel, y `php artisan api:token` emite, lista y revoca. (El hallazgo original decía además que no caducaban: no era cierto, `sanctum.expiration` lleva 30 días y se aplica; ahora hay un test que lo fija.)
+9. **Acceso a `/api/v1/services` es público** (solo `throttle`), expone catálogo y precios sin token. Es intencional: lo consume el agente OpenClaw. Se corrigió que devolviera también los servicios no marcados como públicos.
+10. **Cosmotown apunta a sandbox por defecto** (`cosmotown_base_url` en `Setting`); el valor real está configurado en producción, así que el default no se cambia.
 
 ---
 

@@ -1,18 +1,18 @@
 {
-    "generated_at": "2026-09-07T23:23:37+00:00",
+    "generated_at": "2026-09-07T23:55:53+00:00",
     "generator": "scripts/build-graph.php",
     "stats": {
-        "nodes": 144,
-        "edges": 372,
+        "nodes": 148,
+        "edges": 375,
         "nodes_by_type": {
-            "command": 6,
+            "command": 7,
             "controller": 46,
             "event": 4,
             "external": 8,
             "mail": 6,
             "middleware": 4,
             "model": 34,
-            "routes": 23,
+            "routes": 26,
             "scheduler": 1,
             "service": 12
         },
@@ -22,10 +22,10 @@
             "guarded_by": 5,
             "invokes": 1,
             "relation": 64,
-            "routes_to": 52,
+            "routes_to": 54,
             "schedules": 5,
             "sends_mail": 8,
-            "uses_model": 191,
+            "uses_model": 192,
             "uses_service": 34
         }
     },
@@ -1017,6 +1017,15 @@
             }
         },
         {
+            "id": "command:ApiToken",
+            "label": "api:token",
+            "type": "command",
+            "meta": {
+                "class": "ApiToken",
+                "file": "app/Console/Commands/ApiToken.php"
+            }
+        },
+        {
             "id": "command:BackupDatabase",
             "label": "db:backup",
             "type": "command",
@@ -1320,6 +1329,48 @@
                 "closures": [
                     "GET /api/v1/test (closure)",
                     "GET /api/v1/services (closure)"
+                ]
+            }
+        },
+        {
+            "id": "routes:api:/api/v1|auth:sanctum,throttle:120,1,abilities:leads:read",
+            "label": "/api/v1\n[auth:sanctum, throttle:120,1, abilities:leads:read]",
+            "type": "routes",
+            "meta": {
+                "kind": "api",
+                "prefix": "/api/v1",
+                "middleware": [
+                    "auth:sanctum",
+                    "throttle:120,1",
+                    "abilities:leads:read"
+                ]
+            }
+        },
+        {
+            "id": "routes:api:/api/v1|auth:sanctum,throttle:120,1,abilities:leads:write",
+            "label": "/api/v1\n[auth:sanctum, throttle:120,1, abilities:leads:write]",
+            "type": "routes",
+            "meta": {
+                "kind": "api",
+                "prefix": "/api/v1",
+                "middleware": [
+                    "auth:sanctum",
+                    "throttle:120,1",
+                    "abilities:leads:write"
+                ]
+            }
+        },
+        {
+            "id": "routes:api:/api/v1|auth:sanctum,throttle:120,1,abilities:quotes:write",
+            "label": "/api/v1\n[auth:sanctum, throttle:120,1, abilities:quotes:write]",
+            "type": "routes",
+            "meta": {
+                "kind": "api",
+                "prefix": "/api/v1",
+                "middleware": [
+                    "auth:sanctum",
+                    "throttle:120,1",
+                    "abilities:quotes:write"
                 ]
             }
         },
@@ -3370,6 +3421,12 @@
             "meta": []
         },
         {
+            "from": "command:ApiToken",
+            "to": "model:User",
+            "type": "uses_model",
+            "meta": []
+        },
+        {
             "from": "command:ExpireQuotes",
             "to": "model:ActivityLog",
             "type": "uses_model",
@@ -4144,17 +4201,39 @@
             }
         },
         {
-            "from": "routes:api:/api/v1|auth:sanctum,throttle:120,1",
+            "from": "routes:api:/api/v1|auth:sanctum,throttle:120,1,abilities:leads:read",
             "to": "controller:Api/LeadController",
             "type": "routes_to",
             "meta": {
                 "routes": [
                     "GET /api/v1/leads/search → search()",
                     "GET /api/v1/leads → index()",
+                    "GET /api/v1/leads/{lead} → show()"
+                ],
+                "middleware": []
+            }
+        },
+        {
+            "from": "routes:api:/api/v1|auth:sanctum,throttle:120,1,abilities:leads:write",
+            "to": "controller:Api/LeadController",
+            "type": "routes_to",
+            "meta": {
+                "routes": [
                     "POST /api/v1/leads → store()",
-                    "GET /api/v1/leads/{lead} → show()",
                     "PATCH /api/v1/leads/{lead}/status → updateStatus()",
                     "POST /api/v1/leads/{lead}/notes → addNote()"
+                ],
+                "middleware": []
+            }
+        },
+        {
+            "from": "routes:api:/api/v1|auth:sanctum,throttle:120,1,abilities:quotes:write",
+            "to": "controller:Api/QuoteController",
+            "type": "routes_to",
+            "meta": {
+                "routes": [
+                    "POST /api/v1/quotes → store()",
+                    "PATCH /api/v1/quotes/{quote}/status → updateStatus()"
                 ],
                 "middleware": []
             }
@@ -4165,8 +4244,6 @@
             "type": "routes_to",
             "meta": {
                 "routes": [
-                    "POST /api/v1/quotes → store()",
-                    "PATCH /api/v1/quotes/{quote}/status → updateStatus()",
                     "GET /api/v1/quotes/{quote}/pdf → downloadPdf()"
                 ],
                 "middleware": []

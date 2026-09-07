@@ -6,11 +6,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens;
+
+    /** Rol de la identidad que firma los tokens de API. No entra al panel. */
+    public const API_ROLE = 'agent';
+
+    /** Correo de esa identidad; es una cuenta de máquina, no de persona. */
+    public const API_EMAIL = 'agente-api@crm.local';
 
     /** Caché por petición de los permisos resueltos. */
     private ?array $effectivePermissions = null;
@@ -50,6 +58,26 @@ class User extends Authenticatable
     public function permissions()
     {
         return $this->hasMany(Permission::class);
+    }
+
+    /**
+     * Identidad de los tokens de API. El token del agente colgaba del
+     * administrador (`User::first()`), así que autenticaba como tal; esta
+     * cuenta no es admin y no hereda permiso alguno, de modo que el token vale
+     * exactamente lo que diga su lista de permisos y nada más.
+     *
+     * La contraseña es aleatoria y nadie la conoce: no sirve para entrar.
+     */
+    public static function apiAgent(): self
+    {
+        return static::firstOrCreate(
+            ['email' => self::API_EMAIL],
+            [
+                'name'     => 'Agente API',
+                'role'     => self::API_ROLE,
+                'password' => Hash::make(Str::random(64)),
+            ],
+        );
     }
 
     /**

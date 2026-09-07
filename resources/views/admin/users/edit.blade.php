@@ -33,6 +33,7 @@
                     <select name="role" required class="w-full border rounded-lg px-3 py-2">
                         <option value="sales" {{ old('role', $user->role) === 'sales' ? 'selected' : '' }}>Ventas</option>
                         <option value="accounting" {{ old('role', $user->role) === 'accounting' ? 'selected' : '' }}>Contabilidad</option>
+                        <option value="agent" {{ old('role', $user->role) === 'agent' ? 'selected' : '' }}>Agente API (sin acceso al panel)</option>
                         <option value="admin" {{ old('role', $user->role) === 'admin' ? 'selected' : '' }}>Administrador</option>
                     </select>
                     @error('role') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror

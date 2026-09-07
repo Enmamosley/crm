@@ -16,6 +16,37 @@ Los únicos endpoints públicos (sin token) son:
 - `GET /test`
 - `GET /services`
 
+### Alcance del token
+
+Cada token lleva escrito lo que puede hacer, y cada endpoint exige el permiso
+que le corresponde. Un token sin el permiso adecuado recibe **403**, no 401: la
+credencial es válida, lo que falta es el alcance.
+
+| Permiso | Da acceso a |
+|---|---|
+| `leads:read` | `GET /leads`, `GET /leads/search`, `GET /leads/{id}` |
+| `leads:write` | `POST /leads`, `PATCH /leads/{id}/status`, `POST /leads/{id}/notes` |
+| `quotes:read` | `GET /quotes/{id}/pdf` |
+| `quotes:write` | `POST /quotes`, `PATCH /quotes/{id}/status` |
+| `agent:read` | `GET /agent/status` |
+| `settings:read` | `GET /settings` |
+
+El token del agente se emite con los seis. Un endpoint que se añada en el
+futuro **no** queda cubierto por un token ya emitido: hay que reemitirlo.
+
+### Emitir, listar y revocar
+
+```bash
+php artisan api:token openclaw                       # los seis permisos, 30 días
+php artisan api:token lectura --abilities=leads:read --days=7
+php artisan api:token --list                         # qué hay vivo y cuándo caduca
+php artisan api:token --revoke=3
+```
+
+El token se muestra una sola vez. Cuelga de una cuenta de máquina (`Agente
+API`), no del administrador, y caduca a los 30 días salvo que se indique otra
+cosa — `sanctum.expiration` impone ese tope de todos modos.
+
 ---
 
 ## Límites de peticiones
@@ -23,7 +54,7 @@ Los únicos endpoints públicos (sin token) son:
 | Grupo | Límite |
 |---|---|
 | Endpoints públicos | 60 peticiones / minuto |
-| Endpoints protegidos | Sin límite explícito |
+| Endpoints protegidos | 120 peticiones / minuto |
 
 ---
 
@@ -571,6 +602,7 @@ Este es el flujo de trabajo estándar que el agente debe seguir:
 | HTTP | Causa típica |
 |---|---|
 | `401 Unauthorized` | Token inválido, expirado o ausente |
+| `403 Forbidden` | El token es válido pero no tiene el permiso que exige ese endpoint |
 | `404 Not Found` | El recurso no existe (`lead_id` o `service_id` inválido) |
 | `422 Unprocessable Entity` | Error de validación — revisar el campo `errors` en la respuesta |
 | `429 Too Many Requests` | Límite de peticiones alcanzado — reducir frecuencia |

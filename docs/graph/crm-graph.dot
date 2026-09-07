@@ -154,6 +154,9 @@ digraph crm {
     "routes:web:/portal|portal" [label="/portal\n[portal]" shape=cds fillcolor="#dbeafe"];
     "routes:api:/api/user" [label="/api/user" shape=cds fillcolor="#dbeafe"];
     "routes:api:/api/v1|throttle:60,1" [label="/api/v1\n[throttle:60,1]" shape=cds fillcolor="#dbeafe"];
+    "routes:api:/api/v1|auth:sanctum,throttle:120,1,abilities:leads:read" [label="/api/v1\n[auth:sanctum, throttle:120,1, abilities:leads:read]" shape=cds fillcolor="#dbeafe"];
+    "routes:api:/api/v1|auth:sanctum,throttle:120,1,abilities:leads:write" [label="/api/v1\n[auth:sanctum, throttle:120,1, abilities:leads:write]" shape=cds fillcolor="#dbeafe"];
+    "routes:api:/api/v1|auth:sanctum,throttle:120,1,abilities:quotes:write" [label="/api/v1\n[auth:sanctum, throttle:120,1, abilities:quotes:write]" shape=cds fillcolor="#dbeafe"];
     "routes:api:/api/v1|auth:sanctum,throttle:120,1" [label="/api/v1\n[auth:sanctum, throttle:120,1]" shape=cds fillcolor="#dbeafe"];
     "routes:api:/api/webhooks" [label="/api/webhooks" shape=cds fillcolor="#dbeafe"];
     "routes:api:/api/v1/dmchamp|throttle:60,1,no.cache,DmChampTokenMiddleware" [label="/api/v1/dmchamp\n[throttle:60,1, no.cache, DmChampTokenMiddleware]" shape=cds fillcolor="#dbeafe"];
@@ -161,6 +164,7 @@ digraph crm {
 
   subgraph cluster_6 {
     label="Comandos Artisan"; style=rounded; color="#9ca3af";
+    "command:ApiToken" [label="api:token" shape=box fillcolor="#ede9fe"];
     "command:BackupDatabase" [label="db:backup" shape=box fillcolor="#ede9fe"];
     "command:ExpireQuotes" [label="quotes:expire" shape=box fillcolor="#ede9fe"];
     "command:ProcessDunning" [label="dunning:process" shape=box fillcolor="#ede9fe"];
@@ -420,6 +424,7 @@ digraph crm {
   "controller:Portal/TicketController" -> "model:SupportTicket" [color="#f59e0b" style=dashed];
   "controller:Portal/TicketController" -> "model:TicketReply" [color="#f59e0b" style=dashed];
   "controller:Portal/TicketController" -> "model:User" [color="#f59e0b" style=dashed];
+  "command:ApiToken" -> "model:User" [color="#f59e0b" style=dashed];
   "command:ExpireQuotes" -> "model:Quote" [color="#f59e0b" style=dashed];
   "command:ProcessDunning" -> "model:DunningAttempt" [color="#f59e0b" style=dashed];
   "command:ProcessDunning" -> "model:Notification" [color="#f59e0b" style=dashed];
@@ -481,7 +486,9 @@ digraph crm {
   "routes:web:/portal|portal" -> "controller:Portal/TicketController" [color="#2563eb"];
   "routes:web:/portal|portal" -> "controller:Portal/DomainController" [color="#2563eb"];
   "routes:web:/portal|portal" -> "controller:Portal/DnsController" [color="#2563eb"];
-  "routes:api:/api/v1|auth:sanctum,throttle:120,1" -> "controller:Api/LeadController" [color="#2563eb"];
+  "routes:api:/api/v1|auth:sanctum,throttle:120,1,abilities:leads:read" -> "controller:Api/LeadController" [color="#2563eb"];
+  "routes:api:/api/v1|auth:sanctum,throttle:120,1,abilities:leads:write" -> "controller:Api/LeadController" [color="#2563eb"];
+  "routes:api:/api/v1|auth:sanctum,throttle:120,1,abilities:quotes:write" -> "controller:Api/QuoteController" [color="#2563eb"];
   "routes:api:/api/v1|auth:sanctum,throttle:120,1" -> "controller:Api/QuoteController" [color="#2563eb"];
   "routes:api:/api/v1|auth:sanctum,throttle:120,1" -> "controller:Api/AgentController" [color="#2563eb"];
   "routes:api:/api/v1|auth:sanctum,throttle:120,1" -> "controller:Api/SettingController" [color="#2563eb"];

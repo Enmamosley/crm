@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\ServiceCategory;
 use App\Models\Service;
 use App\Models\Setting;
+use App\Support\ApiAbilities;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
@@ -48,11 +49,14 @@ class DatabaseSeeder extends Seeder
         Service::create(['service_category_id' => $soporte->id, 'name' => 'Soporte Mensual Premium', 'description' => 'Soporte prioritario con SLA garantizado', 'price' => 8000]);
         Service::create(['service_category_id' => $soporte->id, 'name' => 'Consultoría Técnica (hora)', 'description' => 'Asesoría técnica por hora', 'price' => 800]);
 
-        // Create API token for agent
-        $user = User::first();
-        $token = $user->createToken('openclaw-agent');
+        // Token del agente. Cuelga de una identidad de máquina —no del
+        // administrador— y lleva escrito su alcance en vez del comodín `*`.
+        // Para rotarlo: php artisan api:token --list / --revoke=ID / api:token
+        $token = User::apiAgent()->createToken('openclaw-agent', ApiAbilities::OPENCLAW, now()->addDays(30));
         echo "\n========================================\n";
         echo "API TOKEN PARA OPENCLAW: " . $token->plainTextToken . "\n";
+        echo "Permisos: " . implode(', ', ApiAbilities::OPENCLAW) . "\n";
+        echo "Caduca:   " . $token->accessToken->expires_at->format('d/m/Y') . "\n";
         echo "========================================\n\n";
     }
 }

@@ -27,8 +27,8 @@
                 <td class="px-4 py-3">{{ $user->email }}</td>
                 <td class="px-4 py-3 text-center">
                     @php
-                        $roleColors = ['admin'=>'red','sales'=>'blue','accounting'=>'green'];
-                        $roleLabels = ['admin'=>'Administrador','sales'=>'Ventas','accounting'=>'Contabilidad'];
+                        $roleColors = ['admin'=>'red','sales'=>'blue','accounting'=>'green','agent'=>'gray'];
+                        $roleLabels = ['admin'=>'Administrador','sales'=>'Ventas','accounting'=>'Contabilidad','agent'=>'Agente API'];
                         $rc = $roleColors[$user->role] ?? 'gray';
                     @endphp
                     <span class="px-2 py-0.5 rounded text-xs font-medium bg-{{ $rc }}-100 text-{{ $rc }}-700">
