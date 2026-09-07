@@ -1,0 +1,272 @@
+// Generado por scripts/build-graph.php — no editar a mano
+digraph crm {
+  rankdir=LR; splines=true; overlap=false; nodesep=0.3; ranksep=1.0;
+  graph [fontname="Helvetica" fontsize=11 labelloc=t label="CRM Mosley - arquitectura: entradas > controladores > servicios > APIs externas"];
+  node  [fontname="Helvetica" fontsize=10 style=filled];
+  edge  [fontname="Helvetica" fontsize=9];
+
+  subgraph cluster_0 {
+    label="Modelos Eloquent"; style=rounded; color="#9ca3af";
+    "model:Client" [label="Client" shape=ellipse fillcolor="#fff7ed"];
+    "model:Lead" [label="Lead" shape=ellipse fillcolor="#fff7ed"];
+    "model:Order" [label="Order" shape=ellipse fillcolor="#fff7ed"];
+    "model:Quote" [label="Quote" shape=ellipse fillcolor="#fff7ed"];
+  }
+
+  subgraph cluster_1 {
+    label="Mailables"; style=rounded; color="#9ca3af";
+    "mail:InvoiceCreated" [label="InvoiceCreated" shape=tab fillcolor="#fce7f3"];
+    "mail:InvoicePaymentLink" [label="InvoicePaymentLink" shape=tab fillcolor="#fce7f3"];
+    "mail:MagicLinkMail" [label="MagicLinkMail" shape=tab fillcolor="#fce7f3"];
+    "mail:PaymentConfirmed" [label="PaymentConfirmed" shape=tab fillcolor="#fce7f3"];
+    "mail:PaymentReminder" [label="PaymentReminder" shape=tab fillcolor="#fce7f3"];
+    "mail:QuoteSent" [label="QuoteSent" shape=tab fillcolor="#fce7f3"];
+  }
+
+  subgraph cluster_2 {
+    label="Servicios"; style=rounded; color="#9ca3af";
+    "service:CfdiBuilderService" [label="CfdiBuilderService" shape=component fillcolor="#dcfce7"];
+    "service:CosmotownService" [label="CosmotownService" shape=component fillcolor="#dcfce7"];
+    "service:DmChampService" [label="DmChampService" shape=component fillcolor="#dcfce7"];
+    "service:FacturapiService" [label="FacturapiService" shape=component fillcolor="#dcfce7"];
+    "service:FinkokService" [label="FinkokService" shape=component fillcolor="#dcfce7"];
+    "service:InvoicingManager" [label="InvoicingManager" shape=component fillcolor="#dcfce7"];
+    "service:MercadoPagoService" [label="MercadoPagoService" shape=component fillcolor="#dcfce7"];
+    "service:OrderFinalizationService" [label="OrderFinalizationService" shape=component fillcolor="#dcfce7"];
+    "service:MetaConversionsService" [label="MetaConversionsService" shape=component fillcolor="#dcfce7"];
+    "service:PayPalService" [label="PayPalService" shape=component fillcolor="#dcfce7"];
+    "service:ProvisioningService" [label="ProvisioningService" shape=component fillcolor="#dcfce7"];
+    "service:TwentyIService" [label="TwentyIService" shape=component fillcolor="#dcfce7"];
+  }
+
+  subgraph cluster_3 {
+    label="APIs externas"; style=rounded; color="#9ca3af";
+    "external:cosmotown_api_dominios_" [label="Cosmotown API (dominios)" shape=doubleoctagon fillcolor="#fee2e2"];
+    "external:dm_champ_api_whatsapp_" [label="DM Champ API (WhatsApp)" shape=doubleoctagon fillcolor="#fee2e2"];
+    "external:facturapi_pac_" [label="Facturapi (PAC)" shape=doubleoctagon fillcolor="#fee2e2"];
+    "external:finkok_pac" [label="Finkok (PAC, SOAP)" shape=doubleoctagon fillcolor="#fee2e2"];
+    "external:mercado_pago_api" [label="Mercado Pago API" shape=doubleoctagon fillcolor="#fee2e2"];
+    "external:meta_conversions_api" [label="Meta Conversions API" shape=doubleoctagon fillcolor="#fee2e2"];
+    "external:paypal_api" [label="PayPal API" shape=doubleoctagon fillcolor="#fee2e2"];
+    "external:20i_api_hosting_correo_dns_" [label="20i API (hosting/correo/DNS)" shape=doubleoctagon fillcolor="#fee2e2"];
+  }
+
+  subgraph cluster_4 {
+    label="Controladores"; style=rounded; color="#9ca3af";
+    "controller:Admin/ActivityLogController" [label="ActivityLogController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/AgentControlController" [label="AgentControlController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/ClientController" [label="ClientController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/ClientServiceController" [label="ClientServiceController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/DashboardController" [label="DashboardController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/DiscountCodeController" [label="DiscountCodeController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/DnsController" [label="DnsController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/DocumentController" [label="DocumentController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/DomainController" [label="DomainController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/LeadController" [label="LeadController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/MailboxController" [label="MailboxController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/NotificationController" [label="NotificationController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/OrderController" [label="OrderController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/PermissionController" [label="PermissionController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/QuoteController" [label="QuoteController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/RecurringInvoiceController" [label="RecurringInvoiceController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/ReportController" [label="ReportController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/ServiceBundleController" [label="ServiceBundleController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/ServiceCategoryController" [label="ServiceCategoryController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/ServiceController" [label="ServiceController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/SettingController" [label="SettingController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/TagController" [label="TagController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/TaskController" [label="TaskController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/TicketController" [label="TicketController" shape=box fillcolor="#ede9fe"];
+    "controller:Admin/UserController" [label="UserController" shape=box fillcolor="#ede9fe"];
+    "controller:Api/AgentController" [label="AgentController" shape=box fillcolor="#ede9fe"];
+    "controller:Api/DmChampFunctionController" [label="DmChampFunctionController" shape=box fillcolor="#ede9fe"];
+    "controller:Api/LeadController" [label="LeadController" shape=box fillcolor="#ede9fe"];
+    "controller:Api/QuoteController" [label="QuoteController" shape=box fillcolor="#ede9fe"];
+    "controller:Api/SettingController" [label="SettingController" shape=box fillcolor="#ede9fe"];
+    "controller:Auth/LoginController" [label="LoginController" shape=box fillcolor="#ede9fe"];
+    "controller:Auth/MagicLinkController" [label="MagicLinkController" shape=box fillcolor="#ede9fe"];
+    "controller:CartController" [label="CartController" shape=box fillcolor="#ede9fe"];
+    "controller:ClientPortalController" [label="ClientPortalController" shape=box fillcolor="#ede9fe"];
+    "controller:DirectCheckoutController" [label="DirectCheckoutController" shape=box fillcolor="#ede9fe"];
+    "controller:DmChampWebhookController" [label="DmChampWebhookController" shape=box fillcolor="#ede9fe"];
+    "controller:MercadoPagoWebhookController" [label="MercadoPagoWebhookController" shape=box fillcolor="#ede9fe"];
+    "controller:PayPalWebhookController" [label="PayPalWebhookController" shape=box fillcolor="#ede9fe"];
+  }
+
+  subgraph cluster_5 {
+    label="Entradas HTTP"; style=rounded; color="#9ca3af";
+    "scheduler" [label="Scheduler (schedule:run)" shape=cds fillcolor="#dbeafe"];
+    "routes:web:/login" [label="/login" shape=cds fillcolor="#dbeafe"];
+    "routes:web:/logout" [label="/logout" shape=cds fillcolor="#dbeafe"];
+    "routes:web:/auth" [label="/auth" shape=cds fillcolor="#dbeafe"];
+    "routes:web:/" [label="/" shape=cds fillcolor="#dbeafe"];
+    "routes:web:/buy" [label="/buy" shape=cds fillcolor="#dbeafe"];
+    "routes:web:/panel|auth" [label="/panel\n[auth]" shape=cds fillcolor="#dbeafe"];
+    "routes:web:/panel|auth,role:admin" [label="/panel\n[auth, role:admin]" shape=cds fillcolor="#dbeafe"];
+    "routes:web:/panel|auth,role:admin,accounting" [label="/panel\n[auth, role:admin,accounting]" shape=cds fillcolor="#dbeafe"];
+    "routes:web:/panel/reports|auth,role:admin,accounting" [label="/panel/reports\n[auth, role:admin,accounting]" shape=cds fillcolor="#dbeafe"];
+    "routes:web:/panel/backups|auth,role:admin" [label="/panel/backups\n[auth, role:admin]" shape=cds fillcolor="#dbeafe"];
+    "routes:web:/panel/notifications|auth" [label="/panel/notifications\n[auth]" shape=cds fillcolor="#dbeafe"];
+    "routes:web:/portal|portal" [label="/portal\n[portal]" shape=cds fillcolor="#dbeafe"];
+    "routes:api:/api/user" [label="/api/user" shape=cds fillcolor="#dbeafe"];
+    "routes:api:/api/v1|throttle:60,1" [label="/api/v1\n[throttle:60,1]" shape=cds fillcolor="#dbeafe"];
+    "routes:api:/api/v1|auth:sanctum" [label="/api/v1\n[auth:sanctum]" shape=cds fillcolor="#dbeafe"];
+    "routes:api:/api/webhooks" [label="/api/webhooks" shape=cds fillcolor="#dbeafe"];
+    "routes:api:/api/v1/dmchamp|throttle:60,1,no.cache,DmChampTokenMiddleware" [label="/api/v1/dmchamp\n[throttle:60,1, no.cache, DmChampTokenMiddleware]" shape=cds fillcolor="#dbeafe"];
+  }
+
+  subgraph cluster_6 {
+    label="Comandos Artisan"; style=rounded; color="#9ca3af";
+    "command:BackupDatabase" [label="db:backup" shape=box fillcolor="#ede9fe"];
+    "command:ExpireQuotes" [label="quotes:expire" shape=box fillcolor="#ede9fe"];
+    "command:ProcessDunning" [label="dunning:process" shape=box fillcolor="#ede9fe"];
+    "command:ProcessRecurringInvoices" [label="invoices:process-recurring" shape=box fillcolor="#ede9fe"];
+    "command:SendPaymentReminders" [label="invoices:send-reminders" shape=box fillcolor="#ede9fe"];
+    "command:TestMail" [label="mail:test" shape=box fillcolor="#ede9fe"];
+  }
+
+  subgraph cluster_7 {
+    label="Eventos de modelo"; style=rounded; color="#9ca3af";
+    "event:Lead.created" [label="Lead::created" shape=hexagon fillcolor="#fef3c7"];
+    "event:Client.created" [label="Client::created" shape=hexagon fillcolor="#fef3c7"];
+    "event:Order.created" [label="Order::created" shape=hexagon fillcolor="#fef3c7"];
+    "event:Quote.updated" [label="Quote::updated" shape=hexagon fillcolor="#fef3c7"];
+  }
+
+  subgraph cluster_8 {
+    label="Middleware"; style=rounded; color="#9ca3af";
+    "middleware:CheckRole" [label="CheckRole ('role')" shape=note fillcolor="#e5e7eb"];
+    "middleware:ValidatePortalToken" [label="ValidatePortalToken ('portal')" shape=note fillcolor="#e5e7eb"];
+    "middleware:NoCacheMiddleware" [label="NoCacheMiddleware ('no.cache')" shape=note fillcolor="#e5e7eb"];
+    "middleware:DmChampTokenMiddleware" [label="DmChampTokenMiddleware (por clase)" shape=note fillcolor="#e5e7eb"];
+  }
+
+  "model:Client" -> "model:Lead" [color="#9a3412" fontsize=8 label="belongsTo"];
+  "model:Client" -> "model:Order" [color="#9a3412" fontsize=8 label="hasMany (invoices)"];
+  "model:Lead" -> "model:Quote" [color="#9a3412" fontsize=8 label="hasMany (quotes)"];
+  "model:Order" -> "model:Client" [color="#9a3412" fontsize=8 label="belongsTo"];
+  "model:Order" -> "model:Quote" [color="#9a3412" fontsize=8 label="belongsTo"];
+  "model:Quote" -> "model:Lead" [color="#9a3412" fontsize=8 label="belongsTo"];
+  "model:Quote" -> "model:Order" [color="#9a3412" fontsize=8 label="hasMany (invoices)"];
+  "service:CosmotownService" -> "external:cosmotown_api_dominios_" [color="#dc2626" penwidth=2];
+  "service:DmChampService" -> "external:dm_champ_api_whatsapp_" [color="#dc2626" penwidth=2];
+  "service:FacturapiService" -> "external:facturapi_pac_" [color="#dc2626" penwidth=2];
+  "service:FinkokService" -> "service:CfdiBuilderService" [color="#16a34a"];
+  "service:FinkokService" -> "external:finkok_pac" [color="#dc2626" penwidth=2];
+  "service:InvoicingManager" -> "service:FacturapiService" [color="#16a34a"];
+  "service:InvoicingManager" -> "service:FinkokService" [color="#16a34a"];
+  "service:MercadoPagoService" -> "service:OrderFinalizationService" [color="#16a34a"];
+  "service:MercadoPagoService" -> "mail:PaymentConfirmed" [color="#db2777"];
+  "service:MercadoPagoService" -> "external:mercado_pago_api" [color="#dc2626" penwidth=2];
+  "service:MetaConversionsService" -> "external:meta_conversions_api" [color="#dc2626" penwidth=2];
+  "service:OrderFinalizationService" -> "service:InvoicingManager" [color="#16a34a"];
+  "service:OrderFinalizationService" -> "service:MercadoPagoService" [color="#16a34a"];
+  "service:OrderFinalizationService" -> "mail:PaymentConfirmed" [color="#db2777"];
+  "service:PayPalService" -> "service:OrderFinalizationService" [color="#16a34a"];
+  "service:PayPalService" -> "external:paypal_api" [color="#dc2626" penwidth=2];
+  "service:ProvisioningService" -> "service:CosmotownService" [color="#16a34a"];
+  "service:ProvisioningService" -> "service:TwentyIService" [color="#16a34a"];
+  "service:TwentyIService" -> "external:20i_api_hosting_correo_dns_" [color="#dc2626" penwidth=2];
+  "controller:Admin/ClientController" -> "service:CosmotownService" [color="#16a34a"];
+  "controller:Admin/ClientController" -> "service:FacturapiService" [color="#16a34a"];
+  "controller:Admin/ClientController" -> "service:TwentyIService" [color="#16a34a"];
+  "controller:Admin/DnsController" -> "service:TwentyIService" [color="#16a34a"];
+  "controller:Admin/DomainController" -> "service:CosmotownService" [color="#16a34a"];
+  "controller:Admin/MailboxController" -> "service:TwentyIService" [color="#16a34a"];
+  "controller:Admin/OrderController" -> "service:FacturapiService" [color="#16a34a"];
+  "controller:Admin/OrderController" -> "service:InvoicingManager" [color="#16a34a"];
+  "controller:Admin/OrderController" -> "service:MetaConversionsService" [color="#16a34a"];
+  "controller:Admin/OrderController" -> "service:ProvisioningService" [color="#16a34a"];
+  "controller:Admin/OrderController" -> "mail:InvoiceCreated" [color="#db2777"];
+  "controller:Admin/OrderController" -> "mail:InvoicePaymentLink" [color="#db2777"];
+  "controller:Admin/OrderController" -> "mail:PaymentConfirmed" [color="#db2777"];
+  "controller:Admin/QuoteController" -> "mail:QuoteSent" [color="#db2777"];
+  "controller:Admin/SettingController" -> "service:CfdiBuilderService" [color="#16a34a"];
+  "controller:Admin/SettingController" -> "service:TwentyIService" [color="#16a34a"];
+  "controller:Auth/MagicLinkController" -> "mail:MagicLinkMail" [color="#db2777"];
+  "controller:CartController" -> "service:MercadoPagoService" [color="#16a34a"];
+  "controller:CartController" -> "service:MetaConversionsService" [color="#16a34a"];
+  "controller:CartController" -> "service:PayPalService" [color="#16a34a"];
+  "controller:CartController" -> "service:ProvisioningService" [color="#16a34a"];
+  "controller:ClientPortalController" -> "service:CosmotownService" [color="#16a34a"];
+  "controller:ClientPortalController" -> "service:FacturapiService" [color="#16a34a"];
+  "controller:ClientPortalController" -> "service:MercadoPagoService" [color="#16a34a"];
+  "controller:ClientPortalController" -> "service:PayPalService" [color="#16a34a"];
+  "controller:ClientPortalController" -> "service:TwentyIService" [color="#16a34a"];
+  "controller:DirectCheckoutController" -> "service:CosmotownService" [color="#16a34a"];
+  "controller:DirectCheckoutController" -> "service:MercadoPagoService" [color="#16a34a"];
+  "controller:DirectCheckoutController" -> "service:MetaConversionsService" [color="#16a34a"];
+  "controller:DirectCheckoutController" -> "service:PayPalService" [color="#16a34a"];
+  "controller:DirectCheckoutController" -> "service:ProvisioningService" [color="#16a34a"];
+  "controller:DmChampWebhookController" -> "service:DmChampService" [color="#16a34a"];
+  "controller:MercadoPagoWebhookController" -> "service:MercadoPagoService" [color="#16a34a"];
+  "controller:MercadoPagoWebhookController" -> "service:MetaConversionsService" [color="#16a34a"];
+  "controller:MercadoPagoWebhookController" -> "service:ProvisioningService" [color="#16a34a"];
+  "controller:PayPalWebhookController" -> "service:MetaConversionsService" [color="#16a34a"];
+  "controller:PayPalWebhookController" -> "service:PayPalService" [color="#16a34a"];
+  "controller:PayPalWebhookController" -> "service:ProvisioningService" [color="#16a34a"];
+  "command:ProcessDunning" -> "mail:PaymentReminder" [color="#db2777"];
+  "command:ProcessRecurringInvoices" -> "service:FacturapiService" [color="#16a34a"];
+  "command:SendPaymentReminders" -> "mail:PaymentReminder" [color="#db2777"];
+  "scheduler" -> "command:SendPaymentReminders" [color="#2563eb" fontsize=8 label="dailyAt(09:00)"];
+  "scheduler" -> "command:ProcessRecurringInvoices" [color="#2563eb" fontsize=8 label="dailyAt(06:00)"];
+  "scheduler" -> "command:ExpireQuotes" [color="#2563eb" fontsize=8 label="dailyAt(07:00)"];
+  "scheduler" -> "command:BackupDatabase" [color="#2563eb" fontsize=8 label="dailyAt(02:00)"];
+  "scheduler" -> "command:ProcessDunning" [color="#2563eb" fontsize=8 label="dailyAt(10:00)"];
+  "routes:web:/login" -> "controller:Auth/LoginController" [color="#2563eb"];
+  "routes:web:/logout" -> "controller:Auth/LoginController" [color="#2563eb"];
+  "routes:web:/auth" -> "controller:Auth/MagicLinkController" [color="#2563eb"];
+  "routes:web:/" -> "controller:DirectCheckoutController" [color="#2563eb"];
+  "routes:web:/buy" -> "controller:DirectCheckoutController" [color="#2563eb"];
+  "routes:web:/buy" -> "controller:CartController" [color="#2563eb"];
+  "routes:web:/panel|auth" -> "controller:Admin/DashboardController" [color="#2563eb"];
+  "routes:web:/panel|auth" -> "controller:Admin/LeadController" [color="#2563eb"];
+  "routes:web:/panel|auth,role:admin" -> "controller:Admin/ServiceCategoryController" [color="#2563eb"];
+  "routes:web:/panel|auth,role:admin" -> "controller:Admin/ServiceController" [color="#2563eb"];
+  "routes:web:/panel|auth,role:admin" -> "controller:Admin/ServiceBundleController" [color="#2563eb"];
+  "routes:web:/panel|auth" -> "controller:Admin/QuoteController" [color="#2563eb"];
+  "routes:web:/panel|auth,role:admin" -> "controller:Admin/SettingController" [color="#2563eb"];
+  "routes:web:/panel|auth,role:admin" -> "controller:Admin/AgentControlController" [color="#2563eb"];
+  "routes:web:/panel|auth" -> "controller:Admin/ClientController" [color="#2563eb"];
+  "routes:web:/panel|auth" -> "controller:Admin/ClientServiceController" [color="#2563eb"];
+  "routes:web:/panel|auth" -> "controller:Admin/DocumentController" [color="#2563eb"];
+  "routes:web:/panel|auth" -> "controller:Admin/DomainController" [color="#2563eb"];
+  "routes:web:/panel|auth" -> "controller:Admin/MailboxController" [color="#2563eb"];
+  "routes:web:/panel|auth" -> "controller:Admin/DnsController" [color="#2563eb"];
+  "routes:web:/panel|auth,role:admin,accounting" -> "controller:Admin/OrderController" [color="#2563eb"];
+  "routes:web:/panel|auth" -> "controller:Admin/UserController" [color="#2563eb"];
+  "routes:web:/panel/reports|auth,role:admin,accounting" -> "controller:Admin/ReportController" [color="#2563eb"];
+  "routes:web:/panel|auth,role:admin" -> "controller:Admin/ActivityLogController" [color="#2563eb"];
+  "routes:web:/panel/backups|auth,role:admin" -> "command:BackupDatabase" [color="#2563eb" style=dashed];
+  "routes:web:/panel|auth,role:admin,accounting" -> "controller:Admin/RecurringInvoiceController" [color="#2563eb"];
+  "routes:web:/panel/notifications|auth" -> "controller:Admin/NotificationController" [color="#2563eb"];
+  "routes:web:/panel|auth" -> "controller:Admin/TicketController" [color="#2563eb"];
+  "routes:web:/panel|auth" -> "controller:Admin/TaskController" [color="#2563eb"];
+  "routes:web:/panel|auth,role:admin" -> "controller:Admin/DiscountCodeController" [color="#2563eb"];
+  "routes:web:/panel|auth,role:admin" -> "controller:Admin/TagController" [color="#2563eb"];
+  "routes:web:/panel|auth,role:admin" -> "controller:Admin/PermissionController" [color="#2563eb"];
+  "routes:web:/portal|portal" -> "controller:ClientPortalController" [color="#2563eb"];
+  "routes:api:/api/v1|auth:sanctum" -> "controller:Api/LeadController" [color="#2563eb"];
+  "routes:api:/api/v1|auth:sanctum" -> "controller:Api/QuoteController" [color="#2563eb"];
+  "routes:api:/api/v1|auth:sanctum" -> "controller:Api/AgentController" [color="#2563eb"];
+  "routes:api:/api/v1|auth:sanctum" -> "controller:Api/SettingController" [color="#2563eb"];
+  "routes:api:/api/webhooks" -> "controller:MercadoPagoWebhookController" [color="#2563eb"];
+  "routes:api:/api/webhooks" -> "controller:PayPalWebhookController" [color="#2563eb"];
+  "routes:api:/api/webhooks" -> "controller:DmChampWebhookController" [color="#2563eb"];
+  "routes:api:/api/v1/dmchamp|throttle:60,1,no.cache,DmChampTokenMiddleware" -> "controller:Api/DmChampFunctionController" [color="#2563eb"];
+  "model:Lead" -> "event:Lead.created" [color="#d97706" style=dashed];
+  "event:Lead.created" -> "service:DmChampService" [color="#16a34a"];
+  "model:Client" -> "event:Client.created" [color="#d97706" style=dashed];
+  "event:Client.created" -> "service:DmChampService" [color="#16a34a"];
+  "model:Order" -> "event:Order.created" [color="#d97706" style=dashed];
+  "event:Order.created" -> "service:DmChampService" [color="#16a34a"];
+  "model:Quote" -> "event:Quote.updated" [color="#d97706" style=dashed];
+  "event:Quote.updated" -> "service:DmChampService" [color="#16a34a"];
+  "routes:web:/panel|auth,role:admin" -> "middleware:CheckRole" [color="#6b7280" style=dotted arrowhead=none];
+  "routes:web:/panel|auth,role:admin,accounting" -> "middleware:CheckRole" [color="#6b7280" style=dotted arrowhead=none];
+  "routes:web:/panel/reports|auth,role:admin,accounting" -> "middleware:CheckRole" [color="#6b7280" style=dotted arrowhead=none];
+  "routes:web:/panel/backups|auth,role:admin" -> "middleware:CheckRole" [color="#6b7280" style=dotted arrowhead=none];
+  "routes:web:/portal|portal" -> "middleware:ValidatePortalToken" [color="#6b7280" style=dotted arrowhead=none];
+  "routes:api:/api/v1/dmchamp|throttle:60,1,no.cache,DmChampTokenMiddleware" -> "middleware:NoCacheMiddleware" [color="#6b7280" style=dotted arrowhead=none];
+  "routes:api:/api/v1/dmchamp|throttle:60,1,no.cache,DmChampTokenMiddleware" -> "middleware:DmChampTokenMiddleware" [color="#6b7280" style=dotted arrowhead=none];
+}

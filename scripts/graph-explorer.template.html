@@ -1,0 +1,650 @@
+<title>Grafo CRM Mosley</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+    --surface: #fcfcfb;
+    --panel: #f4f3ef;
+    --panel-2: #ebeae4;
+    --border: #e0dfd7;
+    --text-1: #0b0b0b;
+    --text-2: #52514e;
+    --text-3: #7b7a74;
+    --accent: #2a78d6;
+    --accent-ink: #ffffff;
+    --focus: #2a78d6;
+    /* capas (paleta categórica validada, orden fijo) */
+    --c-entry: #2a78d6;
+    --c-model: #eb6834;
+    --c-service: #1baf7a;
+    --c-event: #eda100;
+    --c-mail: #e87ba4;
+    --c-handler: #4a3aa7;
+    --c-external: #e34948;
+    --c-mw: #8d8c84;
+    --halo: #fcfcfb;
+    --dim: 0.12;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --surface: #1a1a19;
+      --panel: #222221;
+      --panel-2: #2c2c2a;
+      --border: #383835;
+      --text-1: #f4f3ec;
+      --text-2: #c3c2b7;
+      --text-3: #8d8c84;
+      --accent: #3987e5;
+      --accent-ink: #0b0b0b;
+      --focus: #3987e5;
+      --c-entry: #3987e5;
+      --c-model: #d95926;
+      --c-service: #199e70;
+      --c-event: #c98500;
+      --c-mail: #d55181;
+      --c-handler: #9085e9;
+      --c-external: #e66767;
+      --c-mw: #a3a29a;
+      --halo: #1a1a19;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface: #1a1a19;
+    --panel: #222221;
+    --panel-2: #2c2c2a;
+    --border: #383835;
+    --text-1: #f4f3ec;
+    --text-2: #c3c2b7;
+    --text-3: #8d8c84;
+    --accent: #3987e5;
+    --accent-ink: #0b0b0b;
+    --focus: #3987e5;
+    --c-entry: #3987e5;
+    --c-model: #d95926;
+    --c-service: #199e70;
+    --c-event: #c98500;
+    --c-mail: #d55181;
+    --c-handler: #9085e9;
+    --c-external: #e66767;
+    --c-mw: #a3a29a;
+    --halo: #1a1a19;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0;
+    background: var(--surface);
+    color: var(--text-1);
+    font-family: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  code, .mono { font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  button, input, select { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+  .app {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    grid-template-columns: 250px minmax(0, 1fr) 330px;
+    grid-template-areas: "head head head" "rail canvas detail";
+    height: 100vh;
+  }
+  header {
+    grid-area: head;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  header h1 { font-size: 15px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  header .sub { color: var(--text-3); font-size: 12px; }
+  .stats { display: flex; gap: 8px; margin-left: auto; font-variant-numeric: tabular-nums; }
+  .stat { padding: 3px 9px; border: 1px solid var(--border); border-radius: 999px; color: var(--text-2); font-size: 12px; background: var(--surface); }
+  .stat b { color: var(--text-1); font-weight: 600; }
+
+  .presets { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: var(--surface); }
+  .presets button {
+    border: 0; background: transparent; padding: 5px 11px; cursor: pointer; color: var(--text-2);
+  }
+  .presets button + button { border-left: 1px solid var(--border); }
+  .presets button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+
+  .search { display: flex; align-items: center; gap: 6px; }
+  .search input {
+    width: 220px; padding: 5px 9px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface);
+  }
+  .search input::placeholder { color: var(--text-3); }
+
+  .rail, .detail { overflow: auto; background: var(--panel); }
+  .rail { grid-area: rail; border-right: 1px solid var(--border); padding: 12px 14px; }
+  .detail { grid-area: detail; border-left: 1px solid var(--border); padding: 14px 16px; }
+  .canvas { grid-area: canvas; position: relative; overflow: hidden; background: var(--surface); }
+
+  .rail h2, .detail h2 {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3);
+    margin: 14px 0 6px;
+  }
+  .rail h2:first-child { margin-top: 0; }
+  .layer, .edge-type {
+    display: flex; align-items: center; gap: 8px; padding: 4px 2px; cursor: pointer; border-radius: 4px;
+  }
+  .layer:hover, .edge-type:hover { background: var(--panel-2); }
+  .layer input, .edge-type input { margin: 0; accent-color: var(--accent); }
+  .layer .name, .edge-type .name { flex: 1; }
+  .layer .count { color: var(--text-3); font-variant-numeric: tabular-nums; font-size: 12px; }
+  .glyph { width: 16px; height: 16px; flex: none; }
+  .edge-type .line { width: 22px; height: 12px; flex: none; }
+  .opt { display: flex; align-items: center; gap: 8px; padding: 4px 2px; cursor: pointer; }
+  .opt input { margin: 0; accent-color: var(--accent); }
+  .hint { color: var(--text-3); font-size: 12px; margin-top: 12px; }
+
+  svg.graph { width: 100%; height: 100%; display: block; cursor: grab; }
+  svg.graph:active { cursor: grabbing; }
+  .link { fill: none; stroke-width: 1.2px; opacity: 0.75; }
+  .link.calls_api { stroke-width: 2px; }
+  .link.uses_model { stroke-width: 0.9px; stroke-dasharray: 3 3; opacity: 0.55; }
+  .link.schedules, .link.fires { stroke-dasharray: 5 3; }
+  .link.invokes, .link.guarded_by { stroke-dasharray: 1.5 3; }
+  .link.routes_to, .link.schedules, .link.invokes { stroke: var(--c-entry); }
+  .link.guarded_by { stroke: var(--c-mw); }
+  .link.uses_service { stroke: var(--c-service); }
+  .link.uses_model, .link.relation { stroke: var(--c-model); }
+  .link.sends_mail { stroke: var(--c-mail); }
+  .link.calls_api { stroke: var(--c-external); }
+  .link.fires { stroke: var(--c-event); }
+  marker path { stroke: none; }
+  .arrow-routes_to path, .arrow-schedules path, .arrow-invokes path { fill: var(--c-entry); }
+  .arrow-guarded_by path { fill: var(--c-mw); }
+  .arrow-uses_service path { fill: var(--c-service); }
+  .arrow-uses_model path, .arrow-relation path { fill: var(--c-model); }
+  .arrow-sends_mail path { fill: var(--c-mail); }
+  .arrow-calls_api path { fill: var(--c-external); }
+  .arrow-fires path { fill: var(--c-event); }
+
+  .node { cursor: pointer; }
+  .node .shape { stroke: var(--halo); stroke-width: 1.5px; }
+  .node.entry .shape { fill: var(--c-entry); }
+  .node.model .shape { fill: var(--c-model); }
+  .node.service .shape { fill: var(--c-service); }
+  .node.event .shape { fill: var(--c-event); }
+  .node.mail .shape { fill: var(--c-mail); }
+  .node.handler .shape { fill: var(--c-handler); }
+  .node.external .shape { fill: var(--c-external); }
+  .node.mw .shape { fill: var(--c-mw); }
+  .node text {
+    font-size: 10.5px; fill: var(--text-2); pointer-events: none;
+    paint-order: stroke; stroke: var(--halo); stroke-width: 3px; stroke-linejoin: round;
+  }
+  .node.selected .shape { stroke: var(--text-1); stroke-width: 2.5px; }
+  .node.selected text { fill: var(--text-1); font-weight: 600; }
+  .node.match .shape { stroke: var(--accent); stroke-width: 2.5px; }
+  .dimmed { opacity: var(--dim); }
+
+  .tooltip {
+    position: absolute; pointer-events: none; display: none; max-width: 320px;
+    padding: 6px 9px; border: 1px solid var(--border); border-radius: 6px;
+    background: var(--panel); color: var(--text-1); box-shadow: 0 4px 14px rgba(0,0,0,0.12); z-index: 3;
+  }
+  .tooltip .t { color: var(--text-3); font-size: 11px; }
+  .canvas-tools { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; z-index: 2; }
+  .canvas-tools button, .detail .actions button {
+    padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--panel); cursor: pointer; color: var(--text-2);
+  }
+  .canvas-tools button:hover, .detail .actions button:hover { background: var(--panel-2); color: var(--text-1); }
+
+  .detail .empty { color: var(--text-3); }
+  .detail .kind { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); }
+  .detail .kind .sw { width: 10px; height: 10px; border-radius: 2px; }
+  .detail .name { font-size: 16px; font-weight: 600; margin: 4px 0 2px; word-break: break-word; }
+  .detail .file { color: var(--text-3); word-break: break-all; }
+  .detail .desc { margin: 8px 0 0; color: var(--text-2); }
+  .detail .actions { display: flex; gap: 6px; margin: 12px 0 4px; flex-wrap: wrap; }
+  .detail ul { list-style: none; margin: 0; padding: 0; }
+  .detail li { padding: 4px 0; border-top: 1px solid var(--border); }
+  .detail li:first-child { border-top: 0; }
+  .detail li a { color: var(--text-1); text-decoration: none; cursor: pointer; }
+  .detail li a:hover { color: var(--accent); text-decoration: underline; }
+  .detail .sub { color: var(--text-3); font-size: 12px; margin-top: 2px; }
+  .detail .routes { margin: 4px 0 0; padding-left: 0; }
+  .detail .routes li { border: 0; padding: 1px 0; color: var(--text-2); }
+  .detail .badge { display: inline-block; padding: 0 6px; border-radius: 999px; background: var(--panel-2); color: var(--text-2); font-size: 11px; margin-left: 4px; }
+
+  @media (max-width: 1000px) {
+    .app {
+      height: auto; min-height: 100vh;
+      grid-template-columns: 1fr;
+      grid-template-rows: auto auto minmax(520px, 70vh) auto;
+      grid-template-areas: "head" "rail" "canvas" "detail";
+    }
+    .rail { border-right: 0; border-bottom: 1px solid var(--border); }
+    .detail { border-left: 0; border-top: 1px solid var(--border); }
+    .stats { margin-left: 0; }
+    .search input { width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="app">
+  <header>
+    <div>
+      <h1>Grafo CRM Mosley</h1>
+      <div class="sub" id="subtitle">Dependencias extraídas del código con scripts/build-graph.php</div>
+    </div>
+    <div class="presets" role="group" aria-label="Vista">
+      <button type="button" data-preset="arquitectura" aria-pressed="true">Arquitectura</button>
+      <button type="button" data-preset="modelos" aria-pressed="false">Modelos</button>
+      <button type="button" data-preset="todo" aria-pressed="false">Todo</button>
+    </div>
+    <div class="search">
+      <input id="search" type="search" placeholder="Buscar nodo… (Enter selecciona)" aria-label="Buscar nodo">
+    </div>
+    <div class="stats">
+      <span class="stat">nodos <b id="st-nodes">0</b> / <span id="st-nodes-all">0</span></span>
+      <span class="stat">aristas <b id="st-edges">0</b> / <span id="st-edges-all">0</span></span>
+    </div>
+  </header>
+
+  <aside class="rail" aria-label="Filtros">
+    <h2>Capas</h2>
+    <div id="layers"></div>
+    <h2>Aristas</h2>
+    <div id="edge-types"></div>
+    <h2>Opciones</h2>
+    <label class="opt"><input type="checkbox" id="opt-utility" checked> Ocultar ActivityLog y Setting</label>
+    <label class="opt"><input type="checkbox" id="opt-layered" checked> Ordenar por capas (izq → der)</label>
+    <label class="opt"><input type="checkbox" id="opt-labels" checked> Mostrar etiquetas</label>
+    <p class="hint">Clic en un nodo: detalle y vecinos. Doble clic: enfocar solo sus vecinos. Arrastra para reacomodar; rueda para zoom.</p>
+  </aside>
+
+  <main class="canvas" id="canvas">
+    <div class="canvas-tools">
+      <button type="button" id="btn-fit">Ajustar</button>
+      <button type="button" id="btn-clear">Limpiar selección</button>
+    </div>
+    <svg class="graph" id="graph" role="img" aria-label="Grafo de dependencias del CRM"></svg>
+    <div class="tooltip" id="tooltip"></div>
+  </main>
+
+  <aside class="detail" id="detail" aria-live="polite">
+    <p class="empty">Selecciona un nodo para ver sus rutas, dependencias y relaciones.</p>
+  </aside>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script id="graph-data" type="application/json">__GRAPH_JSON__</script>
+<script>
+(function () {
+  const DATA = JSON.parse(document.getElementById('graph-data').textContent);
+
+  // ── Capas (agrupan tipos de nodo) ───────────────────────────────────────
+  const LAYERS = [
+    { key: 'entry',    label: 'Entradas HTTP y scheduler', types: ['routes', 'scheduler'], symbol: d3.symbolCross },
+    { key: 'mw',       label: 'Middleware',                types: ['middleware'],          symbol: d3.symbolSquare },
+    { key: 'handler',  label: 'Controladores y comandos',  types: ['controller', 'command'], symbol: d3.symbolSquare },
+    { key: 'service',  label: 'Servicios',                 types: ['service'],             symbol: d3.symbolDiamond },
+    { key: 'mail',     label: 'Mailables',                 types: ['mail'],                symbol: d3.symbolTriangle },
+    { key: 'event',    label: 'Eventos de modelo',         types: ['event'],               symbol: d3.symbolWye },
+    { key: 'model',    label: 'Modelos Eloquent',          types: ['model'],               symbol: d3.symbolCircle },
+    { key: 'external', label: 'APIs externas',             types: ['external'],            symbol: d3.symbolStar },
+  ];
+  const TYPE_LABEL = {
+    routes: 'Zona de rutas', scheduler: 'Scheduler', middleware: 'Middleware', controller: 'Controlador', command: 'Comando Artisan',
+    service: 'Servicio', mail: 'Mailable', event: 'Evento de modelo', model: 'Modelo Eloquent', external: 'API externa',
+  };
+  const EDGE_TYPES = [
+    { key: 'routes_to',    label: 'ruta → controlador' },
+    { key: 'uses_service', label: 'usa servicio' },
+    { key: 'calls_api',    label: 'llama API externa' },
+    { key: 'sends_mail',   label: 'envía correo' },
+    { key: 'uses_model',   label: 'usa modelo' },
+    { key: 'relation',     label: 'relación Eloquent' },
+    { key: 'fires',        label: 'dispara evento' },
+    { key: 'schedules',    label: 'programa comando' },
+    { key: 'invokes',      label: 'invoca comando' },
+    { key: 'guarded_by',   label: 'protegido por middleware' },
+  ];
+  const LAYER_X = { entry: 0.06, mw: 0.06, handler: 0.30, service: 0.56, mail: 0.56, event: 0.42, model: 0.50, external: 0.92 };
+  const PRESETS = {
+    arquitectura: { layers: ['entry', 'mw', 'handler', 'service', 'mail', 'event', 'external'], edges: EDGE_TYPES.map(e => e.key).filter(k => k !== 'uses_model' && k !== 'relation'), layered: true },
+    modelos:      { layers: ['model'], edges: ['relation'], layered: false },
+    todo:         { layers: LAYERS.map(l => l.key), edges: EDGE_TYPES.map(e => e.key), layered: true },
+  };
+
+  const layerOf = n => LAYERS.find(l => l.types.includes(n.type)).key;
+  const byId = new Map(DATA.nodes.map(n => [n.id, n]));
+  DATA.nodes.forEach(n => { n.layer = layerOf(n); n.degree = 0; });
+  DATA.edges.forEach(e => { byId.get(e.from).degree++; byId.get(e.to).degree++; });
+  const reverseExists = new Set(DATA.edges.map(e => e.to + '|' + e.from + '|' + e.type));
+
+  const state = {
+    layers: new Set(PRESETS.arquitectura.layers),
+    edges: new Set(PRESETS.arquitectura.edges),
+    layered: true,
+    hideUtility: true,
+    labels: true,
+    selected: null,
+    focus: null,
+    search: '',
+  };
+
+  // ── Rail ───────────────────────────────────────────────────────────────
+  const layersEl = document.getElementById('layers');
+  LAYERS.forEach(l => {
+    const count = DATA.nodes.filter(n => n.layer === l.key).length;
+    const row = document.createElement('label');
+    row.className = 'layer';
+    row.innerHTML = `<input type="checkbox" data-layer="${l.key}">` +
+      `<svg class="glyph" viewBox="-9 -9 18 18"><path class="shape" d="${d3.symbol(l.symbol, 90)()}" fill="var(--c-${l.key})"/></svg>` +
+      `<span class="name">${l.label}</span><span class="count">${count}</span>`;
+    layersEl.appendChild(row);
+  });
+  const edgesEl = document.getElementById('edge-types');
+  EDGE_TYPES.forEach(t => {
+    const count = DATA.edges.filter(e => e.type === t.key).length;
+    const row = document.createElement('label');
+    row.className = 'edge-type';
+    row.innerHTML = `<input type="checkbox" data-edge="${t.key}">` +
+      `<svg class="line" viewBox="0 0 22 12"><path class="link ${t.key}" d="M1 6 H21" style="opacity:1"/></svg>` +
+      `<span class="name">${t.label}</span><span class="count">${count}</span>`;
+    edgesEl.appendChild(row);
+  });
+  function syncRail() {
+    layersEl.querySelectorAll('input').forEach(i => { i.checked = state.layers.has(i.dataset.layer); });
+    edgesEl.querySelectorAll('input').forEach(i => { i.checked = state.edges.has(i.dataset.edge); });
+    document.getElementById('opt-utility').checked = state.hideUtility;
+    document.getElementById('opt-layered').checked = state.layered;
+    document.getElementById('opt-labels').checked = state.labels;
+    document.querySelectorAll('.presets button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.preset === state.preset)));
+  }
+  layersEl.addEventListener('change', e => {
+    const k = e.target.dataset.layer; if (!k) return;
+    e.target.checked ? state.layers.add(k) : state.layers.delete(k);
+    state.preset = null; render();
+  });
+  edgesEl.addEventListener('change', e => {
+    const k = e.target.dataset.edge; if (!k) return;
+    e.target.checked ? state.edges.add(k) : state.edges.delete(k);
+    state.preset = null; render();
+  });
+  document.getElementById('opt-utility').addEventListener('change', e => { state.hideUtility = e.target.checked; render(); });
+  document.getElementById('opt-layered').addEventListener('change', e => { state.layered = e.target.checked; render(true); });
+  document.getElementById('opt-labels').addEventListener('change', e => { state.labels = e.target.checked; applyLabels(); });
+  document.querySelectorAll('.presets button').forEach(b => b.addEventListener('click', () => applyPreset(b.dataset.preset)));
+  function applyPreset(key) {
+    const p = PRESETS[key];
+    state.layers = new Set(p.layers); state.edges = new Set(p.edges); state.layered = p.layered;
+    state.preset = key; state.focus = null; state.selected = null;
+    render(true);
+  }
+
+  // ── SVG ────────────────────────────────────────────────────────────────
+  const svg = d3.select('#graph');
+  const defs = svg.append('defs');
+  EDGE_TYPES.forEach(t => {
+    defs.append('marker').attr('id', 'arrow-' + t.key).attr('class', 'arrow-' + t.key)
+      .attr('viewBox', '0 -4 8 8').attr('refX', 8).attr('refY', 0).attr('markerWidth', 7).attr('markerHeight', 7).attr('orient', 'auto')
+      .append('path').attr('d', 'M0,-3.5 L8,0 L0,3.5 Z');
+  });
+  const viewport = svg.append('g').attr('class', 'viewport');
+  const linkLayer = viewport.append('g').attr('class', 'links');
+  const nodeLayer = viewport.append('g').attr('class', 'nodes');
+  const zoom = d3.zoom().scaleExtent([0.15, 4]).on('zoom', ev => { if (ev.sourceEvent) userZoomed = true; viewport.attr('transform', ev.transform); });
+  svg.call(zoom).on('dblclick.zoom', null);
+  svg.on('click', ev => { if (ev.target === svg.node()) { state.selected = null; updateHighlight(); renderDetail(); } });
+
+  const tooltip = document.getElementById('tooltip');
+  const canvasEl = document.getElementById('canvas');
+  const size = () => ({ w: canvasEl.clientWidth || 800, h: canvasEl.clientHeight || 600 });
+
+  let simulation = null, nodes = [], links = [], nodeSel = null, linkSel = null;
+  const positions = new Map();
+  const radius = n => 5 + Math.sqrt(n.degree) * 1.6;
+
+  function visibleNodes() {
+    let list = DATA.nodes.filter(n => state.layers.has(n.layer) && !(state.hideUtility && n.meta.utility));
+    if (state.focus) {
+      const keep = new Set([state.focus]);
+      DATA.edges.forEach(e => {
+        if (!state.edges.has(e.type)) return;
+        if (e.from === state.focus) keep.add(e.to);
+        if (e.to === state.focus) keep.add(e.from);
+      });
+      list = list.filter(n => keep.has(n.id));
+      if (!list.some(n => n.id === state.focus)) list.push(byId.get(state.focus));
+    }
+    return list;
+  }
+
+  function render(relayout) {
+    syncRail();
+    const prev = new Map(nodes.map(n => [n.id, n]));
+    const vis = visibleNodes();
+    const visIds = new Set(vis.map(n => n.id));
+    nodes = vis.map(n => {
+      const p = prev.get(n.id) || positions.get(n.id);
+      const o = Object.assign({}, n, p ? { x: p.x, y: p.y, vx: 0, vy: 0 } : {});
+      return o;
+    });
+    const nodeMap = new Map(nodes.map(n => [n.id, n]));
+    links = DATA.edges
+      .filter(e => state.edges.has(e.type) && visIds.has(e.from) && visIds.has(e.to))
+      .map(e => Object.assign({}, e, { source: nodeMap.get(e.from), target: nodeMap.get(e.to), curved: reverseExists.has(e.from + '|' + e.to + '|' + e.type) }));
+
+    document.getElementById('st-nodes').textContent = nodes.length;
+    document.getElementById('st-edges').textContent = links.length;
+
+    linkSel = linkLayer.selectAll('path.link').data(links, d => d.from + '|' + d.to + '|' + d.type + '|' + (d.meta.method || ''));
+    linkSel.exit().remove();
+    linkSel = linkSel.enter().append('path')
+      .attr('class', d => 'link ' + d.type)
+      .attr('marker-end', d => `url(#arrow-${d.type})`)
+      .merge(linkSel);
+
+    nodeSel = nodeLayer.selectAll('g.node').data(nodes, d => d.id);
+    nodeSel.exit().remove();
+    const enter = nodeSel.enter().append('g').attr('class', d => 'node ' + d.layer);
+    enter.append('path').attr('class', 'shape');
+    enter.append('text').attr('text-anchor', 'middle');
+    nodeSel = enter.merge(nodeSel);
+    nodeSel.select('path.shape').attr('d', d => d3.symbol(LAYERS.find(l => l.key === d.layer).symbol, Math.PI * radius(d) * radius(d))());
+    nodeSel.select('text').attr('dy', d => radius(d) + 11).text(d => d.label.split('\n')[0]);
+    nodeSel
+      .on('click', (ev, d) => { ev.stopPropagation(); select(d.id); })
+      .on('dblclick', (ev, d) => { ev.stopPropagation(); focusOn(d.id); })
+      .on('mousemove', (ev, d) => showTip(ev, d))
+      .on('mouseleave', hideTip)
+      .call(d3.drag()
+        .on('start', (ev, d) => { if (!ev.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+        .on('drag', (ev, d) => { d.fx = ev.x; d.fy = ev.y; })
+        .on('end', (ev, d) => { if (!ev.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+    applyLabels();
+    startSimulation(relayout);
+    updateHighlight();
+    renderDetail();
+  }
+
+  function startSimulation(relayout) {
+    const { w, h } = size();
+    if (simulation) simulation.stop();
+    simulation = d3.forceSimulation(nodes)
+      .force('link', d3.forceLink(links).id(d => d.id).distance(d => d.type === 'relation' ? 70 : 90).strength(0.5))
+      .force('charge', d3.forceManyBody().strength(-260))
+      .force('collide', d3.forceCollide(d => radius(d) + 12 + Math.min(30, d.label.split('\n')[0].length * 1.1)))
+      .force('center', d3.forceCenter(w / 2, h / 2).strength(0.05));
+    if (state.layered) {
+      simulation
+        .force('x', d3.forceX(d => LAYER_X[d.layer] * w).strength(d => d.layer === 'model' ? 0.04 : 0.35))
+        .force('y', d3.forceY(d => (d.layer === 'model' ? 0.82 : d.layer === 'event' || d.layer === 'mail' ? 0.18 : d.layer === 'mw' ? 0.9 : 0.5) * h).strength(d => d.layer === 'model' ? 0.35 : 0.12));
+    } else {
+      simulation.force('x', d3.forceX(w / 2).strength(0.03)).force('y', d3.forceY(h / 2).strength(0.03));
+    }
+    simulation.alpha(relayout ? 1 : 0.6).on('tick', tick);
+    // Encuadre automático: pronto (1.2 s) y al enfriarse, salvo que el usuario ya haya hecho zoom/pan.
+    userZoomed = false;
+    const myRun = ++simRun;
+    setTimeout(() => { if (myRun === simRun && !userZoomed) fit(); }, 1200);
+    simulation.on('end', () => { nodes.forEach(n => positions.set(n.id, { x: n.x, y: n.y })); if (myRun === simRun && !userZoomed) fit(); });
+  }
+  let userZoomed = false, simRun = 0;
+
+  function tick() {
+    linkSel.attr('d', d => {
+      const sx = d.source.x, sy = d.source.y, tx = d.target.x, ty = d.target.y;
+      const dx = tx - sx, dy = ty - sy, dist = Math.max(1, Math.hypot(dx, dy));
+      const ux = dx / dist, uy = dy / dist;
+      const rt = radius(d.target) + 2, rs = radius(d.source);
+      const x1 = sx + ux * rs, y1 = sy + uy * rs, x2 = tx - ux * rt, y2 = ty - uy * rt;
+      if (!d.curved) return `M${x1},${y1}L${x2},${y2}`;
+      const nx = -uy, ny = ux, k = Math.min(30, dist * 0.2);
+      return `M${x1},${y1}Q${(x1 + x2) / 2 + nx * k},${(y1 + y2) / 2 + ny * k} ${x2},${y2}`;
+    });
+    nodeSel.attr('transform', d => `translate(${d.x},${d.y})`);
+  }
+
+  function fit() {
+    if (!nodes.length) return;
+    const { w, h } = size();
+    const xs = nodes.map(n => n.x), ys = nodes.map(n => n.y);
+    const x0 = Math.min(...xs) - 60, x1 = Math.max(...xs) + 60, y0 = Math.min(...ys) - 40, y1 = Math.max(...ys) + 40;
+    const k = Math.min(4, 0.95 / Math.max((x1 - x0) / w, (y1 - y0) / h));
+    const t = d3.zoomIdentity.translate(w / 2 - k * (x0 + x1) / 2, h / 2 - k * (y0 + y1) / 2).scale(k);
+    svg.transition().duration(400).call(zoom.transform, t);
+  }
+  function centerOn(id) {
+    const n = nodes.find(x => x.id === id); if (!n) return;
+    const { w, h } = size();
+    const k = Math.max(d3.zoomTransform(svg.node()).k, 1);
+    svg.transition().duration(400).call(zoom.transform, d3.zoomIdentity.translate(w / 2 - k * n.x, h / 2 - k * n.y).scale(k));
+  }
+  document.getElementById('btn-fit').addEventListener('click', fit);
+  document.getElementById('btn-clear').addEventListener('click', () => { state.selected = null; state.focus = null; render(); });
+  window.addEventListener('resize', () => { if (simulation) { startSimulation(false); } });
+
+  function applyLabels() {
+    if (nodeSel) nodeSel.select('text').style('display', state.labels ? null : 'none');
+  }
+
+  // ── Selección, enfoque, resaltado ───────────────────────────────────────
+  function neighborsOf(id) {
+    const set = new Set([id]);
+    links.forEach(l => { if (l.from === id) set.add(l.to); if (l.to === id) set.add(l.from); });
+    return set;
+  }
+  function select(id) {
+    state.selected = id;
+    if (!nodes.some(n => n.id === id)) {
+      // El nodo está oculto por filtros: abrir su capa
+      const n = byId.get(id); state.layers.add(n.layer); state.preset = null;
+      if (n.meta.utility) state.hideUtility = false;
+      render();
+    }
+    updateHighlight(); renderDetail(); centerOn(id);
+  }
+  function focusOn(id) {
+    state.focus = state.focus === id ? null : id;
+    state.selected = id;
+    render(true);
+  }
+  function updateHighlight() {
+    if (!nodeSel) return;
+    const q = state.search.trim().toLowerCase();
+    const nb = state.selected ? neighborsOf(state.selected) : null;
+    nodeSel
+      .classed('selected', d => d.id === state.selected)
+      .classed('match', d => q && d.label.toLowerCase().includes(q))
+      .classed('dimmed', d => nb ? !nb.has(d.id) : (q ? !d.label.toLowerCase().includes(q) : false));
+    linkSel.classed('dimmed', d => nb ? (d.from !== state.selected && d.to !== state.selected) : false);
+  }
+  document.getElementById('search').addEventListener('input', e => { state.search = e.target.value; updateHighlight(); });
+  document.getElementById('search').addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    const q = state.search.trim().toLowerCase(); if (!q) return;
+    const hit = nodes.find(n => n.label.toLowerCase().includes(q)) || DATA.nodes.find(n => n.label.toLowerCase().includes(q));
+    if (hit) select(hit.id);
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { state.selected = null; if (state.focus) { state.focus = null; render(); } else { updateHighlight(); renderDetail(); } }
+  });
+
+  // ── Tooltip ────────────────────────────────────────────────────────────
+  function showTip(ev, d) {
+    const r = canvasEl.getBoundingClientRect();
+    tooltip.innerHTML = `<div><b>${esc(d.label.split('\n')[0])}</b></div><div class="t">${TYPE_LABEL[d.type]}${d.meta.file ? ' · <span class="mono">' + esc(d.meta.file) + '</span>' : ''}</div>`;
+    tooltip.style.display = 'block';
+    tooltip.style.left = Math.min(ev.clientX - r.left + 14, r.width - 330) + 'px';
+    tooltip.style.top = (ev.clientY - r.top + 14) + 'px';
+  }
+  function hideTip() { tooltip.style.display = 'none'; }
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ── Panel de detalle ───────────────────────────────────────────────────
+  const detail = document.getElementById('detail');
+  function edgeLine(e, other) {
+    const o = byId.get(other);
+    let extra = '';
+    if (e.type === 'relation') extra = ` <span class="badge">${esc(e.meta.kind)} · ${esc(e.meta.method)}</span>`;
+    if (e.type === 'schedules') extra = ` <span class="badge">${esc(e.meta.when)}</span>`;
+    if (e.type === 'calls_api' && e.meta.sdk) extra = ` <span class="badge">${esc(e.meta.sdk)}</span>`;
+    if (e.type === 'uses_service' && e.meta.calls) extra = ` <span class="badge">${esc(e.meta.calls.filter(c => !['loadMissing', 'wasChanged'].includes(c)).join(', '))}</span>`;
+    let routes = '';
+    if (e.type === 'routes_to' && e.meta.routes) {
+      routes = `<ul class="routes mono">${e.meta.routes.map(r => `<li>${esc(r)}</li>`).join('')}</ul>`;
+    }
+    return `<li><a data-go="${esc(other)}">${esc(o.label.split('\n')[0])}</a>${extra}<div class="sub">${TYPE_LABEL[o.type]}</div>${routes}</li>`;
+  }
+  function section(title, items) {
+    if (!items.length) return '';
+    return `<h2>${title} <span class="badge">${items.length}</span></h2><ul>${items.join('')}</ul>`;
+  }
+  function renderDetail() {
+    if (!state.selected) {
+      detail.innerHTML = '<p class="empty">Selecciona un nodo para ver sus rutas, dependencias y relaciones.</p>';
+      return;
+    }
+    const n = byId.get(state.selected);
+    const inc = DATA.edges.filter(e => e.to === n.id);
+    const out = DATA.edges.filter(e => e.from === n.id);
+    const group = (list, dir) => {
+      const g = {};
+      list.forEach(e => { (g[e.type] = g[e.type] || []).push(edgeLine(e, dir === 'in' ? e.from : e.to)); });
+      return Object.entries(g).map(([t, items]) => section(EDGE_TYPES.find(x => x.key === t).label + (dir === 'in' ? ' ← desde' : ' →'), items)).join('');
+    };
+    const closures = n.meta.closures ? `<h2>Rutas con closure</h2><ul class="routes mono">${n.meta.closures.map(c => `<li>${esc(c)}</li>`).join('')}</ul>` : '';
+    const mw = n.meta.middleware && n.meta.middleware.length ? `<p class="desc">Middleware de grupo: <span class="mono">${esc(n.meta.middleware.join(', '))}</span></p>` : '';
+    const table = n.meta.table ? `<p class="desc">Tabla: <span class="mono">${esc(n.meta.table)}</span></p>` : '';
+    const soft = n.meta.soft_deletes ? '<span class="badge">SoftDeletes</span>' : '';
+    detail.innerHTML =
+      `<div class="kind"><span class="sw" style="background:var(--c-${n.layer})"></span>${TYPE_LABEL[n.type]}${soft}</div>` +
+      `<div class="name">${esc(n.label.split('\n')[0])}</div>` +
+      (n.meta.file ? `<div class="file mono">${esc(n.meta.file)}</div>` : '') +
+      (n.meta.description ? `<p class="desc">${esc(n.meta.description)}</p>` : '') +
+      mw + table +
+      `<div class="actions"><button type="button" data-act="focus">${state.focus === n.id ? 'Salir del enfoque' : 'Enfocar vecinos'}</button><button type="button" data-act="center">Centrar</button></div>` +
+      `<p class="desc">Grado: <b>${n.degree}</b> · entrantes ${inc.length} · salientes ${out.length}</p>` +
+      closures + group(out, 'out') + group(inc, 'in');
+  }
+  detail.addEventListener('click', e => {
+    const go = e.target.closest('[data-go]');
+    if (go) { select(go.dataset.go); return; }
+    const act = e.target.closest('[data-act]');
+    if (act && state.selected) { act.dataset.act === 'focus' ? focusOn(state.selected) : centerOn(state.selected); }
+  });
+
+  // ── Arranque ───────────────────────────────────────────────────────────
+  document.getElementById('st-nodes-all').textContent = DATA.nodes.length;
+  document.getElementById('st-edges-all').textContent = DATA.edges.length;
+  document.getElementById('subtitle').textContent =
+    `${DATA.stats.nodes} nodos · ${DATA.stats.edges} aristas · generado ${new Date(DATA.generated_at).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' })} con scripts/build-graph.php`;
+  state.preset = 'arquitectura';
+  render(true);
+})();
+</script>
