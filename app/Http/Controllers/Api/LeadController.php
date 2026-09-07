@@ -58,10 +58,11 @@ class LeadController extends Controller
 
     public function search(Request $request)
     {
-        $request->validate([
+        $validated = $request->validate([
             'phone' => 'nullable|string',
             'email' => 'nullable|email',
             'name'  => 'nullable|string',
+            'limit' => 'nullable|integer|min:1|max:100',
         ]);
 
         if (!$request->filled('phone') && !$request->filled('email') && !$request->filled('name')) {
@@ -83,7 +84,9 @@ class LeadController extends Controller
             $query->where('name', 'like', '%' . $request->name . '%');
         }
 
-        $leads = $query->latest()->get();
+        // Acotado: la búsqueda por nombre es un `like` y sin tope devolvía
+        // todos los prospectos en una sola respuesta.
+        $leads = $query->latest()->limit($validated['limit'] ?? 25)->get();
 
         return response()->json(['success' => true, 'data' => $leads]);
     }

@@ -80,10 +80,21 @@ Route::prefix('buy')->name('buy.')->group(function () {
 Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Leads (admin + sales)
-    Route::resource('leads', LeadController::class);
-    Route::patch('leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.update-status');
-    Route::post('leads/{lead}/notes', [LeadController::class, 'addNote'])->name('leads.add-note');
+    // Leads. `leads.view_*` para consultar, `leads.manage` para modificar.
+    // Ojo al orden: `leads/create` debe declararse antes que `leads/{lead}`.
+    Route::get('leads', [LeadController::class, 'index'])->middleware('can:leads.view')->name('leads.index');
+    Route::middleware('can:leads.manage')->group(function () {
+        Route::get('leads/create', [LeadController::class, 'create'])->name('leads.create');
+        Route::post('leads', [LeadController::class, 'store'])->name('leads.store');
+    });
+    Route::get('leads/{lead}', [LeadController::class, 'show'])->middleware('can:leads.view')->name('leads.show');
+    Route::middleware('can:leads.manage')->group(function () {
+        Route::get('leads/{lead}/edit', [LeadController::class, 'edit'])->name('leads.edit');
+        Route::match(['put', 'patch'], 'leads/{lead}', [LeadController::class, 'update'])->name('leads.update');
+        Route::delete('leads/{lead}', [LeadController::class, 'destroy'])->name('leads.destroy');
+        Route::patch('leads/{lead}/status', [LeadController::class, 'updateStatus'])->name('leads.update-status');
+        Route::post('leads/{lead}/notes', [LeadController::class, 'addNote'])->name('leads.add-note');
+    });
 
     // Categories (admin only)
     Route::middleware('role:admin')->group(function () {
@@ -92,11 +103,23 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
         Route::resource('service-bundles', ServiceBundleController::class);
     });
 
-    // Quotes
-    Route::resource('quotes', QuoteController::class);
-    Route::patch('quotes/{quote}/send', [QuoteController::class, 'markAsSent'])->name('quotes.send');
-    Route::get('quotes/{quote}/pdf', [QuoteController::class, 'downloadPdf'])->name('quotes.pdf');
-    Route::post('quotes/{quote}/convert', [QuoteController::class, 'convertToOrder'])->name('quotes.convert');
+    // Cotizaciones. Mismo criterio y mismo cuidado con el orden de las rutas.
+    Route::get('quotes', [QuoteController::class, 'index'])->middleware('can:quotes.view')->name('quotes.index');
+    Route::middleware('can:quotes.manage')->group(function () {
+        Route::get('quotes/create', [QuoteController::class, 'create'])->name('quotes.create');
+        Route::post('quotes', [QuoteController::class, 'store'])->name('quotes.store');
+    });
+    Route::middleware('can:quotes.view')->group(function () {
+        Route::get('quotes/{quote}', [QuoteController::class, 'show'])->name('quotes.show');
+        Route::get('quotes/{quote}/pdf', [QuoteController::class, 'downloadPdf'])->name('quotes.pdf');
+    });
+    Route::middleware('can:quotes.manage')->group(function () {
+        Route::get('quotes/{quote}/edit', [QuoteController::class, 'edit'])->name('quotes.edit');
+        Route::match(['put', 'patch'], 'quotes/{quote}', [QuoteController::class, 'update'])->name('quotes.update');
+        Route::delete('quotes/{quote}', [QuoteController::class, 'destroy'])->name('quotes.destroy');
+        Route::patch('quotes/{quote}/send', [QuoteController::class, 'markAsSent'])->name('quotes.send');
+        Route::post('quotes/{quote}/convert', [QuoteController::class, 'convertToOrder'])->name('quotes.convert');
+    });
 
     // Settings (admin only)
     Route::middleware('role:admin')->group(function () {
@@ -112,8 +135,20 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
         Route::post('agent/reactivate', [AgentControlController::class, 'reactivate'])->name('agent.reactivate');
     });
 
-    // Clientes
-    Route::resource('clients', ClientController::class);
+    // Clientes. Incluye la infraestructura del cliente (hosting, dominios, DNS,
+    // buzones), que hasta ahora bastaba con estar autenticado para manejar.
+    Route::get('clients', [ClientController::class, 'index'])->middleware('can:clients.view')->name('clients.index');
+    Route::middleware('can:clients.manage')->group(function () {
+        Route::get('clients/create', [ClientController::class, 'create'])->name('clients.create');
+        Route::post('clients', [ClientController::class, 'store'])->name('clients.store');
+    });
+    Route::get('clients/{client}', [ClientController::class, 'show'])->middleware('can:clients.view')->name('clients.show');
+    Route::middleware('can:clients.manage')->group(function () {
+        Route::get('clients/{client}/edit', [ClientController::class, 'edit'])->name('clients.edit');
+        Route::match(['put', 'patch'], 'clients/{client}', [ClientController::class, 'update'])->name('clients.update');
+        Route::delete('clients/{client}', [ClientController::class, 'destroy'])->name('clients.destroy');
+    });
+    Route::middleware('can:clients.manage')->group(function () {
     Route::post('clients/{client}/services', [ClientServiceController::class, 'store'])->name('clients.services.store');
     Route::patch('client-services/{clientService}', [ClientServiceController::class, 'update'])->name('client-services.update');
     Route::delete('client-services/{clientService}', [ClientServiceController::class, 'destroy'])->name('client-services.destroy');
@@ -150,9 +185,10 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
     Route::get('clients/{client}/dns', [DnsController::class, 'index'])->name('clients.dns.index');
     Route::post('clients/{client}/dns', [DnsController::class, 'store'])->name('clients.dns.store');
     Route::delete('clients/{client}/dns/{record}', [DnsController::class, 'destroy'])->name('clients.dns.destroy');
+    });
 
-    // Órdenes y Facturación (admin + accounting) — incluye acciones que mueven dinero
-    Route::middleware('role:admin,accounting')->group(function () {
+    // Órdenes y Facturación — incluye acciones que mueven dinero.
+    Route::middleware('can:invoices.manage')->group(function () {
         Route::resource('orders', OrderController::class)->only(['index', 'create', 'store', 'show']);
         Route::patch('orders/{order}/stamp', [OrderController::class, 'stamp'])->name('orders.stamp');
         Route::patch('orders/{order}/void', [OrderController::class, 'void'])->name('orders.void');
@@ -171,8 +207,8 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
     // Usuarios (admin only)
     Route::middleware('role:admin')->resource('users', UserController::class);
 
-    // Reportes (admin + accounting)
-    Route::middleware('role:admin,accounting')->prefix('reports')->name('reports.')->group(function () {
+    // Reportes
+    Route::middleware('can:reports.view')->prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [ReportController::class, 'index'])->name('index');
         Route::get('/export/invoices', [ReportController::class, 'exportInvoices'])->name('export.invoices');
         Route::get('/export/payments', [ReportController::class, 'exportPayments'])->name('export.payments');
@@ -210,8 +246,8 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
         })->name('download')->where('filename', '[a-zA-Z0-9_\-.]+');
     });
 
-    // Facturas recurrentes (admin + accounting)
-    Route::middleware('role:admin,accounting')->group(function () {
+    // Facturas recurrentes
+    Route::middleware('can:invoices.manage')->group(function () {
         Route::resource('recurring-invoices', RecurringInvoiceController::class);
     });
 
@@ -223,9 +259,15 @@ Route::middleware('auth')->prefix('panel')->name('admin.')->group(function () {
         Route::get('count', [NotificationController::class, 'unreadCount'])->name('count');
     });
 
-    // Tickets de soporte (admin)
-    Route::resource('tickets', TicketController::class)->only(['index', 'show', 'update']);
-    Route::post('tickets/{ticket}/reply', [TicketController::class, 'reply'])->name('tickets.reply');
+    // Tickets de soporte
+    Route::middleware('can:tickets.view')->group(function () {
+        Route::get('tickets', [TicketController::class, 'index'])->name('tickets.index');
+        Route::get('tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
+    });
+    Route::middleware('can:tickets.manage')->group(function () {
+        Route::match(['put', 'patch'], 'tickets/{ticket}', [TicketController::class, 'update'])->name('tickets.update');
+        Route::post('tickets/{ticket}/reply', [TicketController::class, 'reply'])->name('tickets.reply');
+    });
 
     // Tareas internas
     Route::resource('tasks', TaskController::class)->except(['show']);

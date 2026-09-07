@@ -17,18 +17,30 @@ class MenuHelper
 
     public static function getMainNavItems($user = null): array
     {
+        // Cada entrada aparece sólo si el usuario puede entrar: antes el menú
+        // ofrecía secciones que ahora responden 403.
         $items = [
             ['icon' => 'dashboard', 'name' => 'Dashboard', 'path' => '/panel'],
-            ['icon' => 'leads',     'name' => 'Leads',      'path' => '/panel/leads'],
-            ['icon' => 'quotes',    'name' => 'Cotizaciones','path' => '/panel/quotes'],
-            ['icon' => 'clients',   'name' => 'Clientes',   'path' => '/panel/clients'],
-            ['icon' => 'invoices',  'name' => 'Facturas',   'path' => '/panel/orders'],
-            ['icon' => 'tickets',   'name' => 'Tickets',    'path' => '/panel/tickets'],
-            ['icon' => 'tasks',     'name' => 'Tareas',     'path' => '/panel/tasks'],
         ];
 
-        // Solo admin y accounting ven recurrentes
-        if ($user?->hasRole('admin', 'accounting')) {
+        if ($user?->canViewAny('leads')) {
+            $items[] = ['icon' => 'leads', 'name' => 'Leads', 'path' => '/panel/leads'];
+        }
+        if ($user?->hasPermission('quotes.view')) {
+            $items[] = ['icon' => 'quotes', 'name' => 'Cotizaciones', 'path' => '/panel/quotes'];
+        }
+        if ($user?->hasPermission('clients.view')) {
+            $items[] = ['icon' => 'clients', 'name' => 'Clientes', 'path' => '/panel/clients'];
+        }
+        if ($user?->hasPermission('invoices.manage')) {
+            $items[] = ['icon' => 'invoices', 'name' => 'Facturas', 'path' => '/panel/orders'];
+        }
+        if ($user?->canViewAny('tickets')) {
+            $items[] = ['icon' => 'tickets', 'name' => 'Tickets', 'path' => '/panel/tickets'];
+        }
+        $items[] = ['icon' => 'tasks', 'name' => 'Tareas', 'path' => '/panel/tasks'];
+
+        if ($user?->hasPermission('invoices.manage')) {
             $items[] = ['icon' => 'recurring', 'name' => 'Recurrentes', 'path' => '/panel/recurring-invoices'];
         }
 
@@ -49,7 +61,7 @@ class MenuHelper
     {
         $items = [];
 
-        if ($user?->hasRole('admin', 'accounting')) {
+        if ($user?->hasPermission('reports.view')) {
             $items[] = ['icon' => 'reports', 'name' => 'Reportes', 'path' => '/panel/reports'];
         }
 
