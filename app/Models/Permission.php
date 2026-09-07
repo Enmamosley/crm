@@ -24,4 +24,34 @@ class Permission extends Model
         'tickets.manage'     => 'Gestionar tickets de soporte',
         'settings.manage'    => 'Gestionar configuración',
     ];
+
+    /**
+     * Permisos que trae cada rol de fábrica.
+     *
+     * Un usuario sin permisos propios hereda los de su rol; en cuanto se le
+     * marca alguno en el panel, esa lista pasa a mandar por completo (así el
+     * admin puede recortar, por ejemplo dejando a un comercial en
+     * `leads.view_own`). Los administradores no pasan por aquí: pueden todo.
+     */
+    public const ROLE_DEFAULTS = [
+        'sales' => [
+            'leads.view_all', 'leads.manage',
+            'quotes.view', 'quotes.manage',
+            'clients.view',
+            'tickets.view_all', 'tickets.manage',
+        ],
+        'accounting' => [
+            'clients.view', 'clients.manage',
+            'quotes.view',
+            'invoices.view', 'invoices.manage',
+            'reports.view',
+            'tickets.view_all',
+        ],
+    ];
+
+    /** @return list<string> */
+    public static function defaultsForRole(?string $role): array
+    {
+        return self::ROLE_DEFAULTS[$role] ?? [];
+    }
 }

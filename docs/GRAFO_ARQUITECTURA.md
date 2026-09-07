@@ -4,7 +4,7 @@ Mapa de dependencias del repositorio generado a partir del código (rutas, contr
 
 | Artefacto | Qué contiene |
 |---|---|
-| `docs/graph/crm-graph.json` | Grafo completo: 136 nodos y 362 aristas tipadas. Fuente de verdad para herramientas. |
+| `docs/graph/crm-graph.json` | Grafo completo: 142 nodos y 365 aristas tipadas. Fuente de verdad para herramientas. |
 | `docs/graph/crm-overview.svg` / `.dot` | Vista de arquitectura: entradas → controladores → servicios → APIs externas (sin modelos). |
 | `docs/graph/crm-models.svg` / `.dot` | Modelos Eloquent y sus relaciones. |
 | `docs/graph/crm-graph.svg` / `.dot` | Todo junto (denso; útil para buscar un nodo concreto). |
@@ -26,7 +26,7 @@ Los diagramas de abajo son una lectura curada del mismo grafo (Mermaid, se rende
 
 | Capa | Cantidad | Detalle |
 |---|---|---|
-| Zonas de entrada HTTP | 17 | 12 web + 5 API, agrupadas por prefijo y middleware |
+| Zonas de entrada HTTP | 23 | 18 web + 5 API, agrupadas por prefijo y permiso |
 | Controladores | 46 | 26 `Admin/*`, 9 `Portal/*`, 5 `Api/*`, 2 `Auth/*`, 4 públicos (tienda, webhooks) |
 | Servicios | 12 | 8 hablan con APIs externas, 4 son orquestadores internos |
 | Modelos Eloquent | 32 | 60 relaciones; 40 tablas en migraciones |
@@ -35,7 +35,7 @@ Los diagramas de abajo son una lectura curada del mismo grafo (Mermaid, se rende
 | Eventos de modelo | 4 | Observers en `AppServiceProvider` que sincronizan con DM Champ |
 | APIs externas | 8 | Mercado Pago, PayPal, Facturapi, Finkok, 20i, Cosmotown, DM Champ, Meta CAPI |
 | Vistas Blade | 88 | admin (54), portal (11), tienda (7), emails (6), pdf (3), resto |
-| Tests | 21 archivos | 112 casos, todos `Feature` |
+| Tests | 23 archivos | 128 casos, todos `Feature` |
 
 Stack: Laravel 12 · PHP 8.2+ · MySQL 8 · Blade + Alpine.js + Tailwind 4 · Sanctum · DomPDF · Docker/Nginx/Traefik.
 
@@ -292,7 +292,7 @@ Cada zona es un prefijo con su middleware de grupo. El middleware inline por rut
 |---|---|---|
 | `/`, `/buy` | ninguno (público) | DirectCheckout, Cart |
 | `/login`, `/logout`, `/auth` | ninguno · `throttle:login`, `throttle:5,1` | Auth/Login, Auth/MagicLink |
-| `/panel` | `auth` | Dashboard, Lead, Quote, Client, ClientService, Document, Domain, Mailbox, Dns, Ticket, Task |
+| `/panel` | `auth` + `can:*` | Cada sección exige su permiso: `leads.view`/`leads.manage`, `quotes.view`/`quotes.manage`, `clients.view`/`clients.manage` (incluye dominios, buzones y DNS), `tickets.view`/`tickets.manage`, `invoices.manage`, `reports.view` |
 | `/panel` | `auth` + `role:admin` | ServiceCategory, Service, ServiceBundle, Setting, AgentControl, ActivityLog, DiscountCode, Tag, Permission, User (`role:admin` inline) |
 | `/panel` | `auth` + `role:admin,accounting` | Order, RecurringInvoice |
 | `/panel/reports` | `auth` + `role:admin,accounting` | Report |

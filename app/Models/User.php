@@ -12,6 +12,9 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable, HasApiTokens;
 
+    /** Caché por petición de los permisos resueltos. */
+    private ?array $effectivePermissions = null;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -49,10 +52,49 @@ class User extends Authenticatable
         return $this->hasMany(Permission::class);
     }
 
+    /**
+     * Permisos efectivos: los que el admin marcó para este usuario o, si no
+     * tiene ninguno, los de su rol. Se resuelve una vez por petición.
+     *
+     * @return list<string>
+     */
+    public function effectivePermissions(): array
+    {
+        return $this->effectivePermissions ??= (function (): array {
+            $own = $this->permissions()->pluck('permission')->all();
+
+            return $own ?: Permission::defaultsForRole($this->role);
+        })();
+    }
+
     public function hasPermission(string $permission): bool
     {
-        if ($this->isAdmin()) return true;
-        return $this->permissions()->where('permission', $permission)->exists();
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return in_array($permission, $this->effectivePermissions(), true);
+    }
+
+    /** ¿Puede ver el recurso, sea todo o sólo lo asignado? */
+    public function canViewAny(string $resource): bool
+    {
+        return $this->hasPermission("{$resource}.view_all")
+            || $this->hasPermission("{$resource}.view_own");
+    }
+
+    /**
+     * ¿Sólo ve lo que tiene asignado? Se cumple cuando el admin le dio
+     * explícitamente el permiso restringido y no el amplio.
+     */
+    public function seesOnlyAssigned(string $resource): bool
+    {
+        if ($this->isAdmin()) {
+            return false;
+        }
+
+        return $this->hasPermission("{$resource}.view_own")
+            && !$this->hasPermission("{$resource}.view_all");
     }
 
     public function notifications()

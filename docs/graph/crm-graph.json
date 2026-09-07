@@ -1,9 +1,9 @@
 {
-    "generated_at": "2026-09-07T22:10:17+00:00",
+    "generated_at": "2026-09-07T22:33:05+00:00",
     "generator": "scripts/build-graph.php",
     "stats": {
-        "nodes": 136,
-        "edges": 362,
+        "nodes": 142,
+        "edges": 365,
         "nodes_by_type": {
             "command": 6,
             "controller": 46,
@@ -12,17 +12,17 @@
             "mail": 6,
             "middleware": 4,
             "model": 32,
-            "routes": 17,
+            "routes": 23,
             "scheduler": 1,
             "service": 12
         },
         "edges_by_type": {
             "calls_api": 8,
             "fires": 4,
-            "guarded_by": 7,
+            "guarded_by": 5,
             "invokes": 1,
             "relation": 61,
-            "routes_to": 47,
+            "routes_to": 52,
             "schedules": 5,
             "sends_mail": 8,
             "uses_model": 187,
@@ -1116,6 +1116,19 @@
             }
         },
         {
+            "id": "routes:web:/panel|auth,can:leads.manage",
+            "label": "/panel\n[auth, can:leads.manage]",
+            "type": "routes",
+            "meta": {
+                "kind": "web",
+                "prefix": "/panel",
+                "middleware": [
+                    "auth",
+                    "can:leads.manage"
+                ]
+            }
+        },
+        {
             "id": "routes:web:/panel|auth,role:admin",
             "label": "/panel\n[auth, role:admin]",
             "type": "routes",
@@ -1129,28 +1142,67 @@
             }
         },
         {
-            "id": "routes:web:/panel|auth,role:admin,accounting",
-            "label": "/panel\n[auth, role:admin,accounting]",
+            "id": "routes:web:/panel|auth,can:quotes.manage",
+            "label": "/panel\n[auth, can:quotes.manage]",
             "type": "routes",
             "meta": {
                 "kind": "web",
                 "prefix": "/panel",
                 "middleware": [
                     "auth",
-                    "role:admin,accounting"
+                    "can:quotes.manage"
                 ]
             }
         },
         {
-            "id": "routes:web:/panel/reports|auth,role:admin,accounting",
-            "label": "/panel/reports\n[auth, role:admin,accounting]",
+            "id": "routes:web:/panel|auth,can:quotes.view",
+            "label": "/panel\n[auth, can:quotes.view]",
+            "type": "routes",
+            "meta": {
+                "kind": "web",
+                "prefix": "/panel",
+                "middleware": [
+                    "auth",
+                    "can:quotes.view"
+                ]
+            }
+        },
+        {
+            "id": "routes:web:/panel|auth,can:clients.manage",
+            "label": "/panel\n[auth, can:clients.manage]",
+            "type": "routes",
+            "meta": {
+                "kind": "web",
+                "prefix": "/panel",
+                "middleware": [
+                    "auth",
+                    "can:clients.manage"
+                ]
+            }
+        },
+        {
+            "id": "routes:web:/panel|auth,can:invoices.manage",
+            "label": "/panel\n[auth, can:invoices.manage]",
+            "type": "routes",
+            "meta": {
+                "kind": "web",
+                "prefix": "/panel",
+                "middleware": [
+                    "auth",
+                    "can:invoices.manage"
+                ]
+            }
+        },
+        {
+            "id": "routes:web:/panel/reports|auth,can:reports.view",
+            "label": "/panel/reports\n[auth, can:reports.view]",
             "type": "routes",
             "meta": {
                 "kind": "web",
                 "prefix": "/panel/reports",
                 "middleware": [
                     "auth",
-                    "role:admin,accounting"
+                    "can:reports.view"
                 ]
             }
         },
@@ -1181,6 +1233,32 @@
                 "prefix": "/panel/notifications",
                 "middleware": [
                     "auth"
+                ]
+            }
+        },
+        {
+            "id": "routes:web:/panel|auth,can:tickets.view",
+            "label": "/panel\n[auth, can:tickets.view]",
+            "type": "routes",
+            "meta": {
+                "kind": "web",
+                "prefix": "/panel",
+                "middleware": [
+                    "auth",
+                    "can:tickets.view"
+                ]
+            }
+        },
+        {
+            "id": "routes:web:/panel|auth,can:tickets.manage",
+            "label": "/panel\n[auth, can:tickets.manage]",
+            "type": "routes",
+            "meta": {
+                "kind": "web",
+                "prefix": "/panel",
+                "middleware": [
+                    "auth",
+                    "can:tickets.manage"
                 ]
             }
         },
@@ -1226,14 +1304,15 @@
             }
         },
         {
-            "id": "routes:api:/api/v1|auth:sanctum",
-            "label": "/api/v1\n[auth:sanctum]",
+            "id": "routes:api:/api/v1|auth:sanctum,throttle:120,1",
+            "label": "/api/v1\n[auth:sanctum, throttle:120,1]",
             "type": "routes",
             "meta": {
                 "kind": "api",
                 "prefix": "/api/v1",
                 "middleware": [
-                    "auth:sanctum"
+                    "auth:sanctum",
+                    "throttle:120,1"
                 ]
             }
         },
@@ -3472,7 +3551,25 @@
             "type": "routes_to",
             "meta": {
                 "routes": [
-                    "RESOURCE /panel/leads [index,create,store,show,edit,update,destroy]",
+                    "GET /panel/leads → index() {can:leads.view}",
+                    "GET /panel/leads/{lead} → show() {can:leads.view}"
+                ],
+                "middleware": [
+                    "can:leads.view",
+                    "can:leads.view"
+                ]
+            }
+        },
+        {
+            "from": "routes:web:/panel|auth,can:leads.manage",
+            "to": "controller:Admin/LeadController",
+            "type": "routes_to",
+            "meta": {
+                "routes": [
+                    "GET /panel/leads/create → create()",
+                    "POST /panel/leads → store()",
+                    "GET /panel/leads/{lead}/edit → edit()",
+                    "DELETE /panel/leads/{lead} → destroy()",
                     "PATCH /panel/leads/{lead}/status → updateStatus()",
                     "POST /panel/leads/{lead}/notes → addNote()"
                 ],
@@ -3518,10 +3615,37 @@
             "type": "routes_to",
             "meta": {
                 "routes": [
-                    "RESOURCE /panel/quotes [index,create,store,show,edit,update,destroy]",
+                    "GET /panel/quotes → index() {can:quotes.view}"
+                ],
+                "middleware": [
+                    "can:quotes.view"
+                ]
+            }
+        },
+        {
+            "from": "routes:web:/panel|auth,can:quotes.manage",
+            "to": "controller:Admin/QuoteController",
+            "type": "routes_to",
+            "meta": {
+                "routes": [
+                    "GET /panel/quotes/create → create()",
+                    "POST /panel/quotes → store()",
+                    "GET /panel/quotes/{quote}/edit → edit()",
+                    "DELETE /panel/quotes/{quote} → destroy()",
                     "PATCH /panel/quotes/{quote}/send → markAsSent()",
-                    "GET /panel/quotes/{quote}/pdf → downloadPdf()",
                     "POST /panel/quotes/{quote}/convert → convertToOrder()"
+                ],
+                "middleware": []
+            }
+        },
+        {
+            "from": "routes:web:/panel|auth,can:quotes.view",
+            "to": "controller:Admin/QuoteController",
+            "type": "routes_to",
+            "meta": {
+                "routes": [
+                    "GET /panel/quotes/{quote} → show()",
+                    "GET /panel/quotes/{quote}/pdf → downloadPdf()"
                 ],
                 "middleware": []
             }
@@ -3558,7 +3682,25 @@
             "type": "routes_to",
             "meta": {
                 "routes": [
-                    "RESOURCE /panel/clients [index,create,store,show,edit,update,destroy]",
+                    "GET /panel/clients → index() {can:clients.view}",
+                    "GET /panel/clients/{client} → show() {can:clients.view}"
+                ],
+                "middleware": [
+                    "can:clients.view",
+                    "can:clients.view"
+                ]
+            }
+        },
+        {
+            "from": "routes:web:/panel|auth,can:clients.manage",
+            "to": "controller:Admin/ClientController",
+            "type": "routes_to",
+            "meta": {
+                "routes": [
+                    "GET /panel/clients/create → create()",
+                    "POST /panel/clients → store()",
+                    "GET /panel/clients/{client}/edit → edit()",
+                    "DELETE /panel/clients/{client} → destroy()",
                     "POST /panel/clients/{client}/create-hosting → createHosting()",
                     "POST /panel/clients/{client}/register-domain → registerDomain()",
                     "POST /panel/clients/{client}/sync-facturapi → syncFacturapi()"
@@ -3567,7 +3709,7 @@
             }
         },
         {
-            "from": "routes:web:/panel|auth",
+            "from": "routes:web:/panel|auth,can:clients.manage",
             "to": "controller:Admin/ClientServiceController",
             "type": "routes_to",
             "meta": {
@@ -3580,7 +3722,7 @@
             }
         },
         {
-            "from": "routes:web:/panel|auth",
+            "from": "routes:web:/panel|auth,can:clients.manage",
             "to": "controller:Admin/DocumentController",
             "type": "routes_to",
             "meta": {
@@ -3593,7 +3735,7 @@
             }
         },
         {
-            "from": "routes:web:/panel|auth",
+            "from": "routes:web:/panel|auth,can:clients.manage",
             "to": "controller:Admin/DomainController",
             "type": "routes_to",
             "meta": {
@@ -3616,7 +3758,7 @@
             }
         },
         {
-            "from": "routes:web:/panel|auth",
+            "from": "routes:web:/panel|auth,can:clients.manage",
             "to": "controller:Admin/MailboxController",
             "type": "routes_to",
             "meta": {
@@ -3631,7 +3773,7 @@
             }
         },
         {
-            "from": "routes:web:/panel|auth",
+            "from": "routes:web:/panel|auth,can:clients.manage",
             "to": "controller:Admin/DnsController",
             "type": "routes_to",
             "meta": {
@@ -3644,7 +3786,7 @@
             }
         },
         {
-            "from": "routes:web:/panel|auth,role:admin,accounting",
+            "from": "routes:web:/panel|auth,can:invoices.manage",
             "to": "controller:Admin/OrderController",
             "type": "routes_to",
             "meta": {
@@ -3680,7 +3822,7 @@
             }
         },
         {
-            "from": "routes:web:/panel/reports|auth,role:admin,accounting",
+            "from": "routes:web:/panel/reports|auth,can:reports.view",
             "to": "controller:Admin/ReportController",
             "type": "routes_to",
             "meta": {
@@ -3711,7 +3853,7 @@
             "meta": []
         },
         {
-            "from": "routes:web:/panel|auth,role:admin,accounting",
+            "from": "routes:web:/panel|auth,can:invoices.manage",
             "to": "controller:Admin/RecurringInvoiceController",
             "type": "routes_to",
             "meta": {
@@ -3736,12 +3878,23 @@
             }
         },
         {
-            "from": "routes:web:/panel|auth",
+            "from": "routes:web:/panel|auth,can:tickets.view",
             "to": "controller:Admin/TicketController",
             "type": "routes_to",
             "meta": {
                 "routes": [
-                    "RESOURCE /panel/tickets [index,show,update]",
+                    "GET /panel/tickets → index()",
+                    "GET /panel/tickets/{ticket} → show()"
+                ],
+                "middleware": []
+            }
+        },
+        {
+            "from": "routes:web:/panel|auth,can:tickets.manage",
+            "to": "controller:Admin/TicketController",
+            "type": "routes_to",
+            "meta": {
+                "routes": [
                     "POST /panel/tickets/{ticket}/reply → reply()"
                 ],
                 "middleware": []
@@ -3920,7 +4073,7 @@
             }
         },
         {
-            "from": "routes:api:/api/v1|auth:sanctum",
+            "from": "routes:api:/api/v1|auth:sanctum,throttle:120,1",
             "to": "controller:Api/LeadController",
             "type": "routes_to",
             "meta": {
@@ -3936,7 +4089,7 @@
             }
         },
         {
-            "from": "routes:api:/api/v1|auth:sanctum",
+            "from": "routes:api:/api/v1|auth:sanctum,throttle:120,1",
             "to": "controller:Api/QuoteController",
             "type": "routes_to",
             "meta": {
@@ -3949,7 +4102,7 @@
             }
         },
         {
-            "from": "routes:api:/api/v1|auth:sanctum",
+            "from": "routes:api:/api/v1|auth:sanctum,throttle:120,1",
             "to": "controller:Api/AgentController",
             "type": "routes_to",
             "meta": {
@@ -3960,7 +4113,7 @@
             }
         },
         {
-            "from": "routes:api:/api/v1|auth:sanctum",
+            "from": "routes:api:/api/v1|auth:sanctum,throttle:120,1",
             "to": "controller:Api/SettingController",
             "type": "routes_to",
             "meta": {
@@ -4085,18 +4238,6 @@
         },
         {
             "from": "routes:web:/panel|auth,role:admin",
-            "to": "middleware:CheckRole",
-            "type": "guarded_by",
-            "meta": []
-        },
-        {
-            "from": "routes:web:/panel|auth,role:admin,accounting",
-            "to": "middleware:CheckRole",
-            "type": "guarded_by",
-            "meta": []
-        },
-        {
-            "from": "routes:web:/panel/reports|auth,role:admin,accounting",
             "to": "middleware:CheckRole",
             "type": "guarded_by",
             "meta": []

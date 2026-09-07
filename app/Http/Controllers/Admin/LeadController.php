@@ -11,9 +11,19 @@ use Illuminate\Http\Request;
 
 class LeadController extends Controller
 {
+    /** Un usuario restringido a sus leads no puede tocar los de otro. */
+    private function authorizeLead(Lead $lead): void
+    {
+        abort_if(
+            auth()->user()->seesOnlyAssigned('leads') && $lead->assigned_to !== auth()->id(),
+            403,
+            'Este lead no está asignado a ti.'
+        );
+    }
+
     public function index(Request $request)
     {
-        $query = Lead::query();
+        $query = Lead::visibleTo($request->user());
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -88,18 +98,21 @@ class LeadController extends Controller
 
     public function show(Lead $lead)
     {
+        $this->authorizeLead($lead);
         $lead->load(['notes', 'statusHistory', 'quotes.items', 'assignee', 'tasks.assignee']);
         return view('admin.leads.show', compact('lead'));
     }
 
     public function edit(Lead $lead)
     {
+        $this->authorizeLead($lead);
         $salesUsers = User::whereIn('role', ['admin', 'sales'])->get();
         return view('admin.leads.edit', compact('lead', 'salesUsers'));
     }
 
     public function update(Request $request, Lead $lead)
     {
+        $this->authorizeLead($lead);
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
@@ -129,6 +142,7 @@ class LeadController extends Controller
 
     public function destroy(Lead $lead)
     {
+        $this->authorizeLead($lead);
         ActivityLog::log('lead_deleted', $lead, "Lead '{$lead->name}' eliminado");
         $lead->delete();
         return redirect()->route('admin.leads.index')
@@ -137,6 +151,7 @@ class LeadController extends Controller
 
     public function updateStatus(Request $request, Lead $lead)
     {
+        $this->authorizeLead($lead);
         $request->validate([
             'status' => 'required|in:' . implode(',', Lead::STATUSES),
         ]);
@@ -151,6 +166,7 @@ class LeadController extends Controller
 
     public function addNote(Request $request, Lead $lead)
     {
+        $this->authorizeLead($lead);
         $request->validate(['content' => 'required|string']);
 
         $lead->notes()->create([

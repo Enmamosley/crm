@@ -5,7 +5,9 @@ namespace App\Providers;
 use App\Models\Client;
 use App\Models\Lead;
 use App\Models\Order;
+use App\Models\Permission;
 use App\Models\Quote;
+use App\Models\User;
 use App\Services\CfdiBuilderService;
 use App\Services\CosmotownService;
 use App\Services\DmChampService;
@@ -20,6 +22,7 @@ use App\Services\ProvisioningService;
 use App\Services\TwentyIService;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
@@ -56,6 +59,18 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        // Los permisos del panel dejan de ser decorativos: cada uno se registra
+        // como Gate para poder exigirlo con el middleware `can:` en las rutas.
+        foreach (array_keys(Permission::AVAILABLE) as $permission) {
+            Gate::define($permission, fn (User $user) => $user->hasPermission($permission));
+        }
+
+        // Recursos con visibilidad graduable: la puerta de la ruta sólo pregunta
+        // si puede ver algo; el controlador decide cuánto.
+        foreach (['leads', 'tickets'] as $resource) {
+            Gate::define("{$resource}.view", fn (User $user) => $user->canViewAny($resource));
+        }
+
         // Rate limiters
         RateLimiter::for('payments', function (Request $request) {
             return Limit::perMinute(10)->by($request->ip());

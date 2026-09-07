@@ -56,6 +56,17 @@ class Lead extends Model
         ]);
     }
 
+    /**
+     * Limita a lo que el usuario puede ver: todo, o sólo lo que tiene asignado
+     * cuando el admin le dio `leads.view_own` en lugar de `leads.view_all`.
+     */
+    public function scopeVisibleTo($query, User $user)
+    {
+        return $user->seesOnlyAssigned('leads')
+            ? $query->where('assigned_to', $user->id)
+            : $query;
+    }
+
     public function scopeByStatus($query, string $status)
     {
         return $query->where('status', $status);

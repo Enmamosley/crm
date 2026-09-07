@@ -18,15 +18,27 @@ class DmChampWebhookTest extends TestCase
 {
     use RefreshDatabase;
 
+    private const SECRET = 's3cret-de-prueba';
+
     protected function setUp(): void
     {
         parent::setUp();
         Http::fake(); // el observer de DmChamp no debe salir a la red
+        config(['services.dmchamp.webhook_secret' => self::SECRET]);
     }
 
-    private function send(string $event, array $data)
+    /** DM Champ firma el cuerpo con HMAC-SHA256. */
+    private function send(string $event, array $data, ?string $secret = null)
     {
-        return $this->postJson('/api/webhooks/dmchamp', ['event' => $event, 'data' => $data]);
+        $payload = ['event' => $event, 'data' => $data];
+        $body = json_encode($payload);
+
+        // call() no fusiona los encabezados de withHeaders(), así que la firma
+        // viaja en las variables de servidor ya transformadas.
+        return $this->call('POST', '/api/webhooks/dmchamp', [], [], [], [
+            'CONTENT_TYPE'                 => 'application/json',
+            'HTTP_X_DMCHAMP_SIGNATURE'     => 'sha256=' . hash_hmac('sha256', $body, $secret ?? self::SECRET),
+        ], $body);
     }
 
     private function newContact(string $phone, ?string $email = null, string $first = 'Ana')
@@ -137,5 +149,41 @@ class DmChampWebhookTest extends TestCase
         $this->assertNotNull($note, 'La cita no dejó nota en el lead.');
         $this->assertStringContainsString('2026-10-01 10:00', $note->content);
         $this->assertSame('DM Champ', $note->author);
+    }
+
+    // ── Autenticación ────────────────────────────────────
+
+    public function test_an_unsigned_request_is_rejected(): void
+    {
+        $this->postJson('/api/webhooks/dmchamp', [
+            'event' => 'new_contact',
+            'data'  => ['contactPhone' => '+525511111111'],
+        ])->assertStatus(401);
+
+        $this->assertSame(0, Lead::count());
+    }
+
+    public function test_a_wrongly_signed_request_is_rejected(): void
+    {
+        $this->send('new_contact', ['contactPhone' => '+525511111111'], secret: 'otro-secreto')
+            ->assertStatus(401);
+
+        $this->assertSame(0, Lead::count());
+    }
+
+    /**
+     * Regresión: sin secreto configurado se saltaba la firma entera y el
+     * endpoint quedaba como API pública de escritura.
+     */
+    public function test_without_a_configured_secret_the_endpoint_is_closed(): void
+    {
+        config(['services.dmchamp.webhook_secret' => null]);
+
+        $this->postJson('/api/webhooks/dmchamp', [
+            'event' => 'new_contact',
+            'data'  => ['contactPhone' => '+525511111111'],
+        ])->assertStatus(403);
+
+        $this->assertSame(0, Lead::count());
     }
 }

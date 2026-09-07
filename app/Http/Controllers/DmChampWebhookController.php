@@ -18,18 +18,25 @@ class DmChampWebhookController extends Controller
 
     public function handle(Request $request): Response
     {
-        // Verificar firma HMAC si hay secreto configurado
+        // Sin secreto no se puede autenticar a nadie, así que se cierra: antes
+        // se saltaba la comprobación entera y el endpoint quedaba como una API
+        // pública de escritura (crear leads, cambiar su estado, dejar notas).
+        // Es el mismo criterio que DmChampTokenMiddleware.
         $secret = config('services.dmchamp.webhook_secret');
-        if ($secret) {
-            $signature = $request->header('X-DmChamp-Signature') ?? '';
-            $expected  = 'sha256=' . hash_hmac('sha256', $request->getContent(), $secret);
 
-            if (! hash_equals($expected, $signature)) {
-                Log::warning('DmChamp webhook: firma inválida', [
-                    'ip' => $request->ip(),
-                ]);
-                return response('Unauthorized', 401);
-            }
+        if (empty($secret)) {
+            Log::warning('DmChamp webhook: DMCHAMP_WEBHOOK_SECRET sin configurar — se rechaza');
+            return response('Not configured', 403);
+        }
+
+        $signature = $request->header('X-DmChamp-Signature') ?? '';
+        $expected  = 'sha256=' . hash_hmac('sha256', $request->getContent(), $secret);
+
+        if (! hash_equals($expected, $signature)) {
+            Log::warning('DmChamp webhook: firma inválida', [
+                'ip' => $request->ip(),
+            ]);
+            return response('Unauthorized', 401);
         }
 
         $event = $request->input('event');

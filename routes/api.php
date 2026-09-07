@@ -35,8 +35,9 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
     });
 });
 
-// API para Agente (Open Claw) - protegida con Sanctum token
-Route::middleware('auth:sanctum')->prefix('v1')->group(function () {
+// API para Agente (Open Claw) - protegida con Sanctum token.
+// El grupo público de arriba ya limitaba el ritmo; éste no tenía tope alguno.
+Route::middleware(['auth:sanctum', 'throttle:120,1'])->prefix('v1')->group(function () {
     // Leads
     Route::get('leads/search', [LeadController::class, 'search']);
     Route::get('leads', [LeadController::class, 'index']);
