@@ -1,9 +1,9 @@
 {
-    "generated_at": "2026-09-07T21:31:58+00:00",
+    "generated_at": "2026-09-07T22:10:17+00:00",
     "generator": "scripts/build-graph.php",
     "stats": {
         "nodes": 136,
-        "edges": 361,
+        "edges": 362,
         "nodes_by_type": {
             "command": 6,
             "controller": 46,
@@ -21,7 +21,7 @@
             "fires": 4,
             "guarded_by": 7,
             "invokes": 1,
-            "relation": 60,
+            "relation": 61,
             "routes_to": 47,
             "schedules": 5,
             "sends_mail": 8,
@@ -1599,6 +1599,15 @@
             "meta": {
                 "kind": "hasOne",
                 "method": "fiscalDocument"
+            }
+        },
+        {
+            "from": "model:Order",
+            "to": "model:FiscalDocument",
+            "type": "relation",
+            "meta": {
+                "kind": "hasMany",
+                "method": "fiscalDocuments"
             }
         },
         {

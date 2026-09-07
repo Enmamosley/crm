@@ -67,6 +67,7 @@ digraph crm {
   "model:Order" -> "model:Payment" [color="#9a3412" fontsize=8 label="hasMany (payments)"];
   "model:Order" -> "model:InvoiceItem" [color="#9a3412" fontsize=8 label="hasMany (items)"];
   "model:Order" -> "model:FiscalDocument" [color="#9a3412" fontsize=8 label="hasOne"];
+  "model:Order" -> "model:FiscalDocument" [color="#9a3412" fontsize=8 label="hasMany (fiscalDocuments)"];
   "model:Payment" -> "model:Order" [color="#9a3412" fontsize=8 label="belongsTo"];
   "model:Quote" -> "model:Lead" [color="#9a3412" fontsize=8 label="belongsTo"];
   "model:Quote" -> "model:QuoteItem" [color="#9a3412" fontsize=8 label="hasMany (items)"];
