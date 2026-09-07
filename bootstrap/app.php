@@ -17,6 +17,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'role'     => \App\Http\Middleware\CheckRole::class,
             'portal'   => \App\Http\Middleware\ValidatePortalToken::class,
             'no.cache' => \App\Http\Middleware\NoCacheMiddleware::class,
+            // Sanctum no registra sus alias por su cuenta: sin esto, el alcance
+            // que lleva escrito cada token de API no lo exigiría nadie.
+            'abilities' => \Laravel\Sanctum\Http\Middleware\CheckAbilities::class,
+            'ability'   => \Laravel\Sanctum\Http\Middleware\CheckForAnyAbility::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -38,24 +38,36 @@ Route::prefix('v1')->middleware('throttle:60,1')->group(function () {
 // API para Agente (Open Claw) - protegida con Sanctum token.
 // El grupo público de arriba ya limitaba el ritmo; éste no tenía tope alguno.
 Route::middleware(['auth:sanctum', 'throttle:120,1'])->prefix('v1')->group(function () {
+    // Cada ruta exige el permiso que lleva escrito el token. Los tokens
+    // antiguos con comodín `*` siguen pasando: hay que reemitirlos.
+
     // Leads
-    Route::get('leads/search', [LeadController::class, 'search']);
-    Route::get('leads', [LeadController::class, 'index']);
-    Route::post('leads', [LeadController::class, 'store']);
-    Route::get('leads/{lead}', [LeadController::class, 'show']);
-    Route::patch('leads/{lead}/status', [LeadController::class, 'updateStatus']);
-    Route::post('leads/{lead}/notes', [LeadController::class, 'addNote']);
+    Route::middleware('abilities:leads:read')->group(function () {
+        Route::get('leads/search', [LeadController::class, 'search']);
+        Route::get('leads', [LeadController::class, 'index']);
+        Route::get('leads/{lead}', [LeadController::class, 'show']);
+    });
+    Route::middleware('abilities:leads:write')->group(function () {
+        Route::post('leads', [LeadController::class, 'store']);
+        Route::patch('leads/{lead}/status', [LeadController::class, 'updateStatus']);
+        Route::post('leads/{lead}/notes', [LeadController::class, 'addNote']);
+    });
 
     // Cotizaciones
-    Route::post('quotes', [QuoteController::class, 'store']);
-    Route::patch('quotes/{quote}/status', [QuoteController::class, 'updateStatus']);
-    Route::get('quotes/{quote}/pdf', [QuoteController::class, 'downloadPdf']);
+    Route::middleware('abilities:quotes:write')->group(function () {
+        Route::post('quotes', [QuoteController::class, 'store']);
+        Route::patch('quotes/{quote}/status', [QuoteController::class, 'updateStatus']);
+    });
+    Route::get('quotes/{quote}/pdf', [QuoteController::class, 'downloadPdf'])
+        ->middleware('abilities:quotes:read');
 
     // Control del Agente
-    Route::get('agent/status', [AgentController::class, 'status']);
+    Route::get('agent/status', [AgentController::class, 'status'])
+        ->middleware('abilities:agent:read');
 
     // Configuración del negocio
-    Route::get('settings', [SettingController::class, 'index']);
+    Route::get('settings', [SettingController::class, 'index'])
+        ->middleware('abilities:settings:read');
 });
 
 // Webhook de Mercado Pago (público, validado por firma HMAC)
