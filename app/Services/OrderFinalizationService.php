@@ -57,27 +57,72 @@ class OrderFinalizationService
     /**
      * Auto-timbra el CFDI si procede. "Sin factura" (none) NO se timbra: esas
      * ventas van al recibo de pago y, en su caso, a la factura global mensual.
+     * Si la factura ya estaba timbrada como PPD, lo que toca no es timbrar otra
+     * vez sino emitir el complemento de pago de este cobro.
      */
     private function stamp(Order $order, Payment $payment): void
     {
         if (($order->billing_preference ?? 'none') === 'none'
-            || $order->isStamped()
             || !$this->invoicing->isConfigured()) {
             return;
         }
 
+        if ($order->isStamped()) {
+            $this->issuePaymentComplement($order, $payment);
+
+            return;
+        }
+
         try {
+            $attributes = [];
+
             // '99' es "por definir": no debe pisar la forma de pago que el
             // admin eligió al registrar un pago manual.
             $satForm = $payment->satPaymentForm();
             if ($satForm !== '99') {
-                $order->update(['payment_form' => $satForm]);
+                $attributes['payment_form'] = $satForm;
+            }
+
+            // Se timbra DESPUÉS de cobrar, y el cobro liquida la orden: eso es
+            // una sola exhibición, PUE. Las órdenes nacidas de una cotización
+            // venían marcadas PPD de fábrica, así que una venta ya liquidada se
+            // timbraba en parcialidades y quedaba debiendo un complemento de
+            // pago que nadie emitía.
+            if ($order->isPpd() && $this->settles($order, $payment)) {
+                $attributes['payment_method'] = 'PUE';
+            }
+
+            if ($attributes) {
+                $order->update($attributes);
             }
 
             $this->invoicing->stampInvoice($order);
             ActivityLog::log('auto_stamped', $order, "Factura {$order->folio()} timbrada automáticamente tras el pago");
         } catch (\Throwable $e) {
             Log::error('Auto-stamp failed after payment', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /** ¿Este cobro liquida la orden entera? */
+    private function settles(Order $order, Payment $payment): bool
+    {
+        return (float) $payment->amount >= (float) $order->total - 0.01;
+    }
+
+    /**
+     * Recibo Electrónico de Pago de un cobro contra una factura PPD ya
+     * timbrada. Es obligatorio ante el SAT y hasta ahora no se emitía ninguno.
+     */
+    private function issuePaymentComplement(Order $order, Payment $payment): void
+    {
+        try {
+            $complement = $this->invoicing->issuePaymentComplement($order, $payment);
+
+            if ($complement?->isStamped()) {
+                ActivityLog::log('payment_complement_stamped', $order, "Complemento de pago de la factura {$order->folio()} emitido");
+            }
+        } catch (\Throwable $e) {
+            Log::error('Payment complement failed', ['order_id' => $order->id, 'payment_id' => $payment->id, 'error' => $e->getMessage()]);
         }
     }
 

@@ -212,6 +212,37 @@
             @endif
         </div>
 
+        {{-- Complementos de pago (REP): obligatorios en toda factura PPD --}}
+        @if($order->isPpd() && $order->isStamped())
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold mb-1">Complementos de pago</h3>
+            <p class="text-xs text-gray-500 mb-4">
+                Esta factura se timbró como PPD: cada pago recibido exige su Recibo Electrónico de Pago
+                ante el SAT, a más tardar el día 5 del mes siguiente.
+            </p>
+
+            @forelse($order->paymentComplements as $complement)
+                <div class="flex items-start justify-between border-t py-3 text-sm">
+                    <div>
+                        <span class="font-medium">Parcialidad {{ $complement->installment }}</span>
+                        <span class="text-gray-500 ml-2">${{ number_format($complement->amount, 2) }}</span>
+                        @if($complement->uuid)
+                            <p class="font-mono text-xs text-gray-400 mt-1">{{ $complement->uuid }}</p>
+                        @endif
+                        @if($complement->error)
+                            <p class="text-xs text-red-600 mt-1">{{ $complement->error }}</p>
+                        @endif
+                    </div>
+                    <span class="px-2 py-0.5 rounded text-xs shrink-0 {{ $complement->isStamped() ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700' }}">
+                        {{ $complement->isStamped() ? 'timbrado' : $complement->status }}
+                    </span>
+                </div>
+            @empty
+                <p class="text-sm text-gray-400 border-t pt-3">Sin pagos registrados todavía.</p>
+            @endforelse
+        </div>
+        @endif
+
         {{-- Items de la cotización o ítems manuales --}}
         @if($order->quote && $order->quote->items->count())
         <div class="bg-white rounded-lg shadow overflow-x-auto">

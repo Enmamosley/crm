@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Order;
+use App\Models\PaymentComplement;
 use App\Models\Setting;
 use CfdiUtils\Cfdi;
 use Endroid\QrCode\QrCode;
@@ -99,6 +100,58 @@ class FinkokService
         $disk->delete($preCfdiPath);
 
         return ['success' => true, 'data' => ['uuid' => $uuid]];
+    }
+
+    /**
+     * Timbra el Recibo Electrónico de Pago (CFDI tipo P) de un pago contra una
+     * factura PPD. Mismo esquema que el timbrado de ingreso: el CRM construye y
+     * sella el XML y Finkok sólo lo timbra.
+     */
+    public function stampPaymentComplement(PaymentComplement $complement): array
+    {
+        if ($complement->isStamped()) {
+            return ['success' => false, 'data' => ['message' => 'El pago ya tiene complemento timbrado.']];
+        }
+
+        try {
+            $preCfdi = $this->cfdi->buildSealedPaymentXml($complement);
+        } catch (\Throwable $e) {
+            return $complement->markFailed($e->getMessage());
+        }
+
+        // Mismo resguardo que en el ingreso: si un intento anterior timbró pero
+        // falló al guardarse, se reenvía el MISMO XML y Finkok devuelve el UUID
+        // que ya emitió en lugar de duplicar el CFDI ante el SAT.
+        $preCfdiPath = "cfdi/precfdi/complement-{$complement->id}.xml";
+        $disk = Storage::disk('local');
+
+        if ($disk->exists($preCfdiPath)) {
+            $preCfdi = $disk->get($preCfdiPath);
+        } else {
+            $disk->put($preCfdiPath, $preCfdi);
+        }
+
+        $result = $this->quick()->stamp($preCfdi);
+
+        if (!$result->uuid()) {
+            $detail = trim($result->faultString() . ' ' . $this->alertText($result));
+
+            return $complement->markFailed('Finkok rechazó el complemento de pago: ' . ($detail ?: 'error desconocido'));
+        }
+
+        $xmlPath = 'cfdi/finkok/' . $result->uuid() . '.xml';
+        $disk->put($xmlPath, $result->xml());
+
+        $complement->update([
+            'status'     => 'valid',
+            'uuid'       => $result->uuid(),
+            'xml_path'   => $xmlPath,
+            'stamped_at' => $result->date() ? \Carbon\Carbon::parse($result->date()) : now(),
+        ]);
+
+        $disk->delete($preCfdiPath);
+
+        return ['success' => true, 'data' => ['uuid' => $result->uuid()]];
     }
 
     private function alertText(\PhpCfdi\Finkok\Services\Stamping\StampingResult $result): string
