@@ -41,8 +41,8 @@ class PaymentRemindersTest extends TestCase
     {
         $this->travelTo(now()->subDays($days));
 
-        $order = Order::create(array_merge([
-            'client_id' => $client->id, 'series' => 'F', 'folio_number' => 1,
+        $order = Order::createWithFolio(array_merge([
+            'client_id' => $client->id, 'series' => 'F',
             'payment_form' => '03', 'payment_method' => 'PUE', 'use_cfdi' => 'G03',
             'billing_preference' => 'fiscal', 'status' => 'sent',
             'subtotal' => 1000, 'iva_amount' => 160, 'total' => 1160,
@@ -87,7 +87,7 @@ class PaymentRemindersTest extends TestCase
         $old = $this->orderCreatedDaysAgo($client, 20, ['status' => 'draft']);
         $old->fiscalDocument()->create(['status' => 'valid', 'stamped_at' => now()->subDays(8)]);
 
-        $recent = $this->orderCreatedDaysAgo($client, 20, ['status' => 'draft', 'folio_number' => 2]);
+        $recent = $this->orderCreatedDaysAgo($client, 20, ['status' => 'draft']);
         $recent->fiscalDocument()->create(['status' => 'valid', 'stamped_at' => now()->subDays(2)]);
 
         $this->artisan('invoices:send-reminders', ['--days' => 7])->assertSuccessful();

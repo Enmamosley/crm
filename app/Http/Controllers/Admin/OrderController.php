@@ -87,8 +87,7 @@ class OrderController extends Controller
 
         // Auto-generar folio si no se proporcionó
         if (empty($validated['folio_number'])) {
-            $max = Order::where('series', $validated['series'])->max('folio_number');
-            $validated['folio_number'] = ($max ?? 0) + 1;
+            $validated['folio_number'] = Order::allocateFolio($validated['series']);
         }
 
         if (!empty($validated['quote_id'])) {

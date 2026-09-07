@@ -179,7 +179,7 @@ class QuoteController extends Controller
                 ->with('info', 'Esta cotización ya tiene una orden de servicio generada.');
         }
 
-        $order = Order::create([
+        $order = Order::createWithFolio([
             'client_id'      => $client->id,
             'quote_id'       => $quote->id,
             'series'         => 'F',

@@ -51,7 +51,7 @@ class QuoteController extends PortalController
                 ->with('success', '¡Cotización aceptada!');
         }
 
-        $order = Order::create([
+        $order = Order::createWithFolio([
             'client_id'      => $client->id,
             'quote_id'       => $quote->id,
             'series'         => 'F',
