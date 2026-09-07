@@ -120,6 +120,8 @@ class RecurringInvoicesTest extends TestCase
         {
             public int $calls = 0;
 
+            public function __construct() {} // sin dependencias: es un doble
+
             public function isConfigured(): bool
             {
                 return true;

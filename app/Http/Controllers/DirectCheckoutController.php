@@ -18,6 +18,12 @@ use Illuminate\Support\Str;
 
 class DirectCheckoutController extends Controller
 {
+    public function __construct(
+        private MercadoPagoService $mercadoPago,
+        private PayPalService $paypal,
+        private CosmotownService $cosmotown,
+    ) {}
+
     /**
      * Catálogo público de servicios marcados como "public".
      */
@@ -39,7 +45,7 @@ class DirectCheckoutController extends Controller
         $mpPublicKey = Setting::get('mp_public_key', '');
         $companyName = Setting::get('company_name', 'CRM');
 
-        $paypal = new PayPalService();
+        $paypal = $this->paypal;
         $paypalClientId = $paypal->isConfigured() ? $paypal->clientId() : '';
         $paypalMode     = $paypal->mode();
 
@@ -67,7 +73,7 @@ class DirectCheckoutController extends Controller
             return response()->json(['error' => 'Dominio inválido.'], 422);
         }
 
-        $service = new CosmotownService();
+        $service = $this->cosmotown;
 
         if (!$service->isConfigured()) {
             // Sin Cosmotown configurado, solo confirmamos que el dominio tiene formato válido
@@ -141,7 +147,7 @@ class DirectCheckoutController extends Controller
                     'notes'              => 'Compra directa: ' . $service->name,
                 ]);
 
-                $payment = (new MercadoPagoService())->createCardPayment(
+                $payment = $this->mercadoPago->createCardPayment(
                     $invoice,
                     $validated['token'],
                     $validated['payment_method_id'],
@@ -225,7 +231,7 @@ class DirectCheckoutController extends Controller
                     'notes'              => 'Compra directa: ' . $service->name,
                 ]);
 
-                $payment = (new MercadoPagoService())->createOxxoPayment($invoice, $validated['email']);
+                $payment = $this->mercadoPago->createOxxoPayment($invoice, $validated['email']);
                 ActivityLog::log('direct_purchase', $invoice, "Compra directa OXXO de '{$service->name}' por {$validated['email']}");
                 // El aprovisionamiento ocurre tras CONFIRMAR el pago (webhook MP), no antes.
 
@@ -290,7 +296,7 @@ class DirectCheckoutController extends Controller
                     'notes'              => 'Compra directa: ' . $service->name,
                 ]);
 
-                $payment = (new MercadoPagoService())->createSpeiPayment($invoice, $validated['email']);
+                $payment = $this->mercadoPago->createSpeiPayment($invoice, $validated['email']);
                 ActivityLog::log('direct_purchase', $invoice, "Compra directa SPEI de '{$service->name}' por {$validated['email']}");
                 // El aprovisionamiento ocurre tras CONFIRMAR el pago (webhook MP), no antes.
 
@@ -412,7 +418,7 @@ class DirectCheckoutController extends Controller
             'cfdi_use'           => 'nullable|string|max:4',
         ]);
 
-        $paypal = new PayPalService();
+        $paypal = $this->paypal;
         if (!$paypal->isConfigured()) {
             return response()->json(['error' => 'PayPal no está configurado.'], 422);
         }
@@ -472,7 +478,7 @@ class DirectCheckoutController extends Controller
         ]);
 
         $order = Order::findOrFail($validated['localOrderId']);
-        $paypal = new PayPalService();
+        $paypal = $this->paypal;
 
         try {
             $capture = $paypal->captureOrder($validated['paypalOrderId']);

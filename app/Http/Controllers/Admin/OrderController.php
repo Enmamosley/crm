@@ -13,6 +13,8 @@ use App\Models\Payment;
 use App\Models\Quote;
 use App\Models\Service;
 use App\Services\FacturapiService;
+use App\Services\InvoicingManager;
+use App\Services\OrderFinalizationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -20,6 +22,12 @@ use Illuminate\Support\Facades\Mail;
 
 class OrderController extends Controller
 {
+    public function __construct(
+        private InvoicingManager $invoicing,
+        private FacturapiService $facturapi,
+        private OrderFinalizationService $finalization,
+    ) {}
+
     public function index()
     {
         $orders = Order::with(['client', 'quote', 'fiscalDocument'])
@@ -203,7 +211,7 @@ class OrderController extends Controller
 
         // Marca pagada, timbra, envía comprobante, aprovisiona, consume cupón
         // y notifica a Meta. Antes este flujo no timbraba ni enviaba correo.
-        (new \App\Services\OrderFinalizationService())->finalize($payment, null, 'paid');
+        $this->finalization->finalize($payment, null, 'paid');
 
         ActivityLog::log('manual_payment_registered', $order,
             "Pago manual de \${$validated['amount']} MXN registrado");
@@ -248,7 +256,7 @@ class OrderController extends Controller
 
         // Marca pagada, timbra, envía comprobante, aprovisiona, consume cupón
         // y notifica a Meta. Antes este flujo no timbraba ni enviaba correo.
-        (new \App\Services\OrderFinalizationService())->finalize($payment, null, 'paid');
+        $this->finalization->finalize($payment, null, 'paid');
 
         ActivityLog::log('transfer_approved', $order,
             "Transferencia de \${$payment->amount} MXN confirmada por " . auth()->user()->name);
@@ -295,7 +303,7 @@ class OrderController extends Controller
             return back()->with('error', 'Esta orden ya tiene un CFDI timbrado.');
         }
 
-        $invoicing = new \App\Services\InvoicingManager();
+        $invoicing = $this->invoicing;
         if (!$invoicing->isConfigured()) {
             return back()->with('error', 'Configura tu proveedor de facturación (Facturapi o Finkok) en Ajustes antes de timbrar.');
         }
@@ -370,7 +378,7 @@ class OrderController extends Controller
         }
 
         try {
-            $result = (new \App\Services\InvoicingManager())->cancelInvoice($order, $request->motive ?: '02');
+            $result = $this->invoicing->cancelInvoice($order, $request->motive ?: '02');
 
             if ($result['success']) {
                 ActivityLog::log('fiscal_document_cancelled', $order, "CFDI de orden {$order->folio()} cancelado ante el SAT");
@@ -444,7 +452,7 @@ class OrderController extends Controller
             return back()->with('error', 'Este CFDI no tiene PDF disponible (sólo XML).');
         }
 
-        $pdf = (new FacturapiService())->downloadPdf($order);
+        $pdf = $this->facturapi->downloadPdf($order);
 
         if (!$pdf) {
             return back()->with('error', 'No se pudo obtener el PDF.');
@@ -468,7 +476,7 @@ class OrderController extends Controller
             return \App\Support\FileResponse::download('local', $doc->xml_path, "factura-{$order->folio()}.xml", 'application/xml');
         }
 
-        $xml = (new FacturapiService())->downloadXml($order);
+        $xml = $this->facturapi->downloadXml($order);
 
         if (!$xml) {
             return back()->with('error', 'No se pudo obtener el XML.');

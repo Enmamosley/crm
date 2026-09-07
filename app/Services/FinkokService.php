@@ -23,11 +23,13 @@ use PhpCfdi\XmlCancelacion\Models\CancelDocument;
  */
 class FinkokService
 {
+    public function __construct(private CfdiBuilderService $cfdi) {}
+
     public function isConfigured(): bool
     {
         return Setting::get('finkok_username')
             && Setting::get('finkok_password')
-            && (new CfdiBuilderService())->isConfigured();
+            && $this->cfdi->isConfigured();
     }
 
     public function environment(): string
@@ -51,7 +53,7 @@ class FinkokService
         if ($disk->exists($preCfdiPath)) {
             $preCfdi = $disk->get($preCfdiPath);
         } else {
-            $preCfdi = (new CfdiBuilderService())->buildSealedXml($order);
+            $preCfdi = $this->cfdi->buildSealedXml($order);
             $disk->put($preCfdiPath, $preCfdi);
         }
 
@@ -59,7 +61,7 @@ class FinkokService
 
         // Pre-CFDI añejo (Fecha fuera de las 72h del SAT): regenerar y reintentar una vez.
         if (!$result->uuid() && str_contains($result->faultString() . $this->alertText($result), '401')) {
-            $preCfdi = (new CfdiBuilderService())->buildSealedXml($order);
+            $preCfdi = $this->cfdi->buildSealedXml($order);
             $disk->put($preCfdiPath, $preCfdi);
             $result = $this->quick()->stamp($preCfdi);
         }
@@ -120,7 +122,7 @@ class FinkokService
             return ['success' => false, 'data' => ['message' => 'El motivo 01 requiere el UUID del CFDI que sustituye. Usa el motivo 02 si no hay sustitución.']];
         }
 
-        $credential = (new CfdiBuilderService())->credential();
+        $credential = $this->cfdi->credential();
 
         $document = match ($motive) {
             '01'    => CancelDocument::newWithErrorsRelated($doc->uuid, $substitutionUuid),

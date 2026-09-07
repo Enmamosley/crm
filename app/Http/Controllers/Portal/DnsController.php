@@ -11,6 +11,10 @@ use Illuminate\Http\Request;
 
 class DnsController extends PortalController
 {
+    public function __construct(
+        private TwentyIService $twentyi,
+    ) {}
+
     public function dns(string $token)
     {
         $client = $this->client();
@@ -25,7 +29,7 @@ class DnsController extends PortalController
 
         if (Setting::get('twentyi_api_key')) {
             try {
-                $records = (new TwentyIService())->listDnsRecords($client);
+                $records = $this->twentyi->listDnsRecords($client);
             } catch (\Throwable $e) {
                 $error = $e->getMessage();
             }
@@ -51,7 +55,7 @@ class DnsController extends PortalController
         ]);
 
         try {
-            (new TwentyIService())->addDnsRecord(
+            $this->twentyi->addDnsRecord(
                 $client,
                 $validated['type'],
                 $validated['host'],
@@ -83,7 +87,7 @@ class DnsController extends PortalController
         ]);
 
         try {
-            (new TwentyIService())->updateDnsRecord(
+            $this->twentyi->updateDnsRecord(
                 $client,
                 $recordId,
                 $validated['type'],
@@ -108,7 +112,7 @@ class DnsController extends PortalController
         }
 
         try {
-            (new TwentyIService())->deleteDnsRecord($client, $recordId);
+            $this->twentyi->deleteDnsRecord($client, $recordId);
         } catch (\Throwable $e) {
             return back()->with('error', 'Error al eliminar: ' . $e->getMessage());
         }

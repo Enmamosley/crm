@@ -12,6 +12,10 @@ use Illuminate\Http\Request;
 
 class DomainController extends PortalController
 {
+    public function __construct(
+        private CosmotownService $cosmotown,
+    ) {}
+
     /**
      * El cliente eligió su dominio después de pagar ("decidir después").
      * Se guarda en el perfil y se notifica al equipo para activar el paquete —
@@ -61,7 +65,7 @@ class DomainController extends PortalController
             return redirect()->route('portal.dashboard', $token);
         }
 
-        $cosmotown = new CosmotownService();
+        $cosmotown = $this->cosmotown;
         $domainInfo = null;
         $error = null;
 
@@ -86,7 +90,7 @@ class DomainController extends PortalController
             return response()->json(['error' => 'Sin dominio Cosmotown asignado.'], 422);
         }
 
-        $cosmotown = new CosmotownService();
+        $cosmotown = $this->cosmotown;
 
         if (!$cosmotown->isConfigured()) {
             return response()->json(['error' => 'Cosmotown no configurado.'], 422);
@@ -109,7 +113,7 @@ class DomainController extends PortalController
 
         $validated = $request->validate(['records' => 'required|array']);
 
-        $cosmotown = new CosmotownService();
+        $cosmotown = $this->cosmotown;
 
         if (!$cosmotown->isConfigured()) {
             return response()->json(['error' => 'Cosmotown no configurado.'], 422);
@@ -137,7 +141,7 @@ class DomainController extends PortalController
             'nameservers.*' => 'required|string|max:253',
         ]);
 
-        $cosmotown = new CosmotownService();
+        $cosmotown = $this->cosmotown;
 
         if (!$cosmotown->isConfigured()) {
             return response()->json(['error' => 'Cosmotown no configurado.'], 422);

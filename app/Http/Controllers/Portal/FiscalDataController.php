@@ -13,6 +13,10 @@ use Illuminate\Http\Request;
 
 class FiscalDataController extends PortalController
 {
+    public function __construct(
+        private FacturapiService $facturapi,
+    ) {}
+
     public function editFiscalData(string $token)
     {
         $client = $this->client();
@@ -68,7 +72,7 @@ class FiscalDataController extends PortalController
         // Sincronizar con FacturAPI si hay API key
         if (Setting::get('facturapi_api_key')) {
             try {
-                (new FacturapiService())->syncCustomer($client);
+                $this->facturapi->syncCustomer($client);
             } catch (\Throwable) {}
         }
 

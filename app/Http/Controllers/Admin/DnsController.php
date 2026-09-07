@@ -9,6 +9,10 @@ use Illuminate\Http\Request;
 
 class DnsController extends Controller
 {
+    public function __construct(
+        private TwentyIService $twentyi,
+    ) {}
+
     public function index(Client $client)
     {
         if (!$client->twentyi_package_id) {
@@ -22,7 +26,7 @@ class DnsController extends Controller
 
         if ($configured) {
             try {
-                $records = (new TwentyIService())->listDnsRecords($client);
+                $records = $this->twentyi->listDnsRecords($client);
             } catch (\Throwable $e) {
                 $error = $e->getMessage();
             }
@@ -46,7 +50,7 @@ class DnsController extends Controller
         ]);
 
         try {
-            (new TwentyIService())->addDnsRecord(
+            $this->twentyi->addDnsRecord(
                 $client,
                 $validated['type'],
                 $validated['host'],
@@ -68,7 +72,7 @@ class DnsController extends Controller
         }
 
         try {
-            (new TwentyIService())->deleteDnsRecord($client, $recordId);
+            $this->twentyi->deleteDnsRecord($client, $recordId);
         } catch (\Throwable $e) {
             return back()->with('error', 'Error al eliminar registro: ' . $e->getMessage());
         }

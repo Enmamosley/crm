@@ -9,21 +9,30 @@ use Illuminate\Support\Facades\Http;
 
 class TwentyIService
 {
-    private string $apiKey;
     private string $baseUrl = 'https://api.20i.com';
 
-    public function __construct()
+    /** ¿Hay API key de 20i en Ajustes? */
+    /**
+     * Se lee en cada uso, no se cachea en el constructor: los servicios viven
+     * en el contenedor y un cambio en Ajustes debe verse sin reinstanciarlos.
+     */
+    private function apiKey(): string
     {
-        $this->apiKey = Setting::get('twentyi_api_key', '');
+        return (string) Setting::get('twentyi_api_key', '');
+    }
+
+    public function isConfigured(): bool
+    {
+        return $this->apiKey() !== '';
     }
 
     private function http(): \Illuminate\Http\Client\PendingRequest
     {
         // 20i espera el token como base64 del API key.
         // Si se guardó la clave combinada (general+oauth), extraemos solo la parte general.
-        $key = str_contains($this->apiKey, '+')
-            ? explode('+', $this->apiKey)[0]
-            : $this->apiKey;
+        $key = str_contains($this->apiKey(), '+')
+            ? explode('+', $this->apiKey())[0]
+            : $this->apiKey();
 
         return Http::withToken(base64_encode($key))
             ->baseUrl($this->baseUrl)

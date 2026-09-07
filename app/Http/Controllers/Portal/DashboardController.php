@@ -6,6 +6,7 @@ use App\Models\ClientDocument;
 use App\Models\Order;
 use App\Models\Setting;
 use App\Services\FacturapiService;
+use App\Services\TwentyIService;
 use App\Support\FileResponse;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -15,6 +16,11 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class DashboardController extends PortalController
 {
+    public function __construct(
+        private FacturapiService $facturapi,
+        private TwentyIService $twentyi,
+    ) {}
+
     public function show(string $token)
     {
         $client = $this->client()
@@ -26,7 +32,7 @@ class DashboardController extends PortalController
 
         if ($hasEmailService && $client->twentyi_package_id && Setting::get('twentyi_api_key')) {
             try {
-                $service     = new TwentyIService();
+                $service     = $this->twentyi;
                 $emailDomain = $service->getDomain($client);
                 $mailboxes   = $service->listMailboxes($client);
             } catch (\Throwable) {}
@@ -56,7 +62,7 @@ class DashboardController extends PortalController
             abort(404, 'Esta factura no tiene PDF disponible.');
         }
 
-        $pdf = (new FacturapiService())->downloadPdf($order);
+        $pdf = $this->facturapi->downloadPdf($order);
 
         if (!$pdf) {
             abort(500, 'No se pudo obtener el PDF.');
@@ -109,7 +115,7 @@ class DashboardController extends PortalController
             return \App\Support\FileResponse::download('local', $doc->xml_path, 'factura-' . $order->folio() . '.xml', 'application/xml');
         }
 
-        $xml = (new FacturapiService())->downloadXml($order);
+        $xml = $this->facturapi->downloadXml($order);
 
         if (!$xml) {
             abort(500, 'No se pudo obtener el XML.');

@@ -16,7 +16,7 @@ class CosmotownNormalizationTest extends TestCase
 
     private function service(): CosmotownService
     {
-        return new CosmotownService();
+        return app(CosmotownService::class);
     }
 
     /** Cosmotown anida los datos bajo 'domain' o los deja en la raíz. */

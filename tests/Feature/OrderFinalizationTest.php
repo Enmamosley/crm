@@ -7,7 +7,9 @@ use App\Models\Client;
 use App\Models\DiscountCode;
 use App\Models\Order;
 use App\Models\Payment;
+use App\Services\InvoicingManager;
 use App\Services\OrderFinalizationService;
+use App\Services\ProvisioningService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
@@ -51,7 +53,7 @@ class OrderFinalizationTest extends TestCase
     {
         $payment = $this->approvedPayment($this->unpaidOrder());
 
-        $this->assertTrue((new OrderFinalizationService())->finalize($payment));
+        $this->assertTrue(app(OrderFinalizationService::class)->finalize($payment));
 
         Mail::assertSent(PaymentConfirmed::class);
     }
@@ -62,7 +64,7 @@ class OrderFinalizationTest extends TestCase
         $order   = $this->unpaidOrder(['iva_amount' => 0, 'total' => 10], email: null);
         $payment = $this->approvedPayment($order, ['amount' => 10]);
 
-        (new OrderFinalizationService())->finalize($payment);
+        app(OrderFinalizationService::class)->finalize($payment);
 
         Mail::assertNothingSent();
     }
@@ -77,7 +79,7 @@ class OrderFinalizationTest extends TestCase
         $order   = $this->unpaidOrder(['discount_code' => 'TEST20']);
         $payment = $this->approvedPayment($order);
 
-        $service = new OrderFinalizationService();
+        $service = app(OrderFinalizationService::class);
 
         $this->assertTrue($service->finalize($payment));
         $this->assertNotNull($order->fresh()->paid_at);
@@ -97,7 +99,7 @@ class OrderFinalizationTest extends TestCase
         $order   = $this->unpaidOrder(['status' => 'draft']);
         $payment = $this->approvedPayment($order, ['payment_type' => 'manual', 'payment_method_id' => '03']);
 
-        $this->assertTrue((new OrderFinalizationService())->finalize($payment, null, 'paid'));
+        $this->assertTrue(app(OrderFinalizationService::class)->finalize($payment, null, 'paid'));
 
         $this->assertSame('paid', $order->fresh()->status);
         $this->assertTrue($order->fresh()->isPaid());
@@ -114,7 +116,7 @@ class OrderFinalizationTest extends TestCase
 
         $this->assertSame('99', $payment->satPaymentForm());
 
-        (new OrderFinalizationService())->finalize($payment, null, 'paid');
+        app(OrderFinalizationService::class)->finalize($payment, null, 'paid');
 
         $this->assertSame('03', $order->fresh()->payment_form);
     }
@@ -130,5 +132,105 @@ class OrderFinalizationTest extends TestCase
         $this->assertSame('28', $manual->satPaymentForm());
         $this->assertSame('05', $paypal->satPaymentForm());
         $this->assertSame('99', $garbage->satPaymentForm());
+    }
+
+    /**
+     * Doble del gestor de facturación: con DI podemos ejercitar la rama de
+     * timbrado, que antes no se podía alcanzar sin salir a la red.
+     */
+    private function fakeInvoicing(bool $throws = false): InvoicingManager
+    {
+        $fake = new class extends InvoicingManager
+        {
+            public array $stamped = [];
+
+            public bool $throws = false;
+
+            public function __construct() {}
+
+            public function isConfigured(): bool
+            {
+                return true;
+            }
+
+            public function stampInvoice(Order $order): array
+            {
+                if ($this->throws) {
+                    throw new \RuntimeException('El PAC rechazó el timbrado.');
+                }
+
+                $this->stamped[] = $order->id;
+                $order->fiscalDocument()->create([
+                    'source' => 'finkok', 'uuid' => 'FAKE-UUID',
+                    'status' => 'valid', 'stamped_at' => now(),
+                ]);
+
+                return ['success' => true, 'data' => []];
+            }
+        };
+        $fake->throws = $throws;
+        $this->app->instance(InvoicingManager::class, $fake);
+
+        return $fake;
+    }
+
+    public function test_finalize_auto_stamps_when_provider_is_configured(): void
+    {
+        $invoicing = $this->fakeInvoicing();
+        $order     = $this->unpaidOrder(['billing_preference' => 'fiscal']);
+        $payment   = $this->approvedPayment($order);
+
+        app(OrderFinalizationService::class)->finalize($payment);
+
+        $this->assertSame([$order->id], $invoicing->stamped);
+        $this->assertTrue($order->fresh()->isStamped());
+        $this->assertDatabaseHas('activity_logs', ['action' => 'auto_stamped', 'subject_id' => $order->id]);
+    }
+
+    /** Las ventas "sin factura" no se timbran: van al recibo de pago. */
+    public function test_finalize_skips_stamp_when_billing_preference_is_none(): void
+    {
+        $invoicing = $this->fakeInvoicing();
+        $payment   = $this->approvedPayment($this->unpaidOrder(['billing_preference' => 'none']));
+
+        app(OrderFinalizationService::class)->finalize($payment);
+
+        $this->assertSame([], $invoicing->stamped);
+    }
+
+    /** Si el PAC falla, el cliente recibe igualmente su comprobante. */
+    public function test_finalize_survives_a_stamping_failure(): void
+    {
+        $this->fakeInvoicing(throws: true);
+        $payment = $this->approvedPayment($this->unpaidOrder(['billing_preference' => 'fiscal']));
+
+        $this->assertTrue(app(OrderFinalizationService::class)->finalize($payment));
+
+        Mail::assertSent(PaymentConfirmed::class, 1);
+    }
+
+    /** El aprovisionamiento corre una sola vez por orden. */
+    public function test_finalize_provisions_once(): void
+    {
+        $spy = new class extends ProvisioningService
+        {
+            public int $calls = 0;
+
+            public function __construct() {}
+
+            public function provisionForOrder(Order $order): void
+            {
+                $this->calls++;
+            }
+        };
+        $this->app->instance(ProvisioningService::class, $spy);
+
+        $payment = $this->approvedPayment($this->unpaidOrder());
+        $service = app(OrderFinalizationService::class);
+
+        $service->finalize($payment);
+        $service->finalize($payment);
+
+        $this->assertSame(1, $spy->calls);
     }
 }

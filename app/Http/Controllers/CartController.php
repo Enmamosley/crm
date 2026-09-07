@@ -17,6 +17,11 @@ use Illuminate\Support\Facades\Log;
 
 class CartController extends Controller
 {
+    public function __construct(
+        private MercadoPagoService $mercadoPago,
+        private PayPalService $paypal,
+    ) {}
+
     public function index()
     {
         $sessionId = session()->getId();
@@ -124,7 +129,7 @@ class CartController extends Controller
 
         $companyName    = Setting::get('company_name', 'CRM');
         $mpPublicKey    = Setting::get('mp_public_key', '');
-        $paypal         = new PayPalService();
+        $paypal         = $this->paypal;
         $paypalClientId = $paypal->isConfigured() ? $paypal->clientId() : '';
         $paypalMode     = $paypal->mode();
         $requiresDomain = $cartData['items']->contains(fn ($i) => $i->service->requires_domain);
@@ -187,7 +192,7 @@ class CartController extends Controller
             return DB::transaction(function () use ($client, $validated, $cartData, $request) {
                 $invoice = $this->createInvoiceFromCart($client, $cartData, '04');
 
-                $payment = (new MercadoPagoService())->createCardPayment(
+                $payment = $this->mercadoPago->createCardPayment(
                     $invoice, $validated['token'], $validated['payment_method_id'],
                     $validated['email'], (int) ($validated['installments'] ?? 1),
                     $validated['issuer_id'] ?? null, $request,
@@ -234,7 +239,7 @@ class CartController extends Controller
         try {
             return DB::transaction(function () use ($client, $validated, $cartData, $request) {
                 $invoice = $this->createInvoiceFromCart($client, $cartData, '01');
-                $payment = (new MercadoPagoService())->createOxxoPayment($invoice, $validated['email']);
+                $payment = $this->mercadoPago->createOxxoPayment($invoice, $validated['email']);
                 $this->clearCart($cartData);
                 ActivityLog::log('cart_purchase', $invoice, "Compra por carrito (OXXO) por {$validated['email']}");
                 // El aprovisionamiento ocurre tras CONFIRMAR el pago (webhook MP), no antes.
@@ -271,7 +276,7 @@ class CartController extends Controller
         try {
             return DB::transaction(function () use ($client, $validated, $cartData, $request) {
                 $invoice = $this->createInvoiceFromCart($client, $cartData, '03');
-                $payment = (new MercadoPagoService())->createSpeiPayment($invoice, $validated['email']);
+                $payment = $this->mercadoPago->createSpeiPayment($invoice, $validated['email']);
                 $this->clearCart($cartData);
                 ActivityLog::log('cart_purchase', $invoice, "Compra por carrito (SPEI) por {$validated['email']}");
                 // El aprovisionamiento ocurre tras CONFIRMAR el pago (webhook MP), no antes.
@@ -303,7 +308,7 @@ class CartController extends Controller
             'reg_country' => 'nullable|string|max:3',
         ]);
 
-        $paypal = new PayPalService();
+        $paypal = $this->paypal;
         if (!$paypal->isConfigured()) {
             return response()->json(['error' => 'PayPal no está configurado.'], 422);
         }
@@ -342,7 +347,7 @@ class CartController extends Controller
         ]);
 
         $order  = Order::findOrFail($validated['localOrderId']);
-        $paypal = new PayPalService();
+        $paypal = $this->paypal;
 
         try {
             $capture = $paypal->captureOrder($validated['paypalOrderId']);

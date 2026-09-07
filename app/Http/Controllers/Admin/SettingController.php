@@ -5,11 +5,17 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ActivityLog;
 use App\Models\Setting;
+use App\Services\CfdiBuilderService;
 use App\Services\TwentyIService;
 use Illuminate\Http\Request;
 
 class SettingController extends Controller
 {
+    public function __construct(
+        private TwentyIService $twentyi,
+        private CfdiBuilderService $cfdi,
+    ) {}
+
     public function index()
     {
         $settings = [
@@ -56,7 +62,7 @@ class SettingController extends Controller
         $csdInfo = null;
         if ($settings['csd_cer_path'] && $settings['csd_key_path']) {
             try {
-                $credential = (new \App\Services\CfdiBuilderService())->credential();
+                $credential = $this->cfdi->credential();
                 $csdInfo = [
                     'rfc'      => $credential->rfc(),
                     'name'     => $credential->legalName(),
@@ -198,7 +204,7 @@ class SettingController extends Controller
     public function packageBundleTypes()
     {
         try {
-            $types = (new TwentyIService())->listPackageBundleTypes();
+            $types = $this->twentyi->listPackageBundleTypes();
             return response()->json(['success' => true, 'data' => $types]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 422);

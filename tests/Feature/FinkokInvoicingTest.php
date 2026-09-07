@@ -57,7 +57,7 @@ class FinkokInvoicingTest extends TestCase
         $order = $this->fiscalOrder();
 
         try {
-            $xml = (new CfdiBuilderService())->buildSealedXml($order);
+            $xml = app(CfdiBuilderService::class)->buildSealedXml($order);
         } catch (\Throwable $e) {
             if (str_contains($e->getMessage(), 'download') || str_contains($e->getMessage(), 'resolve')) {
                 $this->markTestSkipped('Recursos XSLT del SAT no disponibles (sin internet): ' . $e->getMessage());
@@ -82,7 +82,7 @@ class FinkokInvoicingTest extends TestCase
         $order->update(['billing_preference' => 'publico_general']);
 
         try {
-            $xml = (new CfdiBuilderService())->buildSealedXml($order->fresh());
+            $xml = app(CfdiBuilderService::class)->buildSealedXml($order->fresh());
         } catch (\Throwable $e) {
             if (str_contains($e->getMessage(), 'download') || str_contains($e->getMessage(), 'resolve')) {
                 $this->markTestSkipped('Recursos XSLT del SAT no disponibles: ' . $e->getMessage());
@@ -105,7 +105,7 @@ class FinkokInvoicingTest extends TestCase
         $this->expectException(\RuntimeException::class);
 
         try {
-            (new CfdiBuilderService())->buildSealedXml($order);
+            app(CfdiBuilderService::class)->buildSealedXml($order);
         } catch (\RuntimeException $e) {
             if (str_contains($e->getMessage(), 'download') || str_contains($e->getMessage(), 'resolve')) {
                 $this->markTestSkipped('Recursos XSLT del SAT no disponibles');
@@ -125,20 +125,20 @@ class FinkokInvoicingTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->expectExceptionMessage('C.P. fiscal');
 
-        (new CfdiBuilderService())->buildSealedXml($order->fresh()->load('client'));
+        app(CfdiBuilderService::class)->buildSealedXml($order->fresh()->load('client'));
     }
 
     /** El manager enruta por proveedor y la cancelación por el origen del documento. */
     public function test_invoicing_manager_routing(): void
     {
         Setting::set('invoicing_provider', 'finkok');
-        $this->assertSame('finkok', (new InvoicingManager())->provider());
+        $this->assertSame('finkok', app(InvoicingManager::class)->provider());
         // Sin credenciales/CSD → no configurado
-        $this->assertFalse((new InvoicingManager())->isConfigured());
+        $this->assertFalse(app(InvoicingManager::class)->isConfigured());
 
         Setting::set('invoicing_provider', 'facturapi');
         Setting::set('facturapi_api_key', 'sk_test_x');
-        $this->assertTrue((new InvoicingManager())->isConfigured());
+        $this->assertTrue(app(InvoicingManager::class)->isConfigured());
     }
 
     /** Un CFDI de Finkok se descarga desde archivos locales (portal y panel). */

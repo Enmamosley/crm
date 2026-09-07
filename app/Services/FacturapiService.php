@@ -11,17 +11,26 @@ use Illuminate\Support\Facades\Http;
 
 class FacturapiService
 {
-    private string $apiKey;
     private string $baseUrl = 'https://www.facturapi.io/v2';
 
-    public function __construct()
+    /**
+     * Se lee en cada uso, no se cachea en el constructor: los servicios viven
+     * en el contenedor y un cambio en Ajustes debe verse sin reinstanciarlos.
+     */
+    private function apiKey(): string
     {
-        $this->apiKey = Setting::get('facturapi_api_key', '');
+        return (string) Setting::get('facturapi_api_key', '');
     }
 
     // ──────────────────────────────────────────────
     // Clientes
     // ──────────────────────────────────────────────
+
+    /** ¿Hay API key de Facturapi en Ajustes? */
+    public function isConfigured(): bool
+    {
+        return $this->apiKey() !== '';
+    }
 
     /**
      * Crea o actualiza el cliente en FacturAPI y guarda el ID en la BD.
@@ -264,7 +273,7 @@ class FacturapiService
     {
         $id = $order->fiscalDocument?->facturapi_invoice_id;
         if (!$id) return null;
-        $response = Http::withBasicAuth($this->apiKey, '')
+        $response = Http::withBasicAuth($this->apiKey(), '')
             ->get("{$this->baseUrl}/invoices/{$id}/pdf");
         return $response->successful() ? $response->body() : null;
     }
@@ -273,7 +282,7 @@ class FacturapiService
     {
         $id = $order->fiscalDocument?->facturapi_invoice_id;
         if (!$id) return null;
-        $response = Http::withBasicAuth($this->apiKey, '')
+        $response = Http::withBasicAuth($this->apiKey(), '')
             ->get("{$this->baseUrl}/invoices/{$id}/xml");
         return $response->successful() ? $response->body() : null;
     }
@@ -284,7 +293,7 @@ class FacturapiService
 
     private function http()
     {
-        return Http::withBasicAuth($this->apiKey, '')
+        return Http::withBasicAuth($this->apiKey(), '')
             ->timeout(20)
             ->connectTimeout(5)
             ->acceptJson()

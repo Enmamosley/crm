@@ -2,27 +2,36 @@
 
 namespace App\Services;
 
-use App\Mail\PaymentConfirmed;
-use App\Models\ActivityLog;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Setting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class MercadoPagoService
 {
-    private string $accessToken;
     private string $baseUrl = 'https://api.mercadopago.com';
 
-    public function __construct()
+    public function __construct(private OrderFinalizationService $finalization) {}
+
+    /**
+     * Las credenciales se leen en cada uso, no se cachean al construir: los
+     * servicios viven en el contenedor y un cambio en Ajustes debe verse sin
+     * reinstanciarlos.
+     */
+    private function accessToken(): string
     {
-        $this->accessToken = Setting::get('mp_access_token', '');
+        return (string) Setting::get('mp_access_token', '');
     }
 
     // ── Crear pagos ──────────────────────────────────────
+
+    /** ¿Hay access token de Mercado Pago en Ajustes? */
+    public function isConfigured(): bool
+    {
+        return $this->accessToken() !== '';
+    }
 
     /**
      * Pago con tarjeta (token generado por MercadoPago.js).
@@ -136,7 +145,7 @@ class MercadoPagoService
         // Finalizar (timbrado, correo, aprovisionamiento, cupón y Meta). El
         // servicio hace la transición a pagada y es idempotente.
         if ($newStatus === 'approved' && $payment->order) {
-            (new OrderFinalizationService())->finalize($payment, $request);
+            $this->finalization->finalize($payment, $request);
         }
 
         return $payment;
@@ -218,7 +227,7 @@ class MercadoPagoService
         ]);
 
         if ($isApproved) {
-            (new OrderFinalizationService())->finalize($payment, $request);
+            $this->finalization->finalize($payment, $request);
         }
 
         return $payment;
@@ -226,7 +235,7 @@ class MercadoPagoService
 
     private function http(): \Illuminate\Http\Client\PendingRequest
     {
-        return Http::withToken($this->accessToken)
+        return Http::withToken($this->accessToken())
             ->timeout(15)
             ->connectTimeout(5)
             ->acceptJson()

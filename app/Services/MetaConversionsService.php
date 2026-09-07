@@ -18,18 +18,24 @@ class MetaConversionsService
 {
     private const GRAPH_VERSION = 'v21.0';
 
-    private string $pixelId;
-    private string $token;
-
-    public function __construct()
+    /**
+     * Las credenciales se leen en cada uso, no se cachean al construir: los
+     * servicios viven en el contenedor y un cambio en Ajustes debe verse sin
+     * reinstanciarlos.
+     */
+    private function pixelId(): string
     {
-        $this->pixelId = (string) Setting::get('meta_pixel_id', '');
-        $this->token   = (string) Setting::get('meta_capi_token', '');
+        return (string) Setting::get('meta_pixel_id', '');
+    }
+
+    private function token(): string
+    {
+        return (string) Setting::get('meta_capi_token', '');
     }
 
     public function isConfigured(): bool
     {
-        return $this->pixelId !== '' && $this->token !== '';
+        return $this->pixelId() !== '' && $this->token() !== '';
     }
 
     /** event_id determinista para deduplicar con el Pixel del navegador. */
@@ -85,7 +91,7 @@ class MetaConversionsService
             $response = Http::timeout(10)
                 ->connectTimeout(5)
                 ->post(
-                    "https://graph.facebook.com/" . self::GRAPH_VERSION . "/{$this->pixelId}/events?access_token={$this->token}",
+                    "https://graph.facebook.com/" . self::GRAPH_VERSION . "/{$this->pixelId()}/events?access_token={$this->token()}",
                     $payload
                 );
 

@@ -14,6 +14,12 @@ use Illuminate\Http\Request;
 
 class ClientController extends Controller
 {
+    public function __construct(
+        private FacturapiService $facturapi,
+        private TwentyIService $twentyi,
+        private CosmotownService $cosmotown,
+    ) {}
+
     public function index(Request $request)
     {
         $query = Client::with('lead')->latest();
@@ -90,7 +96,7 @@ class ClientController extends Controller
         // Intentar sincronizar con FacturAPI si hay API key
         if (Setting::get('facturapi_api_key')) {
             try {
-                (new FacturapiService())->syncCustomer($client);
+                $this->facturapi->syncCustomer($client);
             } catch (\Throwable $e) {
                 session()->flash('warning', 'Cliente creado. No se pudo sincronizar con FacturAPI: ' . $e->getMessage());
                 return redirect()->route('admin.clients.show', $client);
@@ -161,7 +167,7 @@ class ClientController extends Controller
         // Re-sincronizar con FacturAPI
         if (Setting::get('facturapi_api_key')) {
             try {
-                (new FacturapiService())->syncCustomer($client);
+                $this->facturapi->syncCustomer($client);
             } catch (\Throwable $e) {
                 session()->flash('warning', 'Cliente actualizado. No se pudo sincronizar con FacturAPI: ' . $e->getMessage());
                 return redirect()->route('admin.clients.show', $client);
@@ -222,7 +228,7 @@ class ClientController extends Controller
         }
 
         try {
-            $packageId = (new TwentyIService())->createHostingPackage($client->domain, $bundleId);
+            $packageId = $this->twentyi->createHostingPackage($client->domain, $bundleId);
         } catch (\Throwable $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -248,7 +254,7 @@ class ClientController extends Controller
             return response()->json(['error' => 'El cliente no tiene ningún dominio configurado.'], 422);
         }
 
-        $cosmotown = new CosmotownService();
+        $cosmotown = $this->cosmotown;
         if (!$cosmotown->isConfigured()) {
             return response()->json(['error' => 'No hay API key de Cosmotown configurada en Ajustes.'], 422);
         }
@@ -290,7 +296,7 @@ class ClientController extends Controller
         }
 
         try {
-            (new FacturapiService())->syncCustomer($client);
+            $this->facturapi->syncCustomer($client);
         } catch (\Throwable $e) {
             return back()->with('error', 'Error al sincronizar con FacturAPI: ' . $e->getMessage());
         }
