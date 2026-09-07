@@ -1,9 +1,9 @@
 {
-    "generated_at": "2026-09-07T20:04:43+00:00",
+    "generated_at": "2026-09-07T21:13:31+00:00",
     "generator": "scripts/build-graph.php",
     "stats": {
-        "nodes": 129,
-        "edges": 365,
+        "nodes": 128,
+        "edges": 360,
         "nodes_by_type": {
             "command": 6,
             "controller": 38,
@@ -11,7 +11,7 @@
             "external": 8,
             "mail": 6,
             "middleware": 4,
-            "model": 33,
+            "model": 32,
             "routes": 17,
             "scheduler": 1,
             "service": 12
@@ -21,11 +21,11 @@
             "fires": 4,
             "guarded_by": 7,
             "invokes": 1,
-            "relation": 64,
+            "relation": 60,
             "routes_to": 40,
             "schedules": 5,
             "sends_mail": 9,
-            "uses_model": 180,
+            "uses_model": 179,
             "uses_service": 47
         }
     },
@@ -169,46 +169,6 @@
             }
         },
         {
-            "id": "model:ClientInvoice",
-            "label": "ClientInvoice",
-            "type": "model",
-            "meta": {
-                "file": "app/Models/ClientInvoice.php",
-                "soft_deletes": true,
-                "utility": false
-            }
-        },
-        {
-            "id": "model:Quote",
-            "label": "Quote",
-            "type": "model",
-            "meta": {
-                "file": "app/Models/Quote.php",
-                "soft_deletes": true,
-                "utility": false
-            }
-        },
-        {
-            "id": "model:Payment",
-            "label": "Payment",
-            "type": "model",
-            "meta": {
-                "file": "app/Models/Payment.php",
-                "soft_deletes": false,
-                "utility": false
-            }
-        },
-        {
-            "id": "model:InvoiceItem",
-            "label": "InvoiceItem",
-            "type": "model",
-            "meta": {
-                "file": "app/Models/InvoiceItem.php",
-                "soft_deletes": false,
-                "utility": false
-            }
-        },
-        {
             "id": "model:DiscountCode",
             "label": "DiscountCode",
             "type": "model",
@@ -239,6 +199,16 @@
             }
         },
         {
+            "id": "model:InvoiceItem",
+            "label": "InvoiceItem",
+            "type": "model",
+            "meta": {
+                "file": "app/Models/InvoiceItem.php",
+                "soft_deletes": false,
+                "utility": false
+            }
+        },
+        {
             "id": "model:LeadNote",
             "label": "LeadNote",
             "type": "model",
@@ -259,11 +229,31 @@
             }
         },
         {
+            "id": "model:Quote",
+            "label": "Quote",
+            "type": "model",
+            "meta": {
+                "file": "app/Models/Quote.php",
+                "soft_deletes": true,
+                "utility": false
+            }
+        },
+        {
             "id": "model:Notification",
             "label": "Notification",
             "type": "model",
             "meta": {
                 "file": "app/Models/Notification.php",
+                "soft_deletes": false,
+                "utility": false
+            }
+        },
+        {
+            "id": "model:Payment",
+            "label": "Payment",
+            "type": "model",
+            "meta": {
+                "file": "app/Models/Payment.php",
                 "soft_deletes": false,
                 "utility": false
             }
@@ -1375,42 +1365,6 @@
             "meta": {
                 "kind": "belongsTo",
                 "method": "client"
-            }
-        },
-        {
-            "from": "model:ClientInvoice",
-            "to": "model:Client",
-            "type": "relation",
-            "meta": {
-                "kind": "belongsTo",
-                "method": "client"
-            }
-        },
-        {
-            "from": "model:ClientInvoice",
-            "to": "model:Quote",
-            "type": "relation",
-            "meta": {
-                "kind": "belongsTo",
-                "method": "quote"
-            }
-        },
-        {
-            "from": "model:ClientInvoice",
-            "to": "model:Payment",
-            "type": "relation",
-            "meta": {
-                "kind": "hasMany",
-                "method": "payments"
-            }
-        },
-        {
-            "from": "model:ClientInvoice",
-            "to": "model:InvoiceItem",
-            "type": "relation",
-            "meta": {
-                "kind": "hasMany",
-                "method": "items"
             }
         },
         {
@@ -3270,7 +3224,7 @@
         },
         {
             "from": "command:ProcessRecurringInvoices",
-            "to": "service:FacturapiService",
+            "to": "service:InvoicingManager",
             "type": "uses_service",
             "meta": []
         },
@@ -3289,12 +3243,6 @@
         {
             "from": "command:ProcessRecurringInvoices",
             "to": "model:RecurringInvoiceSchedule",
-            "type": "uses_model",
-            "meta": []
-        },
-        {
-            "from": "command:ProcessRecurringInvoices",
-            "to": "model:Setting",
             "type": "uses_model",
             "meta": []
         },

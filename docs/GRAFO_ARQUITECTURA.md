@@ -4,7 +4,7 @@ Mapa de dependencias del repositorio generado a partir del código (rutas, contr
 
 | Artefacto | Qué contiene |
 |---|---|
-| `docs/graph/crm-graph.json` | Grafo completo: 129 nodos y 365 aristas tipadas. Fuente de verdad para herramientas. |
+| `docs/graph/crm-graph.json` | Grafo completo: 128 nodos y 360 aristas tipadas. Fuente de verdad para herramientas. |
 | `docs/graph/crm-overview.svg` / `.dot` | Vista de arquitectura: entradas → controladores → servicios → APIs externas (sin modelos). |
 | `docs/graph/crm-models.svg` / `.dot` | Modelos Eloquent y sus relaciones. |
 | `docs/graph/crm-graph.svg` / `.dot` | Todo junto (denso; útil para buscar un nodo concreto). |
@@ -29,13 +29,13 @@ Los diagramas de abajo son una lectura curada del mismo grafo (Mermaid, se rende
 | Zonas de entrada HTTP | 17 | 12 web + 5 API, agrupadas por prefijo y middleware |
 | Controladores | 38 | 26 `Admin/*`, 5 `Api/*`, 2 `Auth/*`, 5 públicos (tienda, portal, webhooks) |
 | Servicios | 12 | 8 hablan con APIs externas, 4 son orquestadores internos |
-| Modelos Eloquent | 33 | 64 relaciones; 41 tablas en migraciones |
+| Modelos Eloquent | 32 | 60 relaciones; 40 tablas en migraciones |
 | Comandos Artisan | 6 | 5 programados en el scheduler + `mail:test` |
 | Mailables | 6 | Cada uno con su vista en `resources/views/emails/` |
 | Eventos de modelo | 4 | Observers en `AppServiceProvider` que sincronizan con DM Champ |
 | APIs externas | 8 | Mercado Pago, PayPal, Facturapi, Finkok, 20i, Cosmotown, DM Champ, Meta CAPI |
 | Vistas Blade | 88 | admin (54), portal (11), tienda (7), emails (6), pdf (3), resto |
-| Tests | 11 archivos | 44 casos, todos `Feature` |
+| Tests | 13 archivos | 56 casos, todos `Feature` |
 
 Stack: Laravel 12 · PHP 8.2+ · MySQL 8 · Blade + Alpine.js + Tailwind 4 · Sanctum · DomPDF · Docker/Nginx/Traefik.
 
@@ -237,7 +237,7 @@ erDiagram
   CART_ITEM }o--|| SERVICE : referencia
 ```
 
-Modelos sin relaciones Eloquent: `DiscountCode`, `Setting` (clave/valor con caché), `ClientInvoice` (legacy: las facturas se migraron a `orders`; ningún código lo usa).
+Modelos sin relaciones Eloquent: `DiscountCode` y `Setting` (clave/valor con caché).
 
 Núcleo del dominio por grado de conexión: **Client** (11 relaciones), **User** (9), **Order** (8), **Lead** (6), **Service** (6). Un cambio en `Client` u `Order` afecta a casi todos los controladores.
 
@@ -307,7 +307,7 @@ Cada zona es un prefijo con su middleware de grupo. El middleware inline por rut
 
 ## 7. Hallazgos derivados del grafo
 
-1. **`ClientInvoice` es código muerto.** Ningún controlador, servicio, comando ni test lo referencia; `Client::invoices()` ya devuelve `Order`. La tabla `client_invoices` sigue existiendo en migraciones.
+1. ~~**`ClientInvoice` es código muerto.**~~ **Resuelto.** El modelo huérfano se eliminó junto con la tabla `client_invoices` y las tres columnas `client_invoice_id` que quedaban en `payments`, `invoice_items` y `dunning_attempts`.
 2. **`invoices:process-recurring` salta `InvoicingManager`.** Timbra con `FacturapiService` directamente y solo si existe `facturapi_api_key`, por lo que con `invoicing_provider = finkok` las facturas recurrentes con `auto_stamp` no se timbran (o se timbran con el PAC equivocado). Es el único flujo de timbrado que no pasa por el manager.
 3. **`ClientPortalController` es el nodo más cargado del grafo:** 37 rutas, 11 modelos, 5 servicios (pagos, facturación, correo, dominios, DNS) en un solo archivo. Dividirlo por dominio (pagos, soporte, dominio/DNS) reduciría el radio de impacto de cada cambio.
 4. **Post-pago repartido en cinco sitios.** `ProvisioningService` y `MetaConversionsService` se invocan desde `CartController`, `DirectCheckoutController`, `MercadoPagoWebhookController`, `PayPalWebhookController` y `OrderController`, mientras que timbrado y correo ya están centralizados en `OrderFinalizationService`. Mover esas dos llamadas al mismo servicio cerraría el embudo.
