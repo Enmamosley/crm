@@ -235,4 +235,14 @@ class PanelAuthorizationTest extends TestCase
         $this->actingAs($sales)->get('/panel/orders')->assertForbidden();
         $this->actingAs($sales)->get('/panel/reports')->assertForbidden();
     }
+
+    /** El menú se pinta en todas las páginas del panel: debe cargar para todos. */
+    public function test_the_dashboard_loads_for_every_role(): void
+    {
+        foreach (['admin', 'sales', 'accounting'] as $role) {
+            $this->actingAs($this->user($role))
+                ->get('/panel')
+                ->assertOk();
+        }
+    }
 }
