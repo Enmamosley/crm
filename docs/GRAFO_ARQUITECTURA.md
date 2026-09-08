@@ -35,7 +35,7 @@ Los diagramas de abajo son una lectura curada del mismo grafo (Mermaid, se rende
 | Eventos de modelo | 4 | Observers en `AppServiceProvider` que sincronizan con DM Champ |
 | APIs externas | 8 | Mercado Pago, PayPal, Facturapi, Finkok, 20i, Cosmotown, DM Champ, Meta CAPI |
 | Vistas Blade | 88 | admin (54), portal (11), tienda (7), emails (6), pdf (3), resto |
-| Tests | 27 archivos | 171 casos (`Feature` salvo el del reparto de IVA) |
+| Tests | 28 archivos | 179 casos (`Feature` salvo el del reparto de IVA) |
 
 Stack: Laravel 12 · PHP 8.2+ · MySQL 8 · Blade + Alpine.js + Tailwind 4 · Sanctum · DomPDF · Docker/Nginx/Traefik.
 
@@ -191,6 +191,7 @@ Notas del flujo:
 - Todo el post-pago cuelga de `OrderFinalizationService`, incluidos el aprovisionamiento y el evento de Meta, que antes llamaba cada controlador por su cuenta.
 - La cancelación de CFDI y la emisión del complemento se enrutan por el proveedor que **timbró** (`FiscalDocument.source`), no por el ajuste actual: cambiar de PAC no rompe cancelaciones antiguas, y el REP tiene que salir del mismo sitio que la factura que relaciona.
 - Los conceptos del CFDI los deriva `Order::fiscalLines()` para los dos PAC, y `Order::assertChargedTotalMatches()` impide timbrar un total distinto al cobrado.
+- Las compras públicas guardan sus ítems (`Order::recordSaleItems()`), con los datos fiscales congelados al vender y el descuento repartido a prorrata por línea. El respaldo que reconstruye un concepto desde las notas sigue ahí, sólo para las órdenes anteriores a ese cambio.
 
 ---
 

@@ -278,32 +278,44 @@
         </div>
         @elseif($order->items->count())
         <div class="bg-white rounded-lg shadow overflow-x-auto">
-            <div class="p-6 border-b"><h3 class="text-lg font-semibold">Conceptos <span class="text-xs font-normal text-gray-400 ml-1">(ingresados manualmente)</span></h3></div>
+            @php $hasDiscount = $order->items->sum('discount') > 0; @endphp
+            <div class="p-6 border-b"><h3 class="text-lg font-semibold">Conceptos</h3></div>
             <table class="w-full">
                 <thead class="bg-gray-50">
                     <tr>
                         <th class="text-left px-6 py-3 text-xs font-medium text-gray-500 uppercase">Descripción</th>
                         <th class="text-center px-6 py-3 text-xs font-medium text-gray-500 uppercase">Cant.</th>
                         <th class="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Precio</th>
+                        @if($hasDiscount)
+                        <th class="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Descuento</th>
+                        @endif
                         <th class="text-right px-6 py-3 text-xs font-medium text-gray-500 uppercase">Total</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y">
                     @foreach($order->items as $item)
                     <tr>
-                        <td class="px-6 py-3 text-sm">{{ $item->description }}</td>
+                        <td class="px-6 py-3 text-sm">
+                            {{ $item->description }}
+                            @if($item->iva_exempt)
+                                <span class="ml-1 text-xs text-gray-400">(exento de IVA)</span>
+                            @endif
+                        </td>
                         <td class="px-6 py-3 text-center text-sm">{{ $item->quantity }}</td>
                         <td class="px-6 py-3 text-right text-sm">${{ number_format($item->unit_price, 2) }}</td>
+                        @if($hasDiscount)
+                        <td class="px-6 py-3 text-right text-sm text-gray-500">−${{ number_format($item->discount, 2) }}</td>
+                        @endif
                         <td class="px-6 py-3 text-right text-sm font-medium">${{ number_format($item->total, 2) }}</td>
                     </tr>
                     @endforeach
                 </tbody>
                 <tfoot class="bg-gray-50">
-                    <tr><td colspan="3" class="px-6 py-2 text-right text-sm text-gray-500">Subtotal</td>
+                    <tr><td colspan="{{ $hasDiscount ? 4 : 3 }}" class="px-6 py-2 text-right text-sm text-gray-500">Subtotal</td>
                         <td class="px-6 py-2 text-right text-sm">${{ number_format($order->subtotal, 2) }}</td></tr>
-                    <tr><td colspan="3" class="px-6 py-2 text-right text-sm text-gray-500">IVA</td>
+                    <tr><td colspan="{{ $hasDiscount ? 4 : 3 }}" class="px-6 py-2 text-right text-sm text-gray-500">IVA</td>
                         <td class="px-6 py-2 text-right text-sm">${{ number_format($order->iva_amount, 2) }}</td></tr>
-                    <tr><td colspan="3" class="px-6 py-3 text-right font-bold">Total</td>
+                    <tr><td colspan="{{ $hasDiscount ? 4 : 3 }}" class="px-6 py-3 text-right font-bold">Total</td>
                         <td class="px-6 py-3 text-right font-bold text-lg">${{ number_format($order->total, 2) }}</td></tr>
                 </tfoot>
             </table>

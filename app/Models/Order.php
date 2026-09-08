@@ -211,6 +211,69 @@ class Order extends Model
     }
 
     /**
+     * Guarda en la orden lo que se vendió, una línea por servicio.
+     *
+     * Las compras públicas —carrito y compra directa— no guardaban ítems: lo
+     * comprado se codificaba en las notas ("Carrito: 1x A, 2x B") y el CFDI
+     * reconstruía de ahí un concepto único y gravado. Un carrito que mezclara
+     * un servicio exento con uno gravado no se podía timbrar, porque el total
+     * del CFDI no cuadraba con lo cobrado.
+     *
+     * Los datos fiscales se congelan al vender: si el servicio cambia de precio
+     * o de clave SAT después, la factura sigue diciendo lo que se cobró.
+     *
+     * El descuento del pedido se reparte a prorrata y viaja por línea, que es
+     * como el SAT espera verlo (`Descuento` de cada concepto).
+     *
+     * @param  iterable<array{service: Service, quantity: float|int}>  $lines
+     */
+    public function recordSaleItems(iterable $lines, float $discount = 0.0): void
+    {
+        $lines = collect($lines)
+            ->map(fn (array $line) => [
+                'service' => $line['service'],
+                'quantity' => (float) $line['quantity'],
+                'amount'   => round((float) $line['quantity'] * (float) $line['service']->price, 2),
+            ])
+            ->values();
+
+        $gross = (float) $lines->sum('amount');
+        $discount = min(max($discount, 0.0), $gross);
+
+        // Reparto a prorrata; el sobrante del redondeo lo absorbe la última
+        // línea para que la suma de descuentos sea exactamente la del pedido.
+        $allocated = 0.0;
+        $last = $lines->count() - 1;
+
+        // Reemplaza, no acumula: un borrador reutilizado no debe duplicar ítems.
+        $this->items()->delete();
+
+        foreach ($lines as $index => $line) {
+            $share = $index === $last
+                ? round($discount - $allocated, 2)
+                : round($gross > 0.0 ? $discount * ($line['amount'] / $gross) : 0.0, 2);
+            $allocated += $share;
+
+            $service = $line['service'];
+
+            $this->items()->create([
+                'description'     => $service->name,
+                'sat_product_key' => $service->sat_product_key ?: '80101501',
+                'sat_unit_key'    => $service->sat_unit_key ?: 'E48',
+                'sat_unit_name'   => $service->sat_unit_name ?: 'Servicio',
+                'tax_object'      => $service->tax_object ?: '02',
+                'iva_exempt'      => !$service->causesIva(),
+                'quantity'        => $line['quantity'],
+                'unit_price'      => $service->price,
+                'discount'        => $share,
+                'total'           => round($line['amount'] - $share, 2),
+            ]);
+        }
+
+        $this->unsetRelation('items');
+    }
+
+    /**
      * Conceptos fiscales de la orden, normalizados. Mandan, por este orden:
      * las líneas de la cotización, los ítems capturados a mano en el panel y
      * —cuando no hay ninguno, que es el caso de las compras públicas— el
@@ -222,7 +285,7 @@ class Order extends Model
      *
      * @return list<array{description: string, quantity: float, unit_price: float,
      *                    product_key: string, unit_key: string, unit_name: string,
-     *                    tax_object: string, exempt: bool}>
+     *                    tax_object: string, exempt: bool, discount: float}>
      */
     public function fiscalLines(): array
     {
@@ -248,6 +311,7 @@ class Order extends Model
                 'unit_name'   => $item->sat_unit_name ?: 'Servicio',
                 'tax_object'  => $item->tax_object ?: '02',
                 'exempt'      => !$item->causesIva(),
+                'discount'    => (float) $item->discount,
             ])->all();
         }
 
@@ -274,7 +338,19 @@ class Order extends Model
             'unit_name'   => $service?->sat_unit_name ?: 'Servicio',
             'tax_object'  => $service?->tax_object ?: '02',
             'exempt'      => $service ? !$service->causesIva() : false,
+            'discount'    => 0.0,
         ];
+    }
+
+    /**
+     * Lo que suma un concepto antes de impuestos: su importe menos el
+     * descuento que le tocó.
+     *
+     * @param  array<string, mixed>  $line
+     */
+    public static function lineNet(array $line): float
+    {
+        return round($line['quantity'] * $line['unit_price'] - ($line['discount'] ?? 0.0), 2);
     }
 
     /**

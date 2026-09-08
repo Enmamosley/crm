@@ -115,13 +115,16 @@ class FacturapiService
         // Lo timbrado tiene que cuadrar con lo cobrado; lo comprobamos antes
         // de enviarlo, que es cuando todavía se puede corregir.
         $order->assertChargedTotalMatches(TaxBreakdown::forLines(array_map(fn (array $line) => [
-            'amount' => $line['quantity'] * $line['unit_price'],
+            'amount' => Order::lineNet($line),
             'taxed'  => !$line['exempt'] && $line['tax_object'] !== '01',
         ], $lines), rate: $ivaRate)->total);
 
-        $items = array_map(fn (array $line) => [
+        $items = array_map(fn (array $line) => array_filter([
             'quantity'   => $line['quantity'],
             'tax_object' => $line['tax_object'],
+            // Facturapi lo aplica sobre la línea completa, igual que el
+            // `Descuento` del concepto en el CFDI que arma Finkok.
+            'discount'   => $line['discount'] > 0 ? $line['discount'] : null,
             'product'    => [
                 'description'  => $line['description'],
                 'product_key'  => $line['product_key'],
@@ -133,7 +136,7 @@ class FacturapiService
                     ? [['type' => 'IVA', 'rate' => 0, 'factor' => 'Exento']]
                     : [['type' => 'IVA', 'rate' => $ivaRate, 'factor' => 'Tasa']],
             ],
-        ], $lines);
+        ], fn ($value) => $value !== null), $lines);
 
         $payload = array_filter([
             'customer'       => $customer,

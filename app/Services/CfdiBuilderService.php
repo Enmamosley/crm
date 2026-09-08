@@ -28,7 +28,24 @@ class CfdiBuilderService
     public function buildSealedXml(Order $order): string
     {
         $credential = $this->credential();
-        $client     = $order->client;
+        $creator    = $this->invoiceCreator($order);
+
+        $certificado = new Certificado($this->absolutePath(Setting::get('csd_cer_path')));
+        $creator->putCertificado($certificado, false); // Emisor ya definido en el creator
+
+        $creator->addSello($credential->privateKey()->pem(), $credential->privateKey()->passPhrase());
+        $creator->moveSatDefinitionsToComprobante();
+
+        return $creator->asXml();
+    }
+
+    /**
+     * Estructura del CFDI de Ingreso, sin sellar. Se devuelve así a propósito:
+     * permite revisar los conceptos y las sumas sin necesitar un CSD.
+     */
+    public function invoiceCreator(Order $order): CfdiCreator40
+    {
+        $client = $order->client;
 
         $ivaRate = (float) Setting::get('iva_percentage', 16) / 100;
         $tasa    = number_format($ivaRate, 6, '.', '');
@@ -103,8 +120,10 @@ class CfdiBuilderService
         // ── Conceptos ───────────────────────────────────────────
         foreach ($order->fiscalLines() as $c) {
             $importe = round($c['quantity'] * $c['unit_price'], 2);
+            // La base del impuesto es lo que queda tras el descuento del concepto.
+            $base = Order::lineNet($c);
 
-            $concepto = $comprobante->addConcepto([
+            $concepto = $comprobante->addConcepto(array_filter([
                 'ClaveProdServ' => $c['product_key'],
                 'Cantidad'      => $this->money($c['quantity']),
                 'ClaveUnidad'   => $c['unit_key'],
@@ -112,8 +131,9 @@ class CfdiBuilderService
                 'Descripcion'   => $c['description'],
                 'ValorUnitario' => $this->money($c['unit_price']),
                 'Importe'       => $this->money($importe),
+                'Descuento'     => $c['discount'] > 0 ? $this->money($c['discount']) : null,
                 'ObjetoImp'     => $c['tax_object'],
-            ]);
+            ], fn ($value) => $value !== null));
 
             // '01' = no objeto de impuesto → sin nodo de impuestos
             if ($c['tax_object'] === '01') {
@@ -122,17 +142,17 @@ class CfdiBuilderService
 
             if ($c['exempt']) {
                 $concepto->addImpuestos()->addTraslados()->addTraslado([
-                    'Base'       => $this->money($importe),
+                    'Base'       => $this->money($base),
                     'Impuesto'   => '002',
                     'TipoFactor' => 'Exento',
                 ]);
             } else {
                 $concepto->addImpuestos()->addTraslados()->addTraslado([
-                    'Base'       => $this->money($importe),
+                    'Base'       => $this->money($base),
                     'Impuesto'   => '002',
                     'TipoFactor' => 'Tasa',
                     'TasaOCuota' => $tasa,
-                    'Importe'    => $this->money(round($importe * $ivaRate, 2)),
+                    'Importe'    => $this->money(round($base * $ivaRate, 2)),
                 ]);
             }
         }
@@ -143,14 +163,7 @@ class CfdiBuilderService
         // Nunca timbrar un total distinto al cobrado (ver Order).
         $order->assertChargedTotalMatches((float) $comprobante['Total']);
 
-        // ── Certificado + Sello ─────────────────────────────────
-        $certificado = new Certificado($this->absolutePath(Setting::get('csd_cer_path')));
-        $creator->putCertificado($certificado, false); // Emisor ya definido arriba
-
-        $creator->addSello($credential->privateKey()->pem(), $credential->privateKey()->passPhrase());
-        $creator->moveSatDefinitionsToComprobante();
-
-        return $creator->asXml();
+        return $creator;
     }
 
     /** Credencial CSD desde los archivos cargados en Ajustes. */
@@ -390,7 +403,7 @@ class CfdiBuilderService
         $exento  = 0.0;
 
         foreach ($order->fiscalLines() as $line) {
-            $importe = $line['quantity'] * $line['unit_price'];
+            $importe = Order::lineNet($line);
 
             if ($line['tax_object'] === '01') {
                 continue; // No objeto del impuesto: no se declara.

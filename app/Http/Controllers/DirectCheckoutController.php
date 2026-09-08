@@ -618,12 +618,18 @@ class DirectCheckoutController extends Controller
             ->whereDoesntHave('payments')
             ->first();
 
+        $order = $existing ?: Order::createWithFolio($invoiceData);
+
         if ($existing) {
             $existing->update($invoiceData);
-            return $existing;
         }
 
-        return Order::createWithFolio($invoiceData);
+        // Igual que en el carrito: la orden guarda lo vendido en vez de dejarlo
+        // sólo en las notas. Reemplaza los ítems, así que reutilizar un
+        // borrador no los duplica.
+        $order->recordSaleItems([['service' => $service, 'quantity' => 1]]);
+
+        return $order;
     }
 
     /** Deja el evento Purchase listo para el Pixel del navegador en la página de éxito. */
