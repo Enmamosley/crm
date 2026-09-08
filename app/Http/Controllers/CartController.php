@@ -466,7 +466,7 @@ class CartController extends Controller
 
     private function createInvoiceFromCart(Client $client, array $cartData, string $paymentForm): Order
     {
-        return Order::createWithFolio([
+        $order = Order::createWithFolio([
             'client_id'      => $client->id,
             'series'         => 'V',
             'payment_form'   => $paymentForm,
@@ -479,6 +479,16 @@ class CartController extends Controller
             'discount_code'  => $cartData['discountCode'],
             'notes'          => 'Carrito: ' . $cartData['notes'],
         ]);
+
+        // La orden guarda lo comprado, línea por línea. Antes sólo quedaba el
+        // resumen de las notas, del que el CFDI sacaba un concepto único: un
+        // carrito con exentos y gravados mezclados no se podía timbrar.
+        $order->recordSaleItems(
+            $cartData['items']->map(fn ($item) => ['service' => $item->service, 'quantity' => $item->quantity]),
+            (float) $cartData['discount'],
+        );
+
+        return $order;
     }
 
     private function clearCart(array $cartData): void

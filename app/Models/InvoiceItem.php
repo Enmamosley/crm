@@ -20,12 +20,18 @@ class InvoiceItem extends Model
         'iva_exempt',
         'quantity',
         'unit_price',
+        'discount',
         'total',
     ];
 
     protected function casts(): array
     {
-        return ['iva_exempt' => 'boolean'];
+        return [
+            'iva_exempt' => 'boolean',
+            'unit_price' => 'decimal:2',
+            'discount'   => 'decimal:2',
+            'total'      => 'decimal:2',
+        ];
     }
 
     public function order(): BelongsTo
