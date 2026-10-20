@@ -5,7 +5,8 @@
 #   el proxy de Coolify gestiona HTTPS. Sin container_name ni labels
 #   de Traefik: Coolify los genera.
 # - Variables: se definen en la pestaña "Environment Variables" de Coolify.
-#   APP_KEY debe ser la de producción, o las sesiones y tokens actuales
+#   APP_KEY, DB_PASSWORD y DB_ROOT_PASSWORD son obligatorias y solo de runtime
+#   (no marcarlas como build-time). APP_KEY debe ser la de producción, o las sesiones y tokens actuales
 #   dejan de valer.
 # - Ver docs/COOLIFY.md para importar la base de datos y los archivos.
 # ─────────────────────────────────────────────────────────
@@ -15,7 +16,7 @@ x-app-env: &app-env
   APP_ENV: production
   APP_DEBUG: "false"
   APP_URL: "${APP_URL:-https://app.mosley.digital}"
-  APP_KEY: "${APP_KEY:?APP_KEY es obligatoria}"
+  APP_KEY: "${APP_KEY:-}"
   APP_LOCALE: "${APP_LOCALE:-es}"
   APP_FALLBACK_LOCALE: "${APP_FALLBACK_LOCALE:-es}"
   BCRYPT_ROUNDS: "${BCRYPT_ROUNDS:-12}"
@@ -24,7 +25,7 @@ x-app-env: &app-env
   DB_PORT: "3306"
   DB_DATABASE: "${DB_DATABASE:-crm}"
   DB_USERNAME: "${DB_USERNAME:-crm_user}"
-  DB_PASSWORD: "${DB_PASSWORD:?DB_PASSWORD es obligatoria}"
+  DB_PASSWORD: "${DB_PASSWORD:-}"
   SESSION_DRIVER: database
   SESSION_LIFETIME: "${SESSION_LIFETIME:-120}"
   SESSION_ENCRYPT: "${SESSION_ENCRYPT:-false}"
@@ -100,8 +101,8 @@ services:
     environment:
       MYSQL_DATABASE: "${DB_DATABASE:-crm}"
       MYSQL_USER: "${DB_USERNAME:-crm_user}"
-      MYSQL_PASSWORD: "${DB_PASSWORD:?DB_PASSWORD es obligatoria}"
-      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:?DB_ROOT_PASSWORD es obligatoria}"
+      MYSQL_PASSWORD: "${DB_PASSWORD:-}"
+      MYSQL_ROOT_PASSWORD: "${DB_ROOT_PASSWORD:-}"
     command: ["--character-set-server=utf8mb4", "--collation-server=utf8mb4_0900_ai_ci"]
     volumes:
       - db_data:/var/lib/mysql
