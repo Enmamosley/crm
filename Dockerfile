@@ -1,7 +1,7 @@
 # ─────────────────────────────────────────────────────────
 # Stage 1: Build frontend assets (Node) — rebuild: 2026-03-24
 # ─────────────────────────────────────────────────────────
-FROM node:20-alpine AS assets
+FROM node:22-alpine AS assets
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ RUN npm run build
 # ─────────────────────────────────────────────────────────
 # Stage 2: PHP-FPM application
 # ─────────────────────────────────────────────────────────
-FROM php:8.2-fpm-alpine AS app
+FROM php:8.3-fpm-alpine AS app
 
 # System dependencies
 RUN apk add --no-cache \
@@ -27,6 +27,8 @@ RUN apk add --no-cache \
     libzip-dev \
     icu-dev \
     oniguruma-dev \
+    libxml2-dev \
+    libxslt-dev \
     mysql-client \
     git \
     unzip \
@@ -43,7 +45,9 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         zip \
         intl \
         opcache \
-        pcntl
+        pcntl \
+        soap \
+        xsl
 
 # PHP production settings
 RUN { \
